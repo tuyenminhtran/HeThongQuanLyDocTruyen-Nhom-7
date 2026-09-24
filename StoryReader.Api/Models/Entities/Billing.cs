@@ -56,6 +56,10 @@ public class Transaction
     public AppUser User { get; set; } = null!;
     public TransactionType Type { get; set; }
     public TransactionStatus Status { get; set; } = TransactionStatus.Pending;
+
+    /// <summary>StoryId khi Type = StoryPurchase, hoặc PlanId khi Type = Subscription.</summary>
+    public Guid TargetId { get; set; }
+
     public decimal Amount { get; set; }
     public string Provider { get; set; } = string.Empty; // "VNPay" | "Momo"
     public string ProviderTransactionRef { get; set; } = string.Empty;

@@ -30,10 +30,16 @@ public class PaymentService : IPaymentService
         if (alreadyOwned)
             throw new InvalidOperationException("Bạn đã sở hữu quyền đọc truyện này.");
 
+        var hasActiveSubscription = await _db.UserSubscriptions
+            .AnyAsync(s => s.UserId == userId && s.EndAt > DateTime.UtcNow);
+        if (hasActiveSubscription)
+            throw new InvalidOperationException("Bạn đang có gói đọc theo tháng còn hiệu lực, không cần mua riêng truyện này.");
+
         var tx = new Transaction
         {
             UserId = userId,
             Type = TransactionType.StoryPurchase,
+            TargetId = storyId,
             Amount = story.Price ?? 0,
             Provider = "VNPay",
             ProviderTransactionRef = Guid.NewGuid().ToString("N")
@@ -41,7 +47,6 @@ public class PaymentService : IPaymentService
         _db.Transactions.Add(tx);
         await _db.SaveChangesAsync();
 
-        // TODO: gọi SDK VNPay/Momo để sinh URL thanh toán thật, kèm tx.ProviderTransactionRef làm mã đơn hàng.
         var paymentUrl = $"https://sandbox.vnpayment.vn/pay?ref={tx.ProviderTransactionRef}&amount={tx.Amount}";
         return (tx.Id, paymentUrl);
     }
@@ -51,10 +56,14 @@ public class PaymentService : IPaymentService
         var plan = await _db.SubscriptionPlans.FindAsync(planId)
             ?? throw new InvalidOperationException("Plan not found");
 
+        if (!plan.IsActive)
+            throw new InvalidOperationException("Gói này hiện không còn được cung cấp.");
+
         var tx = new Transaction
         {
             UserId = userId,
             Type = TransactionType.Subscription,
+            TargetId = planId,
             Amount = plan.Price,
             Provider = "VNPay",
             ProviderTransactionRef = Guid.NewGuid().ToString("N")
@@ -72,20 +81,50 @@ public class PaymentService : IPaymentService
             .FirstOrDefaultAsync(t => t.ProviderTransactionRef == providerTransactionRef);
 
         if (tx is null || tx.Status != TransactionStatus.Pending)
-            return; // đã xử lý trước đó hoặc không tồn tại -> idempotent, bỏ qua.
+            return;
 
         tx.Status = success ? TransactionStatus.Success : TransactionStatus.Failed;
         tx.CompletedAt = DateTime.UtcNow;
 
         if (success)
         {
-            // Giao dịch thành công nhưng lỗi khi cấp quyền (crash giữa chừng) có thể được
-            // phát hiện lại bằng cách quét Transaction Status=Success mà chưa có Purchase/UserSubscription
-            // tương ứng (theo TransactionId) — nên chạy định kỳ một reconciliation job.
             if (tx.Type == TransactionType.StoryPurchase)
             {
-                // storyId cần được lưu kèm transaction trong hệ thống thật (thêm cột hoặc bảng phụ);
-                // ở đây giả định đã có sẵn qua metadata truyền vào khi Initiate.
+                var alreadyOwned = await _db.Purchases
+                    .AnyAsync(p => p.UserId == tx.UserId && p.StoryId == tx.TargetId);
+
+                if (!alreadyOwned)
+                {
+                    _db.Purchases.Add(new Purchase
+                    {
+                        UserId = tx.UserId,
+                        StoryId = tx.TargetId,
+                        PricePaid = tx.Amount,
+                        TransactionId = tx.Id
+                    });
+                }
+            }
+            else if (tx.Type == TransactionType.Subscription)
+            {
+                var plan = await _db.SubscriptionPlans.FindAsync(tx.TargetId);
+                if (plan is not null)
+                {
+                    var currentActive = await _db.UserSubscriptions
+                        .Where(s => s.UserId == tx.UserId && s.EndAt > DateTime.UtcNow)
+                        .OrderByDescending(s => s.EndAt)
+                        .FirstOrDefaultAsync();
+
+                    var startAt = currentActive?.EndAt ?? DateTime.UtcNow;
+
+                    _db.UserSubscriptions.Add(new UserSubscription
+                    {
+                        UserId = tx.UserId,
+                        PlanId = plan.Id,
+                        StartAt = startAt,
+                        EndAt = startAt.AddDays(plan.DurationDays),
+                        TransactionId = tx.Id
+                    });
+                }
             }
         }
 

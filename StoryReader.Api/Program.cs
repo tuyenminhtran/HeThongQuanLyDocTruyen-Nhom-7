@@ -37,7 +37,6 @@ builder.Services.AddSwaggerGen(opt =>
         }
     });
 });
-
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
@@ -79,6 +78,7 @@ builder.Services.AddScoped<IStoryService, StoryService>();
 builder.Services.AddScoped<IChapterAccessService, ChapterAccessService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IStatsService, StatsService>();
 
 builder.Services.AddCors(opt =>
     opt.AddDefaultPolicy(p => p.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin()));
@@ -98,6 +98,8 @@ using (var scope = app.Services.CreateScope())
     foreach (var role in new[] { "Admin", "Member" })
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new IdentityRole<Guid>(role));
+
+    await StoryReader.Api.Data.DataSeeder.SeedAsync(scope.ServiceProvider);
 }
 
 app.UseHttpsRedirection();
