@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { searchStories, type StoryListItem } from "../api/stories";
 import StoryCard from "../components/StoryCard";
@@ -46,6 +46,11 @@ export default function HomePage() {
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState<number | "all">("all");
   const [accessFilter, setAccessFilter] = useState<number | "all">("all");
+  const [visibleCount, setVisibleCount] = useState(12);
+
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [keyword, statusFilter, accessFilter]);
 
   const { data: stories, isLoading } = useQuery({
     queryKey: ["stories", keyword],
@@ -167,11 +172,24 @@ export default function HomePage() {
 
           {/* Story grid */}
           {!isLoading && filteredStories && filteredStories.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-5 gap-y-8">
-              {filteredStories.map((story) => (
-                <StoryCard key={story.id} story={story} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-5 gap-y-8">
+                {filteredStories.slice(0, visibleCount).map((story) => (
+                  <StoryCard key={story.id} story={story} />
+                ))}
+              </div>
+
+              {visibleCount < filteredStories.length && (
+                <div className="mt-12 text-center">
+                  <button
+                    onClick={() => setVisibleCount((prev) => prev + 12)}
+                    className="px-8 py-3 rounded-xl font-medium border border-ink-border text-ink-text hover:border-gold hover:text-gold hover:bg-ink-card transition-all shadow-sm"
+                  >
+                    Tải thêm truyện ({filteredStories.length - visibleCount} còn lại)
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 

@@ -42,19 +42,28 @@ export default function Header() {
             >
               Trang chủ
             </Link>
+            <Link
+              to="/pricing"
+              className="px-3 py-2 rounded-lg text-sm text-gold hover:text-gold-dim hover:bg-gold/10 transition-all font-medium flex items-center gap-1.5"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+              Gói VIP
+            </Link>
 
             {accessToken ? (
               <>
                 {isAdmin && (
                   <Link
-                    to="/admin/stories"
+                    to="/admin"
                     className="px-3 py-2 rounded-lg text-sm text-ink-muted hover:text-ink-text hover:bg-ink-card transition-all"
                   >
                     <span className="flex items-center gap-1.5">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
                       </svg>
-                      Quản lý
+                      Trang quản trị
                     </span>
                   </Link>
                 )}
@@ -133,16 +142,26 @@ export default function Header() {
             >
               Trang chủ
             </Link>
+            <Link
+              to="/pricing"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-gold hover:bg-gold/10 transition-all font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+              Gói VIP
+            </Link>
 
             {accessToken ? (
               <>
                 {isAdmin && (
                   <Link
-                    to="/admin/stories"
+                    to="/admin"
                     onClick={() => setMobileOpen(false)}
                     className="block px-3 py-2.5 rounded-lg text-sm text-ink-muted hover:text-ink-text hover:bg-ink-card transition-all"
                   >
-                    Quản lý truyện
+                    Trang quản trị
                   </Link>
                 )}
 
