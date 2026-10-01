@@ -13,11 +13,6 @@ export default function ProfilePage() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editName, setEditName] = useState(displayName || "");
 
-  // Protect route
-  if (!accessToken) {
-    return <Navigate to="/login" replace />;
-  }
-
   // Fetch data based on active tab
   const { data: stories, isLoading } = useQuery({
     queryKey: ["user-library", activeTab],
@@ -27,7 +22,13 @@ export default function ProfilePage() {
       if (activeTab === "purchased") return getPurchasedStories();
       return Promise.resolve([]);
     },
+    enabled: !!accessToken,
   });
+
+  // Protect route
+  if (!accessToken) {
+    return <Navigate to="/login" replace />;
+  }
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();

@@ -5,7 +5,6 @@ import { searchStories, type StoryListItem } from "../api/stories";
 import StoryCard from "../components/StoryCard";
 
 function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }) {
-  const isTop3 = rank <= 3;
   return (
     <Link
       to={`/stories/${story.id}`}
