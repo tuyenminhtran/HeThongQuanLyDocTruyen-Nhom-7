@@ -4,7 +4,7 @@ Tài liệu này tóm tắt danh sách và mục đích của các file tài li�
 
 ---
 
-## 📁 Danh Sách Tài Liệu Chính
+##  Danh Sách Tài Liệu Chính
 
 | Tên File | Định Dạng | Mô Tả Nội Dung |
 | :--- | :--- | :--- |
@@ -17,7 +17,7 @@ Tài liệu này tóm tắt danh sách và mục đích của các file tài li�
 
 ---
 
-## 🚀 Tóm Tắt Lộ Trình Sprint (Sprint Overview)
+##  Tóm Tắt Lộ Trình Sprint (Sprint Overview)
 
 1. **Sprint 0 (Tuần 3 - 4):** Khởi tạo dự án, hạ tầng REST API (`C#`, `JWT`), Đăng ký / Đăng nhập / Profile.
 2. **Sprint 1 (Tuần 5):** Duyệt truyện, Trang chủ, Tìm kiếm & Danh sách gợi ý.
