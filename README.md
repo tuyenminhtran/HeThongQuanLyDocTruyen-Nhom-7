@@ -9,7 +9,7 @@ Hệ thống quản lý và đọc truyện trực tuyến hỗ trợ nền tả
 - **Backend:** ASP.NET Core Web API (.NET 8), Entity Framework Core
 - **Database & Cache:** PostgreSQL, Redis
 - **Frontend (Web):** React + TypeScript (Vite) / `storyreader-web`
-- **Mobile App:** Android Native (Kotlin)
+- **Mobile App:** Flutter
 - **Authentication:** JWT (JSON Web Token) & ASP.NET Core Identity
 - **Containerization:** Docker Compose
 
