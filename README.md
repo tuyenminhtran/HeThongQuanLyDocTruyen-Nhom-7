@@ -72,5 +72,5 @@ npm run dev
 
 ---
 
-## 👥 Nhóm Thực Hiện
+##  Nhóm Thực Hiện
 - **Nhóm 7** - Đồ án cuối môn 2026
