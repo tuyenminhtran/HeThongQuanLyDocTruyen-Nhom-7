@@ -75,7 +75,7 @@ npm run dev
 ##  Nhóm Thực Hiện
 - **Nhóm 7** - Đồ án cuối môn 2026
 - Thành viên nhóm:
-- Trần Minh Tuyên
-- Trần Mỹ Duyên
 - Lê Hoàng
+- Trần Mỹ Duyên
+- Trần Minh Tuyên
 - Trần Minh Tuyền
