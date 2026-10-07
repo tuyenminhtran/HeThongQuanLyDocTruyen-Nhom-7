@@ -9,7 +9,7 @@ Hệ thống quản lý và đọc truyện trực tuyến hỗ trợ nền tả
 - **Backend:** ASP.NET Core Web API (.NET 8), Entity Framework Core
 - **Database & Cache:** PostgreSQL, Redis
 - **Frontend (Web):** React + TypeScript (Vite) / `storyreader-web`
-- **Mobile App:** Flutter
+- **Mobile App:** Flutter / `Storyreader_mobile`
 - **Authentication:** JWT (JSON Web Token) & ASP.NET Core Identity
 - **Containerization:** Docker Compose
 
@@ -36,6 +36,7 @@ Hệ thống quản lý và đọc truyện trực tuyến hỗ trợ nền tả
 ```text
 ├── StoryReader.Api/        # RESTful API Backend (ASP.NET Core)
 ├── storyreader-web/         # Frontend Web App (React + TypeScript)
+├── Storyreader_mobile/      # Frontend Mobile App (Flutter)
 ├── Docx/                    # Tài liệu quản lý dự án (.docx, .xlsx, .md)
 ├── docker-compose.yml       # Cấu hình môi trường (PostgreSQL, Redis)
 └── StoryReader.Api.slnx     # Csharp Solution File
@@ -48,6 +49,7 @@ Hệ thống quản lý và đọc truyện trực tuyến hỗ trợ nền tả
 ### 1. Yêu Cầu Môi Trường
 - [.NET 8 SDK](https://dotnet.microsoft.com/download)
 - [Node.js](https://nodejs.org/) (phiên bản LTS)
+- [Flutter SDK](https://flutter.dev/docs/get-started/install)
 - [Docker & Docker Compose](https://www.docker.com/)
 
 ### 2. Khởi Chạy Infrastructure (Database & Redis)
@@ -61,7 +63,7 @@ cd StoryReader.Api
 dotnet restore
 dotnet run
 ```
-*API Swagger sẽ khả dụng tại: `http://localhost:5000/swagger` (hoặc port đã cấu hình).*
+*API Swagger sẽ khả dụng tại: `http://localhost:5066/swagger` (hoặc port đã cấu hình).*
 
 ### 4. Chạy Frontend Web
 ```bash
@@ -69,6 +71,14 @@ cd storyreader-web
 npm install
 npm run dev
 ```
+
+### 5. Chạy Frontend Mobile
+```bash
+cd Storyreader_mobile
+flutter pub get
+flutter run
+```
+*(Hoặc chạy trên trình duyệt: `flutter run -d chrome`)*
 
 ---
 
