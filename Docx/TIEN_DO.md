@@ -1,6 +1,6 @@
 # Tiến độ đồ án StoryReader
 
-Cập nhật: 28/09/2026
+Cập nhật: 07/10/2026
 
 ## Tổng quan
 
@@ -8,8 +8,8 @@ Cập nhật: 28/09/2026
 |---|---|
 | Backend API | Xong phần lõi, đã test qua Swagger |
 | Web (React) | Chạy được, còn lỗi build và nhiều chỗ đang mock |
-| Mobile (Android) | Chưa bắt đầu |
-| GitHub | Đã push, 1 repo chung (backend + web) |
+| Mobile (Flutter) | Đã hoàn thành (Storyreader_mobile), đồng bộ 100% giao diện Web |
+| GitHub | Đã merge đầy đủ Backend, Web, Mobile vào nhánh main |
 
 ## Đã xong
 
@@ -31,6 +31,18 @@ Cập nhật: 28/09/2026
 - [x] Trang chủ (tìm kiếm, lọc, bảng xếp hạng), chi tiết truyện, đọc chương (đổi theme, cỡ chữ, xử lý 403)
 - [x] Trang Admin: tạo truyện, thêm chương
 - [x] Giao diện Header / Footer / Profile / Pricing (do Antigravity code thêm)
+
+### Mobile (Flutter)
+- [x] Tạo project Flutter (Dart), Material 3 Dark Theme đồng bộ 100% với Web
+- [x] Cấu hình Dio client kết nối RESTful API (`http://10.0.2.2:5066/api` cho Android emulator, `http://localhost:5066/api` cho Web/iOS)
+- [x] Đăng nhập / đăng ký, lưu token bảo mật (FlutterSecureStorage & SharedPreferences), giải mã vai trò JWT
+- [x] Quản lý trạng thái bằng Riverpod và điều hướng GoRouter
+- [x] Trang chủ: tìm kiếm debounce, bộ lọc trạng thái và thu phí, lưới truyện, top đọc nhiều, banner VIP
+- [x] Chi tiết truyện & đọc chương: 3 theme đọc (Dark, Light, Sepia), tùy chỉnh cỡ chữ (14-32px), lưu tiến độ đọc
+- [x] Mua truyện lẻ & Gói VIP theo tháng/năm, tích hợp API thanh toán
+- [x] Trang cá nhân: lịch sử đọc, đánh dấu bookmark, truyện đã mua
+- [x] Quản trị Admin: Dashboard thống kê, CRUD truyện, quản lý thể loại, quản lý người dùng
+- [x] Kiểm thử widget smoke test và kiểm tra linter (0 lỗi, 0 warning)
 
 ## Đang vướng (nên sửa trước)
 
@@ -64,14 +76,11 @@ Cập nhật: 28/09/2026
 - [ ] Job đối soát: Transaction Success nhưng chưa có Purchase/UserSubscription
 - [ ] Tài liệu API tổng hợp để nộp kèm
 
-## Mobile Android (chưa làm)
+## Mobile: việc mở rộng tiếp theo
 
-- [ ] Tạo project Kotlin + Jetpack Compose
-- [ ] Retrofit + OkHttp trỏ vào cùng backend (emulator dùng `https://10.0.2.2:7244`, cần xử lý cert dev)
-- [ ] Đăng nhập, lưu token bằng DataStore
-- [ ] Danh sách truyện, chi tiết, đọc chương
-- [ ] Room cache chương đã tải + lưu tiến độ đọc offline
-- [ ] Mua truyện / gói tháng
+- [ ] Lưu trữ offline nội dung chương đọc khi không có mạng
+- [ ] Thông báo đẩy (Push Notification) khi có chương mới
+- [ ] Tích hợp cổng thanh toán trực tiếp qua SDK ví điện tử
 
 ## Tạm hoãn
 
@@ -84,5 +93,4 @@ Cập nhật: 28/09/2026
 2. Backend trả `displayName`, bọc lỗi login thành 400/401
 3. Nối Pricing + tab "Đã mua" vào API thật
 4. Endpoint lịch sử đọc + bookmark, nối vào Profile
-5. Bắt đầu Mobile
-6. Trang thống kê Admin, tài liệu API, dọn lỗi nhỏ
+5. Hoàn thiện tài liệu API tổng hợp và kiểm thử toàn hệ thống
