@@ -29,4 +29,11 @@ class ApiConstants {
   static String chapterDetail(String id) => '/chapters/$id';
   static String buyStory(String storyId) => '/payments/story/$storyId';
   static String buySubscription(String planId) => '/payments/subscription/$planId';
+
+  // Profile endpoints
+  static const String profile = '/profile';
+  static const String changePassword = '/profile/change-password';
+  static const String profileHistory = '/profile/history';
+  static const String profileBookmarks = '/profile/bookmarks';
+  static const String profilePurchased = '/profile/purchased';
 }

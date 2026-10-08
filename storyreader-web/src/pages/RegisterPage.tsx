@@ -37,10 +37,15 @@ export default function RegisterPage() {
       );
       setAuth(result.accessToken, data.email, data.displayName);
       navigate("/");
-    } catch {
-      setError(
-        "Đăng ký thất bại. Email có thể đã tồn tại hoặc mật khẩu quá yếu."
-      );
+    } catch (err: any) {
+      if (!err?.response) {
+        setError("Không thể kết nối đến máy chủ backend (cổng 5066).");
+      } else {
+        setError(
+          err.response?.data?.message ||
+            "Đăng ký thất bại. Email có thể đã tồn tại hoặc mật khẩu chưa đạt yêu cầu."
+        );
+      }
     } finally {
       setLoading(false);
     }
