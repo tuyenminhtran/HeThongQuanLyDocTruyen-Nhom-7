@@ -92,50 +92,55 @@ export default function PricingPage() {
       </div>
 
       {/* Pricing Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
         {plans.map((plan) => (
           <div
             key={plan.id}
-            className={`relative flex flex-col bg-ink-card border rounded-3xl p-8 transition-transform hover:-translate-y-1 ${
+            className={`relative flex flex-col rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1 ${
               plan.recommended
-                ? "border-gold shadow-2xl shadow-gold/10 scale-105 z-10"
-                : "border-ink-border shadow-xl shadow-black/20"
+                ? "bg-gradient-to-b from-ink-card to-ink-elevated border-2 border-gold shadow-2xl shadow-gold/15 scale-105 z-10"
+                : "bg-ink-card border border-ink-border hover:border-ink-border-light shadow-xl shadow-black/20"
             }`}
           >
             {plan.recommended && (
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1 bg-gold text-ink-bg text-xs font-bold uppercase tracking-wider rounded-full shadow-lg">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-bold uppercase tracking-wider rounded-full shadow-lg shadow-gold/25 flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
                 Phổ biến nhất
               </div>
             )}
             
-            <div className="mb-8">
-              <h3 className="font-serif text-xl text-ink-text mb-2">{plan.name}</h3>
-              <p className="text-ink-muted text-sm min-h-[40px]">{plan.description}</p>
+            <div className="mb-6">
+              <h3 className="font-serif text-2xl text-white font-bold mb-2">{plan.name}</h3>
+              <p className="text-ink-muted text-sm min-h-[40px] leading-relaxed">{plan.description}</p>
             </div>
             
-            <div className="mb-8">
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-ink-text">{plan.price}</span>
-                <span className="text-ink-muted">{plan.period}</span>
+            <div className="mb-8 pb-6 border-b border-ink-border/60">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight">{plan.price}</span>
+                <span className="text-ink-muted text-sm font-medium">{plan.period}</span>
               </div>
             </div>
             
-            <ul className="flex-1 space-y-4 mb-8">
+            <ul className="flex-1 space-y-3.5 mb-8">
               {plan.features.map((feature, idx) => (
                 <li key={idx} className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-gold shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                  <span className="text-sm text-ink-text/80">{feature}</span>
+                  <div className="w-5 h-5 rounded-full bg-gold/15 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg className="w-3.5 h-3.5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-slate-300">{feature}</span>
                 </li>
               ))}
             </ul>
 
             <button
-              className={`w-full py-3.5 rounded-xl font-medium text-sm transition-all ${
+              className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
                 plan.recommended
-                  ? "bg-gradient-to-r from-gold to-gold-dim text-ink-bg hover:shadow-lg hover:shadow-gold/20"
-                  : "bg-ink-bg border border-ink-border text-ink-text hover:border-gold hover:text-gold"
+                  ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:from-amber-400 hover:to-amber-500 hover:shadow-lg hover:shadow-gold/25"
+                  : "bg-ink-bg border border-ink-border text-slate-200 hover:border-gold/60 hover:text-gold"
               }`}
               onClick={() => {
                 if (!accessToken) {
