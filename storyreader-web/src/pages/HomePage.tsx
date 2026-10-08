@@ -6,39 +6,46 @@ import StoryCard from "../components/StoryCard";
 
 function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }) {
   const formattedRank = rank < 10 ? `0${rank}` : `${rank}`;
+  const rankColors =
+    rank === 1
+      ? "bg-gradient-to-br from-amber-400 to-amber-600 text-black shadow-md shadow-amber-500/30"
+      : rank === 2
+      ? "bg-slate-300 text-slate-900"
+      : rank === 3
+      ? "bg-amber-700 text-amber-100"
+      : "bg-ink-elevated text-ink-muted border border-ink-border";
+
   return (
     <Link
       to={`/stories/${story.id}`}
-      className="flex items-center gap-3 p-2 rounded-xl hover:bg-ink-bg/60 transition-colors group"
+      className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-ink-elevated/70 border border-transparent hover:border-ink-border transition-all duration-200 group"
     >
-      <span
-        className={`w-7 text-center font-bold text-base font-serif shrink-0 ${
-          rank === 1
-            ? "text-gold text-lg"
-            : rank === 2
-            ? "text-slate-300"
-            : rank === 3
-            ? "text-amber-600"
-            : "text-ink-muted"
-        }`}
+      <div
+        className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${rankColors}`}
       >
         {formattedRank}
-      </span>
-      <img
-        src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
-        alt={story.title}
-        className="w-10 h-13 object-cover rounded-lg shrink-0 border border-ink-border"
-      />
+      </div>
+      <div className="w-11 h-14 rounded-lg overflow-hidden shrink-0 border border-ink-border shadow-sm relative book-spine">
+        <img
+          src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
+          alt={story.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+      </div>
       <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-semibold text-ink-text truncate group-hover:text-gold transition-colors">
+        <h4 className="text-xs sm:text-sm font-semibold text-ink-text truncate group-hover:text-gold transition-colors">
           {story.title}
         </h4>
-        <p className="text-xs text-ink-muted mt-0.5 flex items-center justify-between">
-          <span>Chương Mới</span>
-          <span className="flex items-center gap-1">
-            👁️ {story.viewCount >= 1000 ? `${(story.viewCount / 1000).toFixed(0)}K` : story.viewCount}
+        <div className="flex items-center justify-between text-[11px] text-ink-muted mt-1">
+          <span className="truncate max-w-[90px]">{story.author}</span>
+          <span className="flex items-center gap-1 font-medium text-slate-400">
+            <svg className="w-3 h-3 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {story.viewCount >= 1000 ? `${(story.viewCount / 1000).toFixed(0)}k` : story.viewCount}
           </span>
-        </p>
+        </div>
       </div>
     </Link>
   );
@@ -192,46 +199,52 @@ export default function HomePage() {
     .slice(0, 5);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 space-y-10">
       {/* ========================================================= */}
-      {/* PHẦN TRUYỆN ĐỀ CỬ (GIỐNG GIAO DIỆN NETTRUYEN)           */}
+      {/* PHẦN TRUYỆN ĐỀ CỬ                                       */}
       {/* ========================================================= */}
       {!keyword && (
-        <section className="space-y-3">
+        <section className="space-y-4">
           {/* Tiêu đề mục Truyện Đề Cử */}
-          <div className="flex items-center justify-between border-b border-ink-border/80 pb-2">
-            <h2 className="font-serif text-xl md:text-2xl font-bold text-sky-500 dark:text-gold flex items-center gap-1.5 hover:opacity-80 transition-opacity cursor-pointer">
-              <span>Truyện đề cử</span>
-              <svg className="w-5 h-5 inline-block stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
-            </h2>
+          <div className="flex items-center justify-between border-b border-ink-border pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-6 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 shadow-sm shadow-amber-500/30" />
+              <h2 className="font-serif text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+                <span>Truyện đề cử</span>
+              </h2>
+            </div>
+            <span className="text-xs text-ink-muted hidden sm:inline-block">
+              Tuyển tập tác phẩm nổi bật được cộng đồng yêu thích
+            </span>
           </div>
 
           {/* Hàng 5 Card Truyện Đề Cử */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
             {recommendedStories.map((story, idx) => (
               <Link
                 key={story.id}
                 to={`/stories/${story.id}`}
-                className="group relative overflow-hidden rounded-xl border border-ink-border bg-ink-card shadow-md hover:shadow-xl hover:border-gold/70 transition-all duration-300"
-                style={{ aspectRatio: "3/4" }}
+                className="group relative overflow-hidden rounded-xl border border-ink-border bg-ink-card shadow-book hover:shadow-card-hover hover:border-gold/60 transition-all duration-300 book-spine"
+                style={{ aspectRatio: "2/3" }}
               >
                 {/* Ảnh bìa */}
                 <img
                   src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
                   alt={story.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                 />
 
-                {/* Badge HOT góc trên trái */}
-                <div className="absolute top-2 left-2 z-10">
+                {/* Subtle inner border */}
+                <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-xl pointer-events-none" />
+
+                {/* Badge HOT / TOP góc trên trái */}
+                <div className="absolute top-2.5 left-2.5 z-20">
                   {idx < 3 ? (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-600 text-white shadow-md">
+                    <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-red-600 text-white shadow-md shadow-red-600/30">
                       HOT
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-black/75 text-gray-200 shadow-md border border-white/10">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-black/70 text-slate-200 shadow-sm border border-white/10">
                       TOP {idx + 1}
                     </span>
                   )}
@@ -239,24 +252,24 @@ export default function HomePage() {
 
                 {/* Badge VIP / Trả phí góc trên phải */}
                 {story.accessPolicy > 0 && (
-                  <div className="absolute top-2 right-2 z-10">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-yellow-500 text-black shadow-md">
+                  <div className="absolute top-2.5 right-2.5 z-20">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-gradient-to-r from-amber-500 to-amber-600 text-ink-bg shadow-sm">
                       {story.accessPolicy === 2 ? "VIP" : "PRO"}
                     </span>
                   </div>
                 )}
 
                 {/* Lớp phủ tối mờ (Gradient Overlay) phía dưới ảnh */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent flex flex-col justify-end p-2.5">
-                  <h3 className="text-[13px] font-bold text-white group-hover:text-gold transition-colors line-clamp-2 leading-snug drop-shadow-sm">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent flex flex-col justify-end p-3 z-10">
+                  <h3 className="font-serif text-[13px] font-bold text-white group-hover:text-gold transition-colors line-clamp-2 leading-snug drop-shadow-sm">
                     {story.title}
                   </h3>
-                  <div className="mt-1.5 flex items-center justify-between text-[11px] text-gray-300 font-medium">
-                    <span className="bg-black/60 px-1.5 py-0.5 rounded text-gold border border-gold/30">
-                      Chapter {Math.floor(story.viewCount / 2000) || 120}
+                  <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-300 font-medium">
+                    <span className="text-[10px] text-amber-400 bg-black/50 px-1.5 py-0.5 rounded border border-amber-400/20">
+                      Chương mới
                     </span>
-                    <span className="text-[10px] text-gray-400 italic">
-                      {idx % 2 === 0 ? "1 ngày trước" : "3 ngày trước"}
+                    <span className="flex items-center gap-1 text-[11px] text-slate-300">
+                      👁️ {story.viewCount >= 1000 ? `${(story.viewCount / 1000).toFixed(0)}k` : story.viewCount}
                     </span>
                   </div>
                 </div>
@@ -267,12 +280,12 @@ export default function HomePage() {
       )}
 
       {/* ========================================================= */}
-      {/* THANH TÌM KIẾM VÀ BỘ LỌC (GIỮ NGUYÊN BẢN CŨ)             */}
+      {/* THANH TÌM KIẾM VÀ BỘ LỌC                                 */}
       {/* ========================================================= */}
-      <div className="bg-ink-card border border-ink-border rounded-2xl p-5 shadow-lg">
-        <div className="relative max-w-2xl mx-auto mb-3">
+      <div className="bg-ink-card/80 backdrop-blur-xl border border-ink-border rounded-2xl p-5 shadow-lg">
+        <div className="relative max-w-2xl mx-auto mb-4">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-5 h-5 text-gold/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
           </span>
@@ -280,12 +293,12 @@ export default function HomePage() {
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="Tìm truyện theo tên hoặc tác giả..."
-            className="w-full bg-ink-bg border border-ink-border rounded-xl pl-12 pr-10 py-3 text-ink-text placeholder:text-ink-muted focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-all text-sm font-medium"
+            className="w-full bg-ink-bg border border-ink-border rounded-xl pl-12 pr-10 py-3 text-ink-text placeholder:text-ink-muted focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/20 transition-all text-sm font-medium"
           />
           {keyword && (
             <button
               onClick={() => setKeyword("")}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-text transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-muted hover:text-white transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -297,11 +310,11 @@ export default function HomePage() {
         {/* Filter Chips */}
         <div className="flex flex-wrap items-center justify-center gap-4 text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-ink-muted">Trạng thái:</span>
+            <span className="text-ink-muted font-medium">Trạng thái:</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="bg-ink-bg border border-ink-border rounded-lg px-3 py-1.5 text-ink-text focus:outline-none focus:border-gold"
+              className="bg-ink-bg border border-ink-border rounded-lg px-3 py-1.5 text-ink-text focus:outline-none focus:border-gold cursor-pointer"
             >
               <option value="all">Tất cả</option>
               <option value={0}>Đang phát hành</option>
@@ -311,11 +324,11 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-ink-muted">Phân loại:</span>
+            <span className="text-ink-muted font-medium">Phân loại:</span>
             <select
               value={accessFilter}
               onChange={(e) => setAccessFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="bg-ink-bg border border-ink-border rounded-lg px-3 py-1.5 text-ink-text focus:outline-none focus:border-gold"
+              className="bg-ink-bg border border-ink-border rounded-lg px-3 py-1.5 text-ink-text focus:outline-none focus:border-gold cursor-pointer"
             >
               <option value="all">Tất cả</option>
               <option value={0}>Miễn phí</option>
@@ -334,14 +347,14 @@ export default function HomePage() {
         {/* Cột trái: Danh sách toàn bộ truyện */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-6 pb-2 border-b border-ink-border">
-            <h2 className="font-serif text-xl font-bold text-sky-500 dark:text-gold flex items-center gap-2">
-              <span>{keyword ? "Kết quả tìm kiếm" : "StoryNest - Truyện gì cũng có!"}</span>
-              <svg className="w-5 h-5 inline-block stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
-            </h2>
-            <span className="text-xs text-ink-muted bg-ink-card border border-ink-border rounded-full px-3 py-1">
-              {filteredStories.length} kết quả
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-6 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 shadow-sm shadow-amber-500/30" />
+              <h2 className="font-serif text-xl font-bold text-white flex items-center gap-2">
+                <span>{keyword ? "Kết quả tìm kiếm" : "Khám Phá Truyện"}</span>
+              </h2>
+            </div>
+            <span className="text-xs text-ink-muted bg-ink-card border border-ink-border rounded-full px-3 py-1 font-medium">
+              {filteredStories.length} tác phẩm
             </span>
           </div>
 
@@ -360,14 +373,14 @@ export default function HomePage() {
 
           {/* Khi không tìm thấy kết quả */}
           {!isLoading && filteredStories.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 bg-ink-card/30 border border-ink-border rounded-2xl text-center">
-              <div className="w-20 h-20 rounded-full bg-ink-card border border-ink-border flex items-center justify-center mb-5">
-                <svg className="w-10 h-10 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+            <div className="flex flex-col items-center justify-center py-16 bg-ink-card/40 border border-ink-border rounded-2xl text-center">
+              <div className="w-20 h-20 rounded-full bg-ink-card border border-ink-border flex items-center justify-center mb-5 shadow-lg shadow-gold/5">
+                <svg className="w-10 h-10 text-gold/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                 </svg>
               </div>
-              <p className="text-ink-muted text-lg font-serif">Không tìm thấy truyện nào</p>
-              <p className="text-ink-muted/60 text-sm mt-1">Hãy thử đổi từ khóa hoặc bộ lọc khác</p>
+              <p className="text-white text-lg font-serif font-semibold">Không tìm thấy truyện nào</p>
+              <p className="text-ink-muted text-sm mt-1">Hãy thử đổi từ khóa tìm kiếm hoặc chọn bộ lọc khác</p>
             </div>
           )}
 
@@ -384,7 +397,7 @@ export default function HomePage() {
                 <div className="mt-12 text-center">
                   <button
                     onClick={() => setVisibleCount((prev) => prev + 12)}
-                    className="px-8 py-3 rounded-xl font-medium border border-ink-border text-ink-text hover:border-gold hover:text-gold hover:bg-ink-card transition-all shadow-sm text-sm"
+                    className="px-8 py-3 rounded-xl font-semibold border border-ink-border text-ink-text hover:border-gold hover:text-gold hover:bg-ink-card transition-all shadow-sm text-sm"
                   >
                     Tải thêm truyện ({filteredStories.length - visibleCount} còn lại)
                   </button>
@@ -395,13 +408,13 @@ export default function HomePage() {
         </div>
 
         {/* Cột phải: Bảng xếp hạng (Sidebar) */}
-        <div className="w-full lg:w-[300px] shrink-0 space-y-6">
+        <div className="w-full lg:w-[320px] shrink-0 space-y-6">
           <div className="bg-ink-card border border-ink-border rounded-2xl p-5 shadow-lg">
             {/* Header Bảng Xếp Hạng */}
             <div className="flex border-b border-ink-border pb-3 mb-4 text-sm font-bold text-ink-text gap-4">
-              <span className="text-gold border-b-2 border-gold pb-3 -mb-3.5">Top Tháng</span>
-              <span className="text-ink-muted hover:text-ink-text cursor-pointer">Top Tuần</span>
-              <span className="text-ink-muted hover:text-ink-text cursor-pointer">Top Ngày</span>
+              <span className="text-amber-400 border-b-2 border-amber-400 pb-3 -mb-3.5 cursor-pointer font-serif">
+                Top Bảng Xếp Hạng
+              </span>
             </div>
 
             {isLoading ? (
@@ -422,17 +435,23 @@ export default function HomePage() {
           </div>
 
           {/* Banner Premium */}
-          <div className="bg-gradient-to-br from-gold/20 to-gold/5 border border-gold/20 rounded-2xl p-6 text-center relative overflow-hidden group">
+          <div className="bg-gradient-to-br from-amber-500/15 via-ink-card to-amber-600/10 border border-amber-500/30 rounded-2xl p-6 text-center relative overflow-hidden group shadow-lg">
+            <div className="absolute -top-12 -right-12 w-28 h-28 bg-amber-500/10 rounded-full blur-2xl" />
             <div className="relative z-10">
-              <h3 className="font-serif text-gold font-medium mb-2">Đăng ký Premium</h3>
-              <p className="text-sm text-ink-text/80 mb-4">
-                Đọc toàn bộ truyện trả phí không giới hạn chỉ với 49.000đ/tháng
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center mx-auto mb-3 text-ink-bg shadow-md shadow-amber-500/30">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                </svg>
+              </div>
+              <h3 className="font-serif text-amber-400 font-bold text-lg mb-1.5">Gói Thành Viên VIP</h3>
+              <p className="text-xs text-ink-muted mb-4 leading-relaxed">
+                Đọc không giới hạn toàn bộ truyện VIP không quảng cáo, mở khóa chương sớm
               </p>
               <Link
                 to="/pricing"
-                className="inline-block px-5 py-2 rounded-xl bg-gold text-ink-bg font-medium text-sm hover:bg-gold-dim transition-colors shadow-lg shadow-gold/20"
+                className="inline-block w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-ink-bg font-bold text-sm hover:brightness-110 transition-all shadow-md shadow-amber-500/25"
               >
-                Xem chi tiết
+                Khám phá ngay
               </Link>
             </div>
           </div>
