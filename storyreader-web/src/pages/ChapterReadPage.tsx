@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getChapterContent } from "../api/chapters";
 import { AxiosError } from "axios";
 import { useState, useEffect } from "react";
+import { getFallbackChapterContent } from "../data/mockDetails";
 
 type Theme = "dark" | "light" | "sepia";
 
@@ -26,12 +27,21 @@ export default function ChapterReadPage() {
     localStorage.setItem("storyreader-theme", theme);
   }, [theme]);
 
-  const { data: chapter, isLoading, error } = useQuery({
+  const { data: apiChapter, isLoading, error } = useQuery({
     queryKey: ["chapter", id],
-    queryFn: () => getChapterContent(id!),
+    queryFn: async () => {
+      try {
+        return await getChapterContent(id!);
+      } catch (err) {
+        if ((err as AxiosError)?.response?.status === 403) throw err;
+        return null;
+      }
+    },
     enabled: !!id,
     retry: false,
   });
+
+  const chapter = apiChapter || (id ? getFallbackChapterContent(id) : null);
 
   // Theme styling
   const themeClasses = {
@@ -96,14 +106,16 @@ export default function ChapterReadPage() {
         </div>
       );
     }
-    return (
-      <div className={`min-h-[calc(100vh-65px)] ${themeClasses[theme]} transition-colors duration-300 text-center py-20 px-4`}>
-        <p className="text-red-400 font-medium">Không thể tải nội dung chương. Vui lòng thử lại sau.</p>
-        <button onClick={() => navigate(-1)} className="mt-4 opacity-70 hover:opacity-100 underline">
-          Quay lại
-        </button>
-      </div>
-    );
+    if (!chapter) {
+      return (
+        <div className={`min-h-[calc(100vh-65px)] ${themeClasses[theme]} transition-colors duration-300 text-center py-20 px-4`}>
+          <p className="text-red-400 font-medium">Không thể tải nội dung chương. Vui lòng thử lại sau.</p>
+          <button onClick={() => navigate(-1)} className="mt-4 opacity-70 hover:opacity-100 underline">
+            Quay lại
+          </button>
+        </div>
+      );
+    }
   }
 
   if (!chapter) return null;

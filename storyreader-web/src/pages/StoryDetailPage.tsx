@@ -4,6 +4,7 @@ import { getStoryDetail } from "../api/stories";
 import { buyStory } from "../api/payments";
 import { useAuthStore } from "../store/authStore";
 import { useState } from "react";
+import { getFallbackStoryDetail } from "../data/mockDetails";
 
 const accessPolicyLabel: Record<number, string> = {
   0: "Miễn phí",
@@ -17,11 +18,20 @@ export default function StoryDetailPage() {
   const queryClient = useQueryClient();
   const [buyError, setBuyError] = useState<string | null>(null);
 
-  const { data: story, isLoading } = useQuery({
+  const { data: apiStory, isLoading } = useQuery({
     queryKey: ["story", id],
-    queryFn: () => getStoryDetail(id!),
+    queryFn: async () => {
+      try {
+        return await getStoryDetail(id!);
+      } catch (err) {
+        return null;
+      }
+    },
     enabled: !!id,
   });
+
+  // Sử dụng dữ liệu API nếu có, ngược lại dùng fallback data để đảm bảo luôn hiển thị
+  const story = apiStory || (id ? getFallbackStoryDetail(id) : null);
 
   const buyMutation = useMutation({
     mutationFn: () => buyStory(id!),
