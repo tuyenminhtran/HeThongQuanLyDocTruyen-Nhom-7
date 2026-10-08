@@ -88,4 +88,4 @@ flutter run
 - Lê Hoàng
 - Trần Mỹ Duyên
 - Trần Minh Tuyên
-- Trần Minh Tuyền
+- Hồ Minh Tuyền
