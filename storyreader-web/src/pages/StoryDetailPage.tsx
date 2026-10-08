@@ -5,6 +5,7 @@ import { buyStory } from "../api/payments";
 import { useAuthStore } from "../store/authStore";
 import { useState } from "react";
 import { getFallbackStoryDetail } from "../data/mockDetails";
+import PaymentModal from "../components/PaymentModal";
 
 const accessPolicyLabel: Record<number, string> = {
   0: "Miễn phí",
@@ -17,6 +18,7 @@ export default function StoryDetailPage() {
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
   const queryClient = useQueryClient();
   const [buyError, setBuyError] = useState<string | null>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const { data: apiStory, isLoading } = useQuery({
     queryKey: ["story", id],
@@ -133,17 +135,10 @@ export default function StoryDetailPage() {
                 </div>
                 {isLoggedIn ? (
                   <button
-                    onClick={() => buyMutation.mutate()}
-                    disabled={buyMutation.isPending}
-                    className="px-6 py-2.5 rounded-xl font-medium bg-gradient-to-r from-gold to-gold/90 text-ink-bg hover:shadow-lg hover:shadow-gold/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                    onClick={() => setPaymentModalOpen(true)}
+                    className="px-6 py-2.5 rounded-xl font-medium bg-gradient-to-r from-gold to-gold/90 text-ink-bg hover:shadow-lg hover:shadow-gold/20 transition-all flex items-center justify-center gap-2"
                   >
-                    {buyMutation.isPending && (
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    )}
-                    {buyMutation.isPending ? "Đang xử lý..." : "Mua ngay"}
+                    Mua truyện qua Ví điện tử
                   </button>
                 ) : (
                   <Link
@@ -313,6 +308,15 @@ export default function StoryDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal thanh toán ví điện tử */}
+      <PaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        itemName={story.title}
+        amount={story.price || 49000}
+        itemType="story"
+      />
     </div>
   );
 }

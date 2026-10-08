@@ -1,15 +1,23 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/authStore";
+import PaymentModal from "../components/PaymentModal";
 
 export default function PricingPage() {
   const { accessToken } = useAuthStore();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<{
+    name: string;
+    amount: number;
+    type: "subscription" | "coin";
+  } | null>(null);
 
   const plans = [
     {
       id: "basic",
       name: "Gói Đọc Thử",
       price: billingCycle === "monthly" ? "19.000đ" : "190.000đ",
+      numericPrice: billingCycle === "monthly" ? 19000 : 190000,
       period: billingCycle === "monthly" ? "/tháng" : "/năm",
       description: "Phù hợp cho người mới bắt đầu khám phá nền tảng.",
       features: [
@@ -24,6 +32,7 @@ export default function PricingPage() {
       id: "premium",
       name: "Gói Premium",
       price: billingCycle === "monthly" ? "49.000đ" : "490.000đ",
+      numericPrice: billingCycle === "monthly" ? 49000 : 490000,
       period: billingCycle === "monthly" ? "/tháng" : "/năm",
       description: "Trải nghiệm đọc truyện không giới hạn mọi lúc mọi nơi.",
       features: [
@@ -38,8 +47,9 @@ export default function PricingPage() {
     {
       id: "coin",
       name: "Mua Xu Lẻ",
-      price: "Từ 10.000đ",
-      period: "",
+      price: "10.000đ",
+      numericPrice: 10000,
+      period: "/1.000 xu",
       description: "Dành cho người đọc ít, chỉ mua những truyện muốn xem.",
       features: [
         "10.000đ = 1.000 xu",
@@ -142,10 +152,15 @@ export default function PricingPage() {
                   alert("Vui lòng đăng nhập trước khi thanh toán!");
                   return;
                 }
-                alert(plan.isCoin ? "Chuyển đến trang mua xu..." : `Đang xử lý đăng ký ${plan.name}...`);
+                setSelectedItem({
+                  name: `${plan.name} (${billingCycle === "monthly" ? "Theo tháng" : "Theo năm"})`,
+                  amount: plan.numericPrice,
+                  type: plan.isCoin ? "coin" : "subscription",
+                });
+                setPaymentModalOpen(true);
               }}
             >
-              {plan.isCoin ? "Nạp Xu Ngay" : "Đăng Ký Ngay"}
+              {plan.isCoin ? "Nạp Xu Qua Ví Điện Tử" : "Thanh Toán Qua Ví Điện Tử"}
             </button>
           </div>
         ))}
@@ -153,15 +168,33 @@ export default function PricingPage() {
 
       {/* FAQ or Trust badges */}
       <div className="mt-24 border-t border-ink-border pt-16 max-w-3xl mx-auto text-center">
-        <h2 className="font-serif text-2xl text-ink-text mb-8">Thanh toán an toàn & tiện lợi</h2>
-        <div className="flex flex-wrap justify-center gap-8 items-center opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-          {/* Mock Logos */}
-          <div className="text-xl font-bold font-sans tracking-tight">MOMO</div>
-          <div className="text-xl font-bold font-sans tracking-tight text-blue-500">ZaloPay</div>
-          <div className="text-xl font-bold font-sans tracking-tight text-red-500">VNPay</div>
-          <div className="text-xl font-bold font-sans tracking-tight text-green-500">Visa / Mastercard</div>
+        <h2 className="font-serif text-2xl text-ink-text mb-8">Hỗ trợ các ví điện tử hàng đầu</h2>
+        <div className="flex flex-wrap justify-center gap-8 items-center opacity-80 hover:opacity-100 transition-all duration-300">
+          <div className="px-4 py-2 bg-ink-card border border-ink-border rounded-xl font-bold text-[#A50064] shadow-sm">
+            Ví MoMo
+          </div>
+          <div className="px-4 py-2 bg-ink-card border border-ink-border rounded-xl font-bold text-[#0068FF] shadow-sm">
+            ZaloPay
+          </div>
+          <div className="px-4 py-2 bg-ink-card border border-ink-border rounded-xl font-bold text-[#E11B22] shadow-sm">
+            VNPay QR
+          </div>
+          <div className="px-4 py-2 bg-ink-card border border-ink-border rounded-xl font-bold text-emerald-400 shadow-sm">
+            VietQR / Ngân Hàng
+          </div>
         </div>
       </div>
+
+      {/* Modal thanh toán ví điện tử */}
+      {selectedItem && (
+        <PaymentModal
+          isOpen={paymentModalOpen}
+          onClose={() => setPaymentModalOpen(false)}
+          itemName={selectedItem.name}
+          amount={selectedItem.amount}
+          itemType={selectedItem.type}
+        />
+      )}
     </div>
   );
 }
