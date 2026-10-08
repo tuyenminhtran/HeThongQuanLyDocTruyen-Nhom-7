@@ -1,9 +1,55 @@
-@import url("https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;600;700&family=Inter:wght@400;500;600&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-ink-bg text-ink-text font-sans;
+@layer base {
+  body {
+    @apply bg-ink-bg text-ink-text font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Custom smooth scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0A0D14;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #262E3D;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #374357;
+  }
+}
+
+@layer utilities {
+  .book-spine {
+    position: relative;
+  }
+  .book-spine::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.45) 0%,
+      rgba(255, 255, 255, 0.12) 2.5%,
+      rgba(0, 0, 0, 0.25) 5%,
+      transparent 12%
+    );
+    z-index: 10;
+  }
+
+  .glass-card {
+    @apply bg-ink-card/90 backdrop-blur-md border border-ink-border shadow-xl;
+  }
+
+  .glass-header {
+    @apply bg-ink-bg/85 backdrop-blur-xl border-b border-ink-border/80;
+  }
 }
