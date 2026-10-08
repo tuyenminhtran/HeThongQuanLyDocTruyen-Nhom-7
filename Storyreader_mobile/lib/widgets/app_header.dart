@@ -60,7 +60,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onTap: _closeMenu,
-                child: Container(color: Colors.transparent),
+                child: Container(color: Colors.black.withValues(alpha: 0.5)),
               ),
             ),
             // Dropdown menu right below header
@@ -70,25 +70,28 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
               right: 0,
               child: Material(
                 color: Colors.transparent,
-                child: ClipRect(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: AppColors.inkBg.withValues(alpha: 0.95),
-                        border: Border(
+                        color: AppColors.inkElevated.withValues(alpha: 0.95),
+                        border: const Border(
                           bottom: BorderSide(
-                            color: AppColors.inkBorder.withValues(alpha: 0.6),
+                            color: AppColors.inkBorder,
+                            width: 1,
                           ),
                         ),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _buildMenuItem(
                             title: 'Trang chủ',
+                            icon: Icons.home_outlined,
                             onTap: () {
                               _closeMenu();
                               context.go('/');
@@ -107,14 +110,15 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                           if (auth.isAdmin)
                             _buildMenuItem(
                               title: 'Trang quản trị',
+                              icon: Icons.admin_panel_settings_outlined,
                               onTap: () {
                                 _closeMenu();
                                 context.push('/admin');
                               },
                             ),
-                          Divider(
-                            color: AppColors.inkBorder.withValues(alpha: 0.6),
-                            height: 16,
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Divider(color: AppColors.inkBorder, height: 1),
                           ),
                           if (auth.isAuthenticated) ...[
                             InkWell(
@@ -122,22 +126,27 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                                 _closeMenu();
                                 context.push('/profile');
                               },
-                              borderRadius: BorderRadius.circular(8),
-                              child: Padding(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
-                                  vertical: 8,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.inkCard,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.inkBorder),
                                 ),
                                 child: Row(
                                   children: [
                                     Container(
-                                      width: 32,
-                                      height: 32,
+                                      width: 36,
+                                      height: 36,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         gradient: AppColors.avatarGradient,
                                         border: Border.all(
-                                          color: AppColors.gold.withValues(alpha: 0.2),
+                                          color: AppColors.gold.withValues(alpha: 0.4),
                                         ),
                                       ),
                                       alignment: Alignment.center,
@@ -148,32 +157,51 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                                             .toUpperCase(),
                                         style: GoogleFonts.inter(
                                           color: AppColors.gold,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: 10),
                                     Expanded(
-                                      child: Text(
-                                        auth.displayName ?? '',
-                                        style: GoogleFonts.inter(
-                                          color: AppColors.inkText,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            auth.displayName ?? 'Người dùng',
+                                            style: GoogleFonts.inter(
+                                              color: AppColors.inkText,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            'Xem hồ sơ cá nhân',
+                                            style: GoogleFonts.inter(
+                                              color: AppColors.inkMuted,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
                                       ),
+                                    ),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      color: AppColors.inkMuted,
+                                      size: 18,
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 8),
                             _buildMenuItem(
                               title: 'Đăng xuất',
+                              icon: Icons.logout,
                               textColor: AppColors.red400,
+                              iconColor: AppColors.red400,
                               onTap: () async {
                                 _closeMenu();
                                 await ref.read(authProvider.notifier).logout();
@@ -185,12 +213,13 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                           ] else ...[
                             _buildMenuItem(
                               title: 'Đăng nhập',
+                              icon: Icons.login,
                               onTap: () {
                                 _closeMenu();
                                 context.push('/login');
                               },
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 8),
                             ElevatedButton(
                               onPressed: () {
                                 _closeMenu();
@@ -203,13 +232,13 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(vertical: 13),
                               ),
                               child: Text(
-                                'Đăng ký',
+                                'Đăng ký tài khoản',
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
@@ -236,21 +265,21 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         child: Row(
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 16, color: iconColor ?? AppColors.inkMuted),
-              const SizedBox(width: 8),
+              Icon(icon, size: 18, color: iconColor ?? AppColors.inkMuted),
+              const SizedBox(width: 10),
             ],
             Text(
               title,
               style: GoogleFonts.inter(
-                color: textColor ?? AppColors.inkMuted,
+                color: textColor ?? AppColors.inkText,
                 fontSize: 14,
-                fontWeight: textColor == AppColors.gold ? FontWeight.w500 : FontWeight.w400,
+                fontWeight: textColor == AppColors.gold ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
           ],
@@ -263,10 +292,10 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.inkBg.withValues(alpha: 0.8),
-        border: Border(
+        color: AppColors.inkBg.withValues(alpha: 0.85),
+        border: const Border(
           bottom: BorderSide(
-            color: AppColors.inkBorder.withValues(alpha: 0.6),
+            color: AppColors.inkBorder,
             width: 1,
           ),
         ),
@@ -289,15 +318,15 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 36,
-                          height: 36,
+                          width: 38,
+                          height: 38,
                           decoration: BoxDecoration(
                             gradient: AppColors.goldGradient,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.gold.withValues(alpha: 0.15),
-                                blurRadius: 6,
+                                color: AppColors.gold.withValues(alpha: 0.25),
+                                blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
                             ],
@@ -310,14 +339,29 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Text(
-                          'StoryReader',
-                          style: GoogleFonts.notoSerif(
-                            color: AppColors.inkText,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                          ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'StoryReader',
+                              style: GoogleFonts.lora(
+                                color: AppColors.inkText,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            Text(
+                              'ĐỌC TRUYỆN ONLINE',
+                              style: GoogleFonts.inter(
+                                color: AppColors.inkMuted,
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -328,7 +372,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                     onPressed: _toggleMenu,
                     icon: Icon(
                       _menuOpen ? Icons.close : Icons.menu,
-                      color: AppColors.inkMuted,
+                      color: AppColors.inkText,
                       size: 24,
                     ),
                   ),

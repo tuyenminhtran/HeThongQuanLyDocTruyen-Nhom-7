@@ -44,11 +44,11 @@ class AppFooter extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 'StoryReader',
-                style: GoogleFonts.notoSerif(
+                style: GoogleFonts.lora(
                   color: AppColors.inkText,
                   fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
                 ),
               ),
             ],
