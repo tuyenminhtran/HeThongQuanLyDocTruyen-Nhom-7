@@ -71,6 +71,13 @@ public class AuthService : IAuthService
             expires: expires,
             signingCredentials: creds);
 
-        return new AuthResultDto(new JwtSecurityTokenHandler().WriteToken(token), expires);
+        var primaryRole = roles.FirstOrDefault() ?? "Member";
+        return new AuthResultDto(
+            new JwtSecurityTokenHandler().WriteToken(token),
+            expires,
+            user.Email,
+            user.DisplayName,
+            primaryRole
+        );
     }
 }

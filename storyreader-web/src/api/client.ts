@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "../store/authStore";
 
 export const apiClient = axios.create({
-  baseURL: "https://localhost:7244/api",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5066/api",
 });
 
 // Tự động gắn JWT token vào header của mọi request, nếu người dùng đã đăng nhập.
