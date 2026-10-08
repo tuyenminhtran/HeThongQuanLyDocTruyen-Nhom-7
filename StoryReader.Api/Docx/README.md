@@ -1,2 +1,0 @@
-# HeThongQuanLyDocTruyen-Nhom 7
-
