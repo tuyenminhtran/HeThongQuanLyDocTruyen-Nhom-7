@@ -22,10 +22,14 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const result = await login(data.email, data.password);
-      setAuth(result.accessToken, data.email, data.email);
+      setAuth(result.accessToken, result.email || data.email, result.displayName || data.email);
       navigate("/");
-    } catch {
-      setError("Email hoặc mật khẩu không đúng.");
+    } catch (err: any) {
+      if (!err?.response) {
+        setError("Không thể kết nối đến máy chủ backend (cổng 5066).");
+      } else {
+        setError(err.response?.data?.message || "Email hoặc mật khẩu không đúng.");
+      }
     } finally {
       setLoading(false);
     }

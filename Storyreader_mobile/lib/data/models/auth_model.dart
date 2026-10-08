@@ -1,22 +1,34 @@
 class AuthResult {
   final String accessToken;
   final String expiresAt;
+  final String? email;
+  final String? displayName;
+  final String? role;
 
   AuthResult({
     required this.accessToken,
     required this.expiresAt,
+    this.email,
+    this.displayName,
+    this.role,
   });
 
   factory AuthResult.fromJson(Map<String, dynamic> json) {
     return AuthResult(
       accessToken: json['accessToken'] as String? ?? '',
       expiresAt: json['expiresAt'] as String? ?? '',
+      email: json['email'] as String?,
+      displayName: json['displayName'] as String?,
+      role: json['role'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'accessToken': accessToken,
     'expiresAt': expiresAt,
+    'email': email,
+    'displayName': displayName,
+    'role': role,
   };
 }
 

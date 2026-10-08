@@ -18,8 +18,28 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterDto dto) => Ok(await _auth.RegisterAsync(dto));
+    public async Task<IActionResult> Register(RegisterDto dto)
+    {
+        try
+        {
+            return Ok(await _auth.RegisterAsync(dto));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginDto dto) => Ok(await _auth.LoginAsync(dto));
+    public async Task<IActionResult> Login(LoginDto dto)
+    {
+        try
+        {
+            return Ok(await _auth.LoginAsync(dto));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

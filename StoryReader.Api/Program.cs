@@ -45,6 +45,9 @@ builder.Services
     {
         opt.Password.RequiredLength = 6;
         opt.Password.RequireNonAlphanumeric = false;
+        opt.Password.RequireUppercase = false;
+        opt.Password.RequireLowercase = false;
+        opt.Password.RequireDigit = false;
         opt.User.RequireUniqueEmail = true;
     })
     .AddEntityFrameworkStores<AppDbContext>()

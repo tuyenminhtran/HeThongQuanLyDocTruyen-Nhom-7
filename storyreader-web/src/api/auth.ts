@@ -3,6 +3,9 @@ import { apiClient } from "./client";
 export interface AuthResult {
   accessToken: string;
   expiresAt: string;
+  email?: string;
+  displayName?: string;
+  role?: string;
 }
 
 export async function login(email: string, password: string) {

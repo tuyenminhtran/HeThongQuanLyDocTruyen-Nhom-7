@@ -33,13 +33,13 @@ public class ChaptersController : ControllerBase
         if (!canRead)
             return Forbid();
 
-        var chapter = await _db.Chapters.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+        var chapter = await _db.Chapters.FirstOrDefaultAsync(c => c.Id == id);
         if (chapter is null || !chapter.IsPublished) return NotFound();
 
         chapter.ViewCount++;
         await _db.SaveChangesAsync();
 
-        if (CurrentUserId is Guid userId)
+        if (CurrentUserId is Guid userId && await _db.Users.AnyAsync(u => u.Id == userId))
         {
             var progress = await _db.ReadingProgresses
                 .FirstOrDefaultAsync(p => p.UserId == userId && p.StoryId == chapter.StoryId);
