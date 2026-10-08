@@ -341,8 +341,10 @@ class ChapterReadScreen extends ConsumerWidget {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 28),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 10,
+                        runSpacing: 10,
                         children: [
                           OutlinedButton(
                             onPressed: () => context.pop(),
@@ -352,18 +354,17 @@ class ChapterReadScreen extends ConsumerWidget {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
+                                horizontal: 16,
                                 vertical: 12,
                               ),
                             ),
                             child: Text(
-                              'Quay lại',
-                              style: GoogleFonts.inter(color: textColor),
+                              '← Quay lại',
+                              style: GoogleFonts.inter(color: textColor, fontSize: 13),
                             ),
                           ),
-                          const SizedBox(width: 12),
                           ElevatedButton(
-                            onPressed: () => context.push('/login'),
+                            onPressed: () => context.push('/pricing'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.gold,
                               foregroundColor: AppColors.inkBg,
@@ -371,13 +372,31 @@ class ChapterReadScreen extends ConsumerWidget {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                              elevation: 2,
+                            ),
+                            child: Text(
+                              'Xem Gói VIP',
+                              style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                          OutlinedButton(
+                            onPressed: () => context.push('/login'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.gold),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
                                 vertical: 12,
                               ),
                             ),
                             child: Text(
                               'Đăng nhập',
-                              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                              style: GoogleFonts.inter(color: AppColors.gold, fontWeight: FontWeight.w600, fontSize: 13),
                             ),
                           ),
                         ],
