@@ -1,75 +1,91 @@
-# React + TypeScript + Vite
+# Hệ Thống Quản Lý Đọc Truyện - StoryReader
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Hệ thống quản lý và đọc truyện trực tuyến hỗ trợ nền tảng Web và Mobile, cung cấp trải nghiệm đọc truyện linh hoạt, quản lý gói đọc theo tháng, mua lẻ truyện và tích hợp thanh toán.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+##  Tech Stack
 
-## React Compiler
+- **Backend:** ASP.NET Core Web API (.NET 8), Entity Framework Core
+- **Database & Cache:** PostgreSQL, Redis
+- **Frontend (Web):** React + TypeScript (Vite) / `storyreader-web`
+- **Mobile App:** Flutter / `Storyreader_mobile`
+- **Authentication:** JWT (JSON Web Token) & ASP.NET Core Identity
+- **Containerization:** Docker Compose
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+##  Tính Năng Chính
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+###  Người Đọc (Member / Guest)
+- **Duyệt & Tìm kiếm:** Xem danh sách truyện hot, truyện mới, tìm kiếm theo thể loại / tác giả.
+- **Trải nghiệm đọc:** Lưu tiến độ đọc, danh sách đang đọc, truyện yêu thích, nhận thông báo chương mới.
+- **Thanh toán & Gói đọc:** Đăng ký gói đọc theo tháng, mua lẻ truyện, xem lịch sử giao dịch.
+- **Thảo luận:** Bình luận theo chương, phản hồi và báo cáo nội dung vi phạm.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+###  Quản Trị Viên (Admin)
+- **Quản lý nội dung:** CRUD truyện, chương, thiết lập chính sách Free/Paid, lên lịch phát hành.
+- **Quản lý kinh doanh:** Quản lý gói đọc, thiết lập giá truyện, xử lý giao dịch lỗi.
+- **Kiểm duyệt & Thành viên:** Quản lý tài khoản người dùng, kiểm duyệt bình luận/báo cáo.
+- **Báo cáo thống kê:** Thống kê lượt đọc, doanh thu và các nội dung nổi bật.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+##  Cấu Trúc Dự Án
 
+```text
+├── StoryReader.Api/        # RESTful API Backend (ASP.NET Core)
+├── storyreader-web/         # Frontend Web App (React + TypeScript)
+├── Storyreader_mobile/      # Frontend Mobile App (Flutter)
+├── Docx/                    # Tài liệu quản lý dự án (.docx, .xlsx, .md)
+├── docker-compose.yml       # Cấu hình môi trường (PostgreSQL, Redis)
+└── StoryReader.Api.slnx     # Csharp Solution File
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+##  Hướng Dẫn Khởi Chạy Nhanh
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Yêu Cầu Môi Trường
+- [.NET 8 SDK](https://dotnet.microsoft.com/download)
+- [Node.js](https://nodejs.org/) (phiên bản LTS)
+- [Flutter SDK](https://flutter.dev/docs/get-started/install)
+- [Docker & Docker Compose](https://www.docker.com/)
 
+### 2. Khởi Chạy Infrastructure (Database & Redis)
+```bash
+docker-compose up -d
 ```
+
+### 3. Chạy Backend API
+```bash
+cd StoryReader.Api
+dotnet restore
+dotnet run
+```
+*API Swagger sẽ khả dụng tại: `http://localhost:5066/swagger` (hoặc port đã cấu hình).*
+
+### 4. Chạy Frontend Web
+```bash
+cd storyreader-web
+npm install
+npm run dev
+```
+
+### 5. Chạy Frontend Mobile
+```bash
+cd Storyreader_mobile
+flutter pub get
+flutter run
+```
+*(Hoặc chạy trên trình duyệt: `flutter run -d chrome`)*
+
+---
+
+##  Nhóm Thực Hiện
+- **Nhóm 7** - Đồ án cuối môn 2026
+- Thành viên nhóm:
+- Lê Hoàng
+- Trần Mỹ Duyên
+- Trần Minh Tuyên
+- Hồ Minh Tuyền
