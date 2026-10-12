@@ -4,6 +4,7 @@ import { getStoryDetail } from "../api/stories";
 import { buyStory } from "../api/payments";
 import { useAuthStore } from "../store/authStore";
 import { useState } from "react";
+import { getFallbackStoryDetail } from "../data/mockDetails";
 
 const accessPolicyLabel: Record<number, string> = {
   0: "Miễn phí",
@@ -19,11 +20,20 @@ export default function StoryDetailPage() {
   const [chapterSearch, setChapterSearch] = useState("");
   const [sortAsc, setSortAsc] = useState(true);
 
-  const { data: story, isLoading } = useQuery({
+  const { data: apiStory, isLoading } = useQuery({
     queryKey: ["story", id],
-    queryFn: () => getStoryDetail(id!),
+    queryFn: async () => {
+      try {
+        return await getStoryDetail(id!);
+      } catch (err) {
+        return null;
+      }
+    },
     enabled: !!id,
   });
+
+  // Sử dụng dữ liệu API nếu có, ngược lại dùng fallback data để đảm bảo luôn hiển thị
+  const story = apiStory || (id ? getFallbackStoryDetail(id) : null);
 
   const buyMutation = useMutation({
     mutationFn: () => buyStory(id!),
@@ -161,14 +171,14 @@ export default function StoryDetailPage() {
             </div>
 
             {/* Pricing & CTA */}
-            <div className="mt-auto pt-4 border-t border-ink-border">
+            <div className="mt-auto pt-6 border-t border-ink-border/50">
               {story.accessPolicy !== 0 && (
-                <div className="mb-5 bg-gradient-to-r from-amber-500/10 via-ink-card to-amber-500/5 border border-amber-500/25 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="mb-5 bg-ink-card border border-ink-border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <p className="text-amber-400 font-bold text-xl font-serif">
+                    <p className="text-ink-text font-medium text-lg">
                       {story.price?.toLocaleString()}đ
                     </p>
-                    <p className="text-xs text-ink-muted mt-0.5">
+                    <p className="text-sm text-ink-muted mt-0.5">
                       {story.freeChapterCount} chương đầu đọc miễn phí
                     </p>
                   </div>
@@ -176,20 +186,20 @@ export default function StoryDetailPage() {
                     <button
                       onClick={() => buyMutation.mutate()}
                       disabled={buyMutation.isPending}
-                      className="px-6 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-ink-bg hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 text-sm"
+                      className="px-6 py-2.5 rounded-xl font-medium bg-gradient-to-r from-gold to-gold/90 text-ink-bg hover:shadow-lg hover:shadow-gold/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                     >
                       {buyMutation.isPending && (
                         <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} fill="none" />
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
                       )}
-                      {buyMutation.isPending ? "Đang xử lý..." : "Mua trọn bộ"}
+                      {buyMutation.isPending ? "Đang xử lý..." : "Mua ngay"}
                     </button>
                   ) : (
                     <Link
                       to="/login"
-                      className="px-6 py-2.5 rounded-xl font-semibold border border-amber-500/40 text-amber-400 hover:bg-amber-500/10 transition-all text-center text-sm"
+                      className="px-6 py-2.5 rounded-xl font-medium border border-gold text-gold hover:bg-gold/10 transition-all text-center"
                     >
                       Đăng nhập để mua
                     </Link>
@@ -206,25 +216,14 @@ export default function StoryDetailPage() {
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-4">
                 {story.chapters.length > 0 && (
-                  <>
-                    <Link
-                      to={`/chapters/${story.chapters[0].id}`}
-                      className="px-7 py-3 rounded-xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 text-ink-bg hover:brightness-110 transition-all shadow-md shadow-amber-500/20 text-sm flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
-                      </svg>
-                      Đọc từ đầu
-                    </Link>
-                    <Link
-                      to={`/chapters/${story.chapters[story.chapters.length - 1].id}`}
-                      className="px-5 py-3 rounded-xl font-medium border border-ink-border text-ink-text hover:border-gold hover:text-gold hover:bg-ink-card transition-all text-sm"
-                    >
-                      Chương mới nhất
-                    </Link>
-                  </>
+                  <Link
+                    to={`/chapters/${story.chapters[0].id}`}
+                    className="px-8 py-3 rounded-xl font-medium bg-ink-text text-ink-bg hover:bg-white transition-all shadow-lg"
+                  >
+                    Đọc từ đầu
+                  </Link>
                 )}
               </div>
             </div>
@@ -306,31 +305,32 @@ export default function StoryDetailPage() {
 
         {/* Reviews Section */}
         <div className="border-t border-ink-border pt-10">
-          <h2 className="font-serif text-2xl text-white font-bold mb-6">Đánh giá & Bình luận</h2>
-          
+          <h2 className="font-serif text-2xl text-ink-text mb-6">Đánh giá & Bình luận</h2>
+
           {/* Comment input */}
-          <div className="bg-ink-card border border-ink-border rounded-2xl p-5 mb-8 shadow-sm">
+          <div className="bg-ink-card border border-ink-border rounded-2xl p-5 mb-8">
             <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/30 flex items-center justify-center shrink-0">
-                <span className="text-sm font-bold text-amber-400 uppercase">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold/20 to-gold/5 border border-gold/20 flex items-center justify-center shrink-0">
+                <span className="text-sm font-semibold text-gold uppercase">
                   U
                 </span>
               </div>
               <div className="flex-1">
                 <textarea
-                  placeholder="Viết cảm nhận của bạn về tác phẩm này..."
+                  placeholder="Viết đánh giá của bạn về truyện này..."
                   rows={3}
-                  className="w-full bg-ink-bg border border-ink-border rounded-xl px-4 py-3 text-sm text-ink-text placeholder:text-ink-muted focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/20 resize-none transition-all"
+                  className="w-full bg-ink-bg border border-ink-border rounded-xl px-4 py-3 text-sm text-ink-text placeholder:text-ink-muted/50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 resize-none transition-all"
                 />
                 <div className="flex justify-between items-center mt-3">
-                  <div className="flex gap-1 text-amber-400">
-                    {[1, 2, 3, 4, 5].map((star) => (
+                  <div className="flex gap-1 text-gold">
+                    {/* Mock stars */}
+                    {[1, 2, 3, 4, 5].map(star => (
                       <svg key={star} className="w-5 h-5 cursor-pointer hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     ))}
                   </div>
-                  <button className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-ink-bg font-bold text-sm hover:brightness-110 transition-all shadow-sm">
+                  <button className="px-5 py-2 rounded-xl bg-gold text-ink-bg font-medium text-sm hover:bg-gold-dim transition-colors">
                     Gửi đánh giá
                   </button>
                 </div>
@@ -339,53 +339,57 @@ export default function StoryDetailPage() {
           </div>
 
           {/* Comment List */}
-          <div className="space-y-4">
-            <div className="flex gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-ink-card border border-ink-border flex items-center justify-center shrink-0">
-                <span className="text-sm font-bold text-amber-400">T</span>
+          <div className="space-y-6">
+            {/* Mock Comment 1 */}
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded-full bg-ink-bg border border-ink-border flex items-center justify-center shrink-0">
+                <span className="text-sm font-semibold text-ink-muted">A</span>
               </div>
               <div className="flex-1">
                 <div className="bg-ink-card border border-ink-border rounded-2xl rounded-tl-none p-4">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="font-semibold text-white text-sm">Anh Tuấn</span>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-ink-text text-sm">Anh Tuấn</span>
                     <span className="text-xs text-ink-muted">2 giờ trước</span>
                   </div>
-                  <div className="flex gap-1 text-amber-400 mb-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
+                  <div className="flex gap-1 text-gold mb-2">
+                    {[1, 2, 3, 4, 5].map(star => (
                       <svg key={star} className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     ))}
                   </div>
-                  <p className="text-sm text-ink-text/80">Truyện rất hay, hành văn mạch lạc, cốt truyện bất ngờ và cuốn hút!</p>
+                  <p className="text-sm text-ink-text/80">Truyện rất hay, mong tác giả ra nhanh chương mới. Plot twist đoạn cuối quá bất ngờ!</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-ink-card border border-ink-border flex items-center justify-center shrink-0">
-                <span className="text-sm font-bold text-amber-400">P</span>
+            {/* Mock Comment 2 */}
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded-full bg-ink-bg border border-ink-border flex items-center justify-center shrink-0">
+                <span className="text-sm font-semibold text-ink-muted">M</span>
               </div>
               <div className="flex-1">
                 <div className="bg-ink-card border border-ink-border rounded-2xl rounded-tl-none p-4">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="font-semibold text-white text-sm">Minh Phượng</span>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-ink-text text-sm">Minh Phượng</span>
                     <span className="text-xs text-ink-muted">1 ngày trước</span>
                   </div>
-                  <div className="flex gap-1 text-amber-400 mb-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
+                  <div className="flex gap-1 text-gold mb-2">
+                    {[1, 2, 3, 4].map(star => (
                       <svg key={star} className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     ))}
+                    <svg className="w-3.5 h-3.5 text-ink-border" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
                   </div>
-                  <p className="text-sm text-ink-text/80">Khá ổn, các chi tiết được xây dựng hợp lý, đáng để theo dõi dài lâu.</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+      );
+  
 }

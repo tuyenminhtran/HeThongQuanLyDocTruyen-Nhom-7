@@ -2,6 +2,7 @@ import { apiClient } from "./client";
 
 export interface ChapterContent {
   id: string;
+  storyId?: string;
   chapterNumber: number;
   title: string;
   content: string;

@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { login } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
 import { useState } from "react";
@@ -17,6 +17,8 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<LoginForm>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from || "/";
   const setAuth = useAuthStore((s) => s.setAuth);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,9 +37,9 @@ export default function LoginPage() {
       navigate("/");
     } catch (err: any) {
       if (!err?.response) {
-        setError("Không thể kết nối đến máy chủ backend (cổng 5066). Vui lòng kiểm tra lại dịch vụ backend.");
+        setError("Không thể kết nối đến máy chủ backend (cổng 5066).");
       } else {
-        setError(err.response?.data?.message || "Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.");
+        setError(err.response?.data?.message || "Email hoặc mật khẩu không đúng.");
       }
     } finally {
       setLoading(false);

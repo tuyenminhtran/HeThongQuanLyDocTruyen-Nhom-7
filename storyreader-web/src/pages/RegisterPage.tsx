@@ -72,11 +72,11 @@ export default function RegisterPage() {
       navigate("/");
     } catch (err: any) {
       if (!err?.response) {
-        setError("Không thể kết nối đến máy chủ backend (cổng 5066). Vui lòng thử lại sau.");
+        setError("Không thể kết nối đến máy chủ backend (cổng 5066).");
       } else {
         setError(
           err.response?.data?.message ||
-            "Đăng ký không thành công. Email này có thể đã được đăng ký trước đó hoặc thông tin chưa hợp lệ."
+          "Đăng ký thất bại. Email có thể đã tồn tại hoặc mật khẩu chưa đạt yêu cầu."
         );
       }
     } finally {
@@ -351,19 +351,16 @@ export default function RegisterPage() {
                   <div className="mt-2 space-y-1.5 animate-fadeIn">
                     <div className="grid grid-cols-3 gap-1.5 h-1.5">
                       <div
-                        className={`rounded-full transition-all duration-300 ${
-                          passwordScore >= 1 ? (passwordScore === 1 ? "bg-rose-500" : passwordScore === 2 ? "bg-amber-500" : "bg-emerald-500") : "bg-ink-border"
-                        }`}
+                        className={`rounded-full transition-all duration-300 ${passwordScore >= 1 ? (passwordScore === 1 ? "bg-rose-500" : passwordScore === 2 ? "bg-amber-500" : "bg-emerald-500") : "bg-ink-border"
+                          }`}
                       />
                       <div
-                        className={`rounded-full transition-all duration-300 ${
-                          passwordScore >= 2 ? (passwordScore === 2 ? "bg-amber-500" : "bg-emerald-500") : "bg-ink-border"
-                        }`}
+                        className={`rounded-full transition-all duration-300 ${passwordScore >= 2 ? (passwordScore === 2 ? "bg-amber-500" : "bg-emerald-500") : "bg-ink-border"
+                          }`}
                       />
                       <div
-                        className={`rounded-full transition-all duration-300 ${
-                          passwordScore >= 3 ? "bg-emerald-500" : "bg-ink-border"
-                        }`}
+                        className={`rounded-full transition-all duration-300 ${passwordScore >= 3 ? "bg-emerald-500" : "bg-ink-border"
+                          }`}
                       />
                     </div>
                     <div className="flex items-center gap-3 text-[11px] text-ink-muted/80 pt-0.5">
@@ -395,11 +392,10 @@ export default function RegisterPage() {
                   </label>
                   {confirmPassword.length > 0 && (
                     <span
-                      className={`text-[11px] font-medium flex items-center gap-1 ${
-                        confirmPassword === password
+                      className={`text-[11px] font-medium flex items-center gap-1 ${confirmPassword === password
                           ? "text-emerald-400"
                           : "text-rose-400"
-                      }`}
+                        }`}
                     >
                       {confirmPassword === password ? (
                         <>
