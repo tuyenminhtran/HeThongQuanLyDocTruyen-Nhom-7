@@ -9,7 +9,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-[#0A0D14]/85 backdrop-blur-xl border-b border-ink-border">
+    <header className="sticky top-0 z-50 bg-ink-bg/90 backdrop-blur-xl border-b border-ink-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}

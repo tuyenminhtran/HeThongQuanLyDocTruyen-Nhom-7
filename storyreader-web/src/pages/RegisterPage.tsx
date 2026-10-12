@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useNavigate, Link } from "react-router-dom";
 import { register as registerApi } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
@@ -16,7 +16,7 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
   } = useForm<RegisterForm>({
     defaultValues: {
@@ -30,8 +30,8 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [socialNotice, setSocialNotice] = useState<string | null>(null);
 
-  const password = watch("password") || "";
-  const confirmPassword = watch("confirmPassword") || "";
+  const password = useWatch({ control, name: "password" }) || "";
+  const confirmPassword = useWatch({ control, name: "confirmPassword" }) || "";
 
   // Dynamic Password Strength Evaluation
   const passwordCriteria = useMemo(() => {
@@ -253,7 +253,7 @@ export default function RegisterPage() {
                       },
                     })}
                     placeholder="Ví dụ: Độc Cô Cầu Bại"
-                    className="w-full bg-[#0A0D14] border border-ink-border rounded-xl pl-10 pr-4 py-3 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-200"
+                    className="w-full bg-ink-bg border border-ink-border rounded-xl pl-10 pr-4 py-3 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-200"
                   />
                 </div>
                 {errors.displayName && (
@@ -287,7 +287,7 @@ export default function RegisterPage() {
                     })}
                     type="email"
                     placeholder="ban@example.com"
-                    className="w-full bg-[#0A0D14] border border-ink-border rounded-xl pl-10 pr-4 py-3 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-200"
+                    className="w-full bg-ink-bg border border-ink-border rounded-xl pl-10 pr-4 py-3 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-200"
                   />
                 </div>
                 {errors.email && (
@@ -326,7 +326,7 @@ export default function RegisterPage() {
                     })}
                     type={showPassword ? "text" : "password"}
                     placeholder="Tối thiểu 6 ký tự"
-                    className="w-full bg-[#0A0D14] border border-ink-border rounded-xl pl-10 pr-11 py-3 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-200"
+                    className="w-full bg-ink-bg border border-ink-border rounded-xl pl-10 pr-11 py-3 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-200"
                   />
                   <button
                     type="button"
@@ -425,7 +425,7 @@ export default function RegisterPage() {
                     })}
                     type={showPassword ? "text" : "password"}
                     placeholder="Nhập lại chính xác mật khẩu"
-                    className="w-full bg-[#0A0D14] border border-ink-border rounded-xl pl-10 pr-4 py-3 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-200"
+                    className="w-full bg-ink-bg border border-ink-border rounded-xl pl-10 pr-4 py-3 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-200"
                   />
                 </div>
                 {errors.confirmPassword && (
@@ -446,7 +446,7 @@ export default function RegisterPage() {
                     {...register("agreeTerms", {
                       required: "Vui lòng đồng ý với điều khoản để tiếp tục",
                     })}
-                    className="w-4 h-4 rounded border-ink-border bg-[#0A0D14] text-amber-500 focus:ring-amber-400/30 focus:ring-offset-0 mt-0.5 transition-colors"
+                    className="w-4 h-4 rounded border-ink-border bg-ink-bg text-amber-500 focus:ring-amber-400/30 focus:ring-offset-0 mt-0.5 transition-colors"
                   />
                   <span className="text-xs text-ink-muted leading-relaxed">
                     Tôi đồng ý với{" "}
@@ -527,7 +527,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => handleSocialClick("Google")}
-                className="flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl bg-[#0A0D14] border border-ink-border hover:border-ink-border-hover hover:bg-ink-elevated text-xs font-medium text-slate-300 transition-all cursor-pointer"
+                className="flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl bg-ink-bg border border-ink-border hover:border-ink-border-hover hover:bg-ink-elevated text-xs font-medium text-slate-300 transition-all cursor-pointer"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path
@@ -553,7 +553,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => handleSocialClick("GitHub")}
-                className="flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl bg-[#0A0D14] border border-ink-border hover:border-ink-border-hover hover:bg-ink-elevated text-xs font-medium text-slate-300 transition-all cursor-pointer"
+                className="flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl bg-ink-bg border border-ink-border hover:border-ink-border-hover hover:bg-ink-elevated text-xs font-medium text-slate-300 transition-all cursor-pointer"
               >
                 <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
                   <path

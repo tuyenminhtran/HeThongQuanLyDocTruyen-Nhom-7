@@ -91,7 +91,7 @@ export default function HomePage() {
         <section className="space-y-3">
           {/* Tiêu đề mục Truyện Đề Cử */}
           <div className="flex items-center justify-between border-b border-ink-border/80 pb-2">
-            <h2 className="font-serif text-xl md:text-2xl font-bold text-sky-500 dark:text-gold flex items-center gap-1.5 hover:opacity-80 transition-opacity cursor-pointer">
+            <h2 className="font-serif text-xl md:text-2xl font-bold text-gold flex items-center gap-1.5 hover:opacity-80 transition-opacity cursor-pointer">
               <span>Truyện đề cử</span>
               <svg className="w-5 h-5 inline-block stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -226,7 +226,7 @@ export default function HomePage() {
         {/* Left Area: Stories Grid */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-6 pb-2 border-b border-ink-border">
-            <h2 className="font-serif text-xl font-bold text-sky-500 dark:text-gold flex items-center gap-2">
+            <h2 className="font-serif text-xl font-bold text-gold flex items-center gap-2">
               <span>{keyword ? "Kết quả tìm kiếm" : "StoryNest - Truyện gì cũng có!"}</span>
               <svg className="w-5 h-5 inline-block stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
