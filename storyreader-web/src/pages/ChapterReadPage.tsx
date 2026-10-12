@@ -2,7 +2,6 @@ import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getChapterContent } from "../api/chapters";
 import { getStoryDetail } from "../api/stories";
-import { useAuthStore } from "../store/authStore";
 import { AxiosError } from "axios";
 import { useState, useEffect, useCallback } from "react";
 
@@ -12,7 +11,6 @@ export default function ChapterReadPage() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { accessToken } = useAuthStore();
 
   const stateStoryId = (location.state as { storyId?: string } | null)?.storyId;
 

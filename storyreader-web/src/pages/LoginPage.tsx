@@ -33,8 +33,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const result = await login(data.email, data.password);
-      setAuth(result.accessToken, result.email || data.email, result.displayName || data.email);
-      navigate("/");
+      setAuth(result.accessToken, data.email, data.email);
+      navigate(from);
     } catch (err: any) {
       if (!err?.response) {
         setError("Không thể kết nối đến máy chủ backend (cổng 5066).");
@@ -48,11 +48,11 @@ export default function LoginPage() {
 
   const fillDemoAccount = (role: "reader" | "admin") => {
     if (role === "admin") {
-      setValue("email", "admin@storyreader.vn");
-      setValue("password", "Admin@123");
+      setValue("email", "admin@storynest.local");
+      setValue("password", "Admin@123456");
     } else {
       setValue("email", "reader@storyreader.vn");
-      setValue("password", "Reader@123");
+      setValue("password", "Reader@123456");
     }
     setError(null);
   };

@@ -390,6 +390,6 @@ export default function StoryDetailPage() {
           </div>
         </div>
       </div>
-      );
-  
+    </div>
+  );
 }
