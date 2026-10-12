@@ -253,6 +253,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            if (_keyword.isEmpty && _statusFilter == null && _accessFilter == null)
+                              _buildFeaturedSection(stories),
+
                             Row(
                               children: [
                                 Text(
@@ -393,6 +396,135 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  Widget _buildFeaturedSection(List<StoryListItem> allStories) {
+    if (allStories.isEmpty) return const SizedBox.shrink();
+    final featured = allStories.take(5).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.auto_awesome, color: AppColors.gold, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Truyện Đề Cử',
+              style: GoogleFonts.notoSerif(
+                color: AppColors.inkText,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          height: 250,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: featured.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 14),
+            itemBuilder: (context, idx) {
+              final story = featured[idx];
+              return InkWell(
+                onTap: () => context.push('/stories/${story.id}'),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: 140,
+                  decoration: BoxDecoration(
+                    color: AppColors.inkCard,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.inkBorder),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Book Cover with Spine effect
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.network(
+                                story.coverImageUrl.isNotEmpty
+                                    ? story.coverImageUrl
+                                    : 'https://placehold.co/400x600?text=No+Cover',
+                                fit: BoxFit.cover,
+                                errorBuilder: (ctx, err, stack) => Container(
+                                  color: AppColors.inkBg,
+                                  child: const Icon(Icons.menu_book, color: AppColors.inkMuted),
+                                ),
+                              ),
+                              // 3D Spine Highlight
+                              Positioned(
+                                top: 0,
+                                bottom: 0,
+                                left: 0,
+                                width: 12,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0.18),
+                                        Colors.black.withValues(alpha: 0.35),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              story.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.notoSerif(
+                                color: AppColors.inkText,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              story.author,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                color: AppColors.inkMuted,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 28),
+      ],
+    );
+  }
+
   Widget _buildLeaderboard(List<StoryListItem> allStories) {
     final topStories = [...allStories]
       ..sort((a, b) => b.viewCount.compareTo(a.viewCount));
@@ -417,13 +549,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.local_fire_department, color: AppColors.gold, size: 20),
+              const Icon(Icons.local_fire_department, color: AppColors.gold, size: 22),
               const SizedBox(width: 8),
               Text(
-                'Đọc Nhiều Nhất',
+                'Bảng Xếp Hạng Đọc Nhiều',
                 style: GoogleFonts.notoSerif(
                   color: AppColors.inkText,
-                  fontSize: 16,
+                  fontSize: 17,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -445,36 +577,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: displayStories.length,
-              separatorBuilder: (context, _) => const SizedBox(height: 8),
+              separatorBuilder: (context, _) => const SizedBox(height: 10),
               itemBuilder: (context, idx) {
                 final story = displayStories[idx];
                 final rank = idx + 1;
 
-                Color rankBg;
-                Color rankText;
-                Color rankBorder;
+                Gradient? rankGradient;
+                Color rankBg = AppColors.inkBg;
+                Color rankTextColor = AppColors.inkMuted;
+                Border? rankBorder;
 
                 if (rank == 1) {
-                  rankBg = Colors.yellow.withValues(alpha: 0.2);
-                  rankText = Colors.yellow.shade700;
-                  rankBorder = Colors.yellow.shade700.withValues(alpha: 0.4);
+                  rankGradient = const LinearGradient(
+                    colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  );
+                  rankTextColor = Colors.white;
                 } else if (rank == 2) {
-                  rankBg = Colors.blueGrey.withValues(alpha: 0.2);
-                  rankText = Colors.blueGrey.shade200;
-                  rankBorder = Colors.blueGrey.shade200.withValues(alpha: 0.4);
+                  rankGradient = const LinearGradient(
+                    colors: [Color(0xFF94A3B8), Color(0xFF64748B)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  );
+                  rankTextColor = Colors.white;
                 } else if (rank == 3) {
-                  rankBg = Colors.amber.shade900.withValues(alpha: 0.2);
-                  rankText = Colors.amber.shade700;
-                  rankBorder = Colors.amber.shade700.withValues(alpha: 0.4);
+                  rankGradient = const LinearGradient(
+                    colors: [Color(0xFFB45309), Color(0xFF78350F)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  );
+                  rankTextColor = Colors.white;
                 } else {
-                  rankBg = AppColors.inkBg;
-                  rankText = AppColors.inkMuted;
-                  rankBorder = AppColors.inkBorder;
+                  rankBorder = Border.all(color: AppColors.inkBorder);
                 }
 
                 return InkWell(
                   onTap: () => context.push('/stories/${story.id}'),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                     child: Row(
@@ -484,15 +624,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           height: 32,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: rankBg,
-                            border: Border.all(color: rankBorder),
+                            color: rankGradient == null ? rankBg : null,
+                            gradient: rankGradient,
+                            border: rankBorder,
+                            boxShadow: rank <= 3
+                                ? [
+                                    BoxShadow(
+                                      color: rank == 1
+                                          ? AppColors.gold.withValues(alpha: 0.3)
+                                          : Colors.black.withValues(alpha: 0.2),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ]
+                                : null,
                           ),
                           alignment: Alignment.center,
                           child: Text(
                             '$rank',
-                            style: GoogleFonts.notoSerif(
-                              color: rankText,
-                              fontSize: 14,
+                            style: GoogleFonts.inter(
+                              color: rankTextColor,
+                              fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -506,7 +658,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 story.title,
                                 style: GoogleFonts.inter(
                                   color: AppColors.inkText,
-                                  fontSize: 13,
+                                  fontSize: 13.5,
                                   fontWeight: FontWeight.w500,
                                 ),
                                 maxLines: 1,
@@ -515,23 +667,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               const SizedBox(height: 2),
                               Row(
                                 children: [
+                                  Text(
+                                    story.author,
+                                    style: GoogleFonts.inter(
+                                      color: AppColors.inkMuted,
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text('•', style: TextStyle(color: AppColors.inkMuted, fontSize: 10)),
+                                  const SizedBox(width: 8),
                                   const Icon(
                                     Icons.remove_red_eye_outlined,
-                                    size: 12,
+                                    size: 11,
                                     color: AppColors.inkMuted,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    '${story.viewCount}',
+                                    story.viewCount >= 1000
+                                        ? '${(story.viewCount / 1000).toStringAsFixed(1)}k'
+                                        : '${story.viewCount}',
                                     style: GoogleFonts.inter(
                                       color: AppColors.inkMuted,
-                                      fontSize: 12,
+                                      fontSize: 11.5,
                                     ),
                                   ),
                                 ],
                               ),
                             ],
                           ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right,
+                          color: AppColors.inkMuted,
+                          size: 18,
                         ),
                       ],
                     ),
@@ -547,33 +716,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildPremiumBanner(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.avatarGradient,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+        color: AppColors.inkCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.gold.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.gold.withValues(alpha: 0.15),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+            ),
+            child: const Icon(Icons.workspace_premium, color: AppColors.gold, size: 28),
+          ),
+          const SizedBox(height: 12),
           Text(
-            'Đăng ký Premium',
+            'Nâng cấp Gói VIP Hội Viên',
             style: GoogleFonts.notoSerif(
               color: AppColors.gold,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+              fontSize: 19,
+              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Đọc toàn bộ truyện trả phí không giới hạn chỉ với 50.000đ/tháng',
+            'Mở khóa toàn bộ chương VIP, đọc không giới hạn và trải nghiệm đọc trọn vẹn nhất.',
             style: GoogleFonts.inter(
               color: AppColors.inkText.withValues(alpha: 0.8),
-              fontSize: 14,
+              fontSize: 13.5,
+              height: 1.5,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
-          ElevatedButton(
+          const SizedBox(height: 18),
+          ElevatedButton.icon(
             onPressed: () => context.push('/pricing'),
+            icon: const Icon(Icons.stars_rounded, size: 18),
+            label: Text(
+              'Xem Gói VIP Ngay',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.gold,
               foregroundColor: AppColors.inkBg,
@@ -582,13 +778,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               elevation: 4,
-            ),
-            child: Text(
-              'Xem chi tiết',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
             ),
           ),
         ],

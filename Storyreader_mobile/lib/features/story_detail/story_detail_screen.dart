@@ -23,6 +23,8 @@ class StoryDetailScreen extends ConsumerStatefulWidget {
 class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
   bool _isBuying = false;
   String? _buyError;
+  String _chapterSearch = '';
+  bool _isAscending = true;
 
   static const accessLabels = ["Miễn phí", "Trả phí", "Mixed"];
 
@@ -121,63 +123,105 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Large Cover Image centered
+                      // Large Cover Image centered with 3D Spine and shadow
                       Center(
                         child: Container(
-                          width: 220,
+                          width: 200,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: AppColors.inkBorder),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.4),
+                                color: Colors.black.withValues(alpha: 0.6),
+                                blurRadius: 24,
+                                offset: const Offset(0, 12),
+                              ),
+                              BoxShadow(
+                                color: AppColors.gold.withValues(alpha: 0.1),
                                 blurRadius: 20,
-                                offset: const Offset(0, 10),
+                                spreadRadius: -2,
                               ),
                             ],
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: AspectRatio(
                             aspectRatio: 2 / 3,
-                            child: CachedNetworkImage(
-                              imageUrl: story.coverImageUrl.isNotEmpty
-                                  ? story.coverImageUrl
-                                  : 'https://placehold.co/400x600?text=No+Cover',
-                              fit: BoxFit.cover,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                CachedNetworkImage(
+                                  imageUrl: story.coverImageUrl.isNotEmpty
+                                      ? story.coverImageUrl
+                                      : 'https://placehold.co/400x600?text=No+Cover',
+                                  fit: BoxFit.cover,
+                                ),
+                                // 3D Book Spine Highlight
+                                Positioned(
+                                  top: 0,
+                                  bottom: 0,
+                                  left: 0,
+                                  width: 14,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.white.withValues(alpha: 0.2),
+                                          Colors.black.withValues(alpha: 0.4),
+                                          Colors.transparent,
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
 
                       // Status & Policy Chips
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                             decoration: BoxDecoration(
-                              color: AppColors.inkCard,
-                              border: Border.all(color: AppColors.inkBorder),
+                              color: story.status == 1
+                                  ? AppColors.green400.withValues(alpha: 0.15)
+                                  : AppColors.inkCard,
+                              border: Border.all(
+                                color: story.status == 1
+                                    ? AppColors.green400.withValues(alpha: 0.3)
+                                    : AppColors.inkBorder,
+                              ),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               statusLabel,
-                              style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 12),
+                              style: GoogleFonts.inter(
+                                color: story.status == 1 ? AppColors.green400 : AppColors.inkMuted,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                             decoration: BoxDecoration(
-                              color: AppColors.inkCard,
-                              border: Border.all(color: AppColors.inkBorder),
+                              color: AppColors.gold.withValues(alpha: 0.15),
+                              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               accessLabel,
-                              style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 12),
+                              style: GoogleFonts.inter(
+                                color: AppColors.gold,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -406,31 +450,44 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
 
                       // "Đọc từ đầu" Button
                       if (story.chapters.isNotEmpty) ...[
-                        ElevatedButton(
-                          onPressed: () {
-                            context.push('/chapters/${story.chapters.first.id}');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.inkText,
-                            foregroundColor: AppColors.inkBg,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            elevation: 4,
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.gold.withValues(alpha: 0.25),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          child: Text(
-                            'Đọc từ đầu',
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              context.push('/chapters/${story.chapters.first.id}');
+                            },
+                            icon: const Icon(Icons.menu_book, size: 20),
+                            label: Text(
+                              'Đọc Từ Đầu (Chương 1)',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.gold,
+                              foregroundColor: AppColors.inkBg,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 0,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 36),
+                        const SizedBox(height: 32),
                       ],
 
-                      // Chapters Section
+                      // Chapters Section Header
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -444,7 +501,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
@@ -456,7 +513,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  '${story.chapters.length} chương',
+                                  '${story.chapters.length}',
                                   style: GoogleFonts.inter(
                                     color: AppColors.inkMuted,
                                     fontSize: 12,
@@ -465,43 +522,129 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                               ),
                             ],
                           ),
+                          // Sort toggle button
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _isAscending = !_isAscending;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                                    size: 14,
+                                    color: AppColors.gold,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _isAscending ? 'Cũ nhất' : 'Mới nhất',
+                                    style: GoogleFonts.inter(
+                                      color: AppColors.gold,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
-                      if (story.chapters.isEmpty)
+                      // Chapter Search Input
+                      if (story.chapters.length > 5) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: 36),
                           decoration: BoxDecoration(
                             color: AppColors.inkCard,
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppColors.inkBorder),
-                            borderRadius: BorderRadius.circular(16),
                           ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Truyện này chưa có chương nào.',
-                            style: GoogleFonts.inter(
-                              color: AppColors.inkMuted,
-                              fontSize: 14,
+                          child: TextField(
+                            onChanged: (val) {
+                              setState(() {
+                                _chapterSearch = val;
+                              });
+                            },
+                            style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: 'Tìm theo số chương hoặc tiêu đề...',
+                              hintStyle: GoogleFonts.inter(
+                                color: AppColors.inkMuted.withValues(alpha: 0.5),
+                                fontSize: 13,
+                              ),
+                              prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.inkMuted),
+                              isDense: true,
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             ),
                           ),
-                        )
-                      else
-                        ListView.separated(
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+
+                      // Chapter List
+                      () {
+                        var filtered = story.chapters.where((c) {
+                          if (_chapterSearch.trim().isEmpty) return true;
+                          final q = _chapterSearch.toLowerCase().trim();
+                          return c.title.toLowerCase().contains(q) ||
+                              'chương ${c.chapterNumber}'.toLowerCase().contains(q);
+                        }).toList();
+
+                        if (!_isAscending) {
+                          filtered = filtered.reversed.toList();
+                        }
+
+                        if (story.chapters.isEmpty) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(vertical: 36),
+                            decoration: BoxDecoration(
+                              color: AppColors.inkCard,
+                              border: Border.all(color: AppColors.inkBorder),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Truyện này chưa có chương nào.',
+                              style: GoogleFonts.inter(
+                                color: AppColors.inkMuted,
+                                fontSize: 14,
+                              ),
+                            ),
+                          );
+                        }
+
+                        if (filtered.isEmpty) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(vertical: 24),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Không tìm thấy chương phù hợp.',
+                              style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13),
+                            ),
+                          );
+                        }
+
+                        return ListView.separated(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: story.chapters.length,
+                          itemCount: filtered.length,
                           separatorBuilder: (context, _) => const SizedBox(height: 8),
                           itemBuilder: (context, idx) {
-                            final c = story.chapters[idx];
+                            final c = filtered[idx];
                             return InkWell(
                               onTap: () {
                                 context.push('/chapters/${c.id}');
                               },
                               borderRadius: BorderRadius.circular(12),
                               child: Container(
-                                padding: const EdgeInsets.all(14),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: AppColors.inkCard,
                                   border: Border.all(color: AppColors.inkBorder),
@@ -509,45 +652,61 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                 ),
                                 child: Row(
                                   children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.inkBg,
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: AppColors.inkBorder),
+                                      ),
+                                      child: Text(
+                                        'C.${c.chapterNumber}',
+                                        style: GoogleFonts.robotoMono(
+                                          color: AppColors.gold,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
                                     Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Chương ${c.chapterNumber}',
-                                            style: GoogleFonts.robotoMono(
-                                              color: AppColors.inkMuted,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            c.title,
-                                            style: GoogleFonts.inter(
-                                              color: AppColors.inkText,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
+                                      child: Text(
+                                        c.title,
+                                        style: GoogleFonts.inter(
+                                          color: AppColors.inkText,
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     if (c.requiresAccess) ...[
                                       const SizedBox(width: 8),
                                       Container(
-                                        width: 32,
-                                        height: 32,
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                         decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: AppColors.gold.withValues(alpha: 0.1),
+                                          color: AppColors.gold.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(6),
                                         ),
-                                        alignment: Alignment.center,
-                                        child: const Icon(
-                                          Icons.lock,
-                                          size: 16,
-                                          color: AppColors.gold,
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.lock_rounded,
+                                              size: 13,
+                                              color: AppColors.gold,
+                                            ),
+                                            SizedBox(width: 3),
+                                            Text(
+                                              'VIP',
+                                              style: TextStyle(
+                                                color: AppColors.gold,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -556,7 +715,8 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                               ),
                             );
                           },
-                        ),
+                        );
+                      }(),
 
                       const SizedBox(height: 36),
                       Divider(color: AppColors.inkBorder.withValues(alpha: 0.5)),

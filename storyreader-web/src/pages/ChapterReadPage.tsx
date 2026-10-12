@@ -34,11 +34,6 @@ export default function ChapterReadPage() {
     localStorage.setItem("storyreader-theme", theme);
   }, [theme]);
 
-  // Scroll to top when chapter ID changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [id]);
-
   const { data: chapter, isLoading, error } = useQuery({
     queryKey: ["chapter", id],
     queryFn: () => getChapterContent(id!),
@@ -102,7 +97,7 @@ export default function ChapterReadPage() {
 
   const borderClasses: Record<Theme, string> = {
     dark: "border-ink-border",
-    light: "border-gray-300",
+    light: "border-gray-200",
     sepia: "border-[#D6C5A5]",
   };
 
@@ -116,13 +111,13 @@ export default function ChapterReadPage() {
     return (
       <div className={`min-h-[calc(100vh-65px)] ${themeClasses[theme]} transition-colors duration-300`}>
         <div className="max-w-3xl mx-auto px-6 py-20 animate-pulse">
-          <div className={`h-10 rounded-lg w-3/4 mb-12 mx-auto ${theme === "dark" ? "bg-ink-card" : "bg-black/10"}`} />
+          <div className={`h-10 rounded-lg w-3/4 mb-12 mx-auto ${theme === 'dark' ? 'bg-ink-card' : 'bg-black/10'}`} />
           <div className="space-y-6">
-            <div className={`h-4 rounded w-full ${theme === "dark" ? "bg-ink-card" : "bg-black/10"}`} />
-            <div className={`h-4 rounded w-[95%] ${theme === "dark" ? "bg-ink-card" : "bg-black/10"}`} />
-            <div className={`h-4 rounded w-[98%] ${theme === "dark" ? "bg-ink-card" : "bg-black/10"}`} />
-            <div className={`h-4 rounded w-[90%] ${theme === "dark" ? "bg-ink-card" : "bg-black/10"}`} />
-            <div className={`h-4 rounded w-full ${theme === "dark" ? "bg-ink-card" : "bg-black/10"}`} />
+            <div className={`h-4 rounded w-full ${theme === 'dark' ? 'bg-ink-card' : 'bg-black/10'}`} />
+            <div className={`h-4 rounded w-[95%] ${theme === 'dark' ? 'bg-ink-card' : 'bg-black/10'}`} />
+            <div className={`h-4 rounded w-[98%] ${theme === 'dark' ? 'bg-ink-card' : 'bg-black/10'}`} />
+            <div className={`h-4 rounded w-[90%] ${theme === 'dark' ? 'bg-ink-card' : 'bg-black/10'}`} />
+            <div className={`h-4 rounded w-full ${theme === 'dark' ? 'bg-ink-card' : 'bg-black/10'}`} />
           </div>
         </div>
       </div>
@@ -133,54 +128,36 @@ export default function ChapterReadPage() {
     const status = (error as AxiosError).response?.status;
     if (status === 403) {
       return (
-        <div className={`flex flex-col items-center justify-center min-h-[calc(100vh-65px)] px-4 text-center ${themeClasses[theme]} transition-colors duration-300`}>
-          <div className="w-20 h-20 bg-gold/10 border border-gold/20 rounded-full flex items-center justify-center mb-6 text-gold">
-            <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-            </svg>
+        <div className={`flex flex-col items-center justify-center min-h-[calc(100vh-65px)] px-4 py-16 text-center ${themeClasses[theme]} transition-colors duration-300`}>
+          <div className="relative mb-6">
+            <div className="w-24 h-24 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center text-gold shadow-xl shadow-gold/10">
+              <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+            </div>
+            <div className="absolute -top-1 -right-1 px-2 py-0.5 rounded-full bg-gold text-ink-bg text-[10px] font-bold tracking-wider uppercase">
+              VIP
+            </div>
           </div>
-          <h2 className="font-serif text-2xl md:text-3xl mb-3 font-semibold">
+          <h2 className="font-serif text-2xl mb-3">
             Chương này đã bị khóa
           </h2>
-          <p className="opacity-80 mb-8 max-w-md mx-auto text-sm leading-relaxed">
-            {accessToken
-              ? "Chương này yêu cầu mở khóa riêng hoặc gói thành viên VIP đang kích hoạt."
-              : "Bạn cần đăng nhập và mua truyện hoặc nâng cấp gói thành viên để đọc chương này."}
+          <p className="opacity-70 mb-8 max-w-md mx-auto">
+            Bạn cần phải mua truyện hoặc đăng ký gói thành viên để tiếp tục đọc chương này.
           </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {activeStoryId ? (
-              <Link
-                to={`/stories/${activeStoryId}`}
-                className={`px-6 py-2.5 rounded-xl font-medium border ${borderClasses[theme]} hover:bg-black/5 transition-all text-sm`}
-              >
-                Về trang truyện
-              </Link>
-            ) : (
-              <button
-                onClick={() => navigate(-1)}
-                className={`px-6 py-2.5 rounded-xl font-medium border ${borderClasses[theme]} hover:bg-black/5 transition-all text-sm`}
-              >
-                Quay lại
-              </button>
-            )}
-
-            {accessToken ? (
-              <Link
-                to="/pricing"
-                className="px-6 py-2.5 rounded-xl font-medium bg-gold text-ink-bg hover:bg-gold-dim transition-all shadow-lg shadow-gold/20 text-sm"
-              >
-                Nâng cấp gói VIP
-              </Link>
-            ) : (
-              <Link
-                to="/login"
-                state={{ from: location.pathname }}
-                className="px-6 py-2.5 rounded-xl font-medium bg-gold text-ink-bg hover:bg-gold-dim transition-all shadow-lg shadow-gold/20 text-sm"
-              >
-                Đăng nhập ngay
-              </Link>
-            )}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className={`px-6 py-2.5 rounded-xl font-medium border ${borderClasses[theme]} hover:bg-black/5 transition-all`}
+            >
+              Quay lại
+            </button>
+            <Link
+              to="/login"
+              className="px-6 py-2.5 rounded-xl font-medium bg-gold text-white hover:bg-gold-dim transition-all shadow-lg shadow-gold/20"
+            >
+              Đăng nhập
+            </Link>
           </div>
         </div>
       );
@@ -188,12 +165,9 @@ export default function ChapterReadPage() {
 
     return (
       <div className={`min-h-[calc(100vh-65px)] ${themeClasses[theme]} transition-colors duration-300 text-center py-20 px-4`}>
-        <p className="text-red-400 font-medium mb-3">Không thể tải nội dung chương. Vui lòng thử lại sau.</p>
-        <button
-          onClick={() => (activeStoryId ? navigate(`/stories/${activeStoryId}`) : navigate(-1))}
-          className="text-gold hover:underline font-medium text-sm"
-        >
-          {activeStoryId ? "Quay về trang thông tin truyện" : "Quay lại"}
+        <p className="text-red-400 font-medium">Không thể tải nội dung chương. Vui lòng thử lại sau.</p>
+        <button onClick={() => navigate(-1)} className="mt-4 opacity-70 hover:opacity-100 underline">
+          Quay lại
         </button>
       </div>
     );
@@ -203,130 +177,53 @@ export default function ChapterReadPage() {
 
   return (
     <div className={`min-h-[calc(100vh-65px)] ${themeClasses[theme]} transition-colors duration-300`}>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative">
         {/* Floating Toolbar */}
-        <div className="sticky top-20 z-20 flex justify-between items-center mb-6 -mt-2">
-          {/* Left: Back / Story info */}
-          <div className="flex items-center gap-2">
-            {activeStoryId ? (
-              <Link
-                to={`/stories/${activeStoryId}`}
-                className={`backdrop-blur-md border ${borderClasses[theme]} rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-lg shadow-black/10 text-xs font-medium hover:text-gold transition-colors ${
-                  theme === "dark" ? "bg-ink-card/85" : "bg-white/85"
-                }`}
-                title="Quay lại trang truyện"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                </svg>
-                <span className="hidden sm:inline max-w-[160px] truncate">
-                  {story?.title || "Trang truyện"}
-                </span>
-              </Link>
-            ) : (
-              <button
-                onClick={() => navigate(-1)}
-                className={`backdrop-blur-md border ${borderClasses[theme]} rounded-full p-2 flex items-center shadow-lg shadow-black/10 hover:text-gold transition-colors ${
-                  theme === "dark" ? "bg-ink-card/85" : "bg-white/85"
-                }`}
-                title="Quay lại"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                </svg>
-              </button>
-            )}
-
-            {/* Quick Chapter Selector Trigger */}
-            {sortedChapters.length > 0 && (
-              <button
-                onClick={() => setShowChapterList(true)}
-                className={`backdrop-blur-md border ${borderClasses[theme]} rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-lg shadow-black/10 text-xs font-medium hover:text-gold transition-colors ${
-                  theme === "dark" ? "bg-ink-card/85" : "bg-white/85"
-                }`}
-                title="Mục lục chương"
-              >
-                <svg className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                </svg>
-                <span>Chương {chapter.chapterNumber}/{sortedChapters.length}</span>
-              </button>
-            )}
-          </div>
-
-          {/* Right: Controls Toolbar */}
-          <div
-            className={`backdrop-blur-md border ${borderClasses[theme]} rounded-full flex items-center p-1.5 shadow-lg shadow-black/10 ${
-              theme === "dark" ? "bg-ink-card/85" : "bg-white/85"
-            }`}
-          >
-            {/* Quick Prev in Toolbar */}
+        <div className="sticky top-20 z-10 flex justify-end mb-6 -mt-4">
+          <div className={`backdrop-blur-md border ${borderClasses[theme]} rounded-full flex items-center p-1.5 shadow-lg shadow-black/10 ${theme === 'dark' ? 'bg-ink-card/80' : 'bg-white/80'}`}>
             <button
-              onClick={() => prevChapter && goToChapter(prevChapter.id)}
-              disabled={!prevChapter}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-opacity ${
-                prevChapter ? "opacity-70 hover:opacity-100 hover:text-gold" : "opacity-20 cursor-not-allowed"
-              }`}
-              title={prevChapter ? `Chương trước: ${prevChapter.title}` : "Đây là chương đầu tiên"}
+              onClick={() => navigate(-1)}
+              className="w-10 h-10 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 transition-colors"
+              title="Quay lại"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
               </svg>
             </button>
 
-            {/* Quick Next in Toolbar */}
-            <button
-              onClick={() => nextChapter && goToChapter(nextChapter.id)}
-              disabled={!nextChapter}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-opacity ${
-                nextChapter ? "opacity-70 hover:opacity-100 hover:text-gold" : "opacity-20 cursor-not-allowed"
-              }`}
-              title={nextChapter ? `Chương sau: ${nextChapter.title}` : "Đây là chương mới nhất"}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
-            </button>
-
-            <div className={`w-px h-5 mx-1.5 ${theme === "dark" ? "bg-ink-border" : "bg-gray-300"}`} />
+            <div className={`w-px h-6 mx-1 ${theme === 'dark' ? 'bg-ink-border' : 'bg-gray-300'}`} />
 
             {/* Theme toggles */}
             <button
-              onClick={() => setTheme("light")}
-              className={`w-7 h-7 rounded-full flex items-center justify-center mx-0.5 border ${
-                theme === "light" ? "border-gold ring-2 ring-gold/30" : "border-transparent hover:border-gray-300"
-              } bg-[#F8F9FA]`}
-              title="Giao diện Sáng"
+              onClick={() => setTheme('light')}
+              className={`w-8 h-8 rounded-full flex items-center justify-center mx-1 border ${theme === 'light' ? 'border-gold ring-2 ring-gold/30' : 'border-transparent hover:border-gray-300'} bg-[#F8F9FA]`}
+              title="Nền sáng"
             />
             <button
-              onClick={() => setTheme("sepia")}
-              className={`w-7 h-7 rounded-full flex items-center justify-center mx-0.5 border ${
-                theme === "sepia" ? "border-gold ring-2 ring-gold/30" : "border-transparent hover:border-[#D6C5A5]"
-              } bg-[#F4ECD8]`}
-              title="Giao diện Vàng (Sepia)"
+              onClick={() => setTheme('sepia')}
+              className={`w-8 h-8 rounded-full flex items-center justify-center mx-1 border ${theme === 'sepia' ? 'border-gold ring-2 ring-gold/30' : 'border-transparent hover:border-[#D6C5A5]'} bg-[#F4ECD8]`}
+              title="Nền vàng"
             />
             <button
-              onClick={() => setTheme("dark")}
-              className={`w-7 h-7 rounded-full flex items-center justify-center mx-0.5 border ${
-                theme === "dark" ? "border-gold ring-2 ring-gold/30" : "border-transparent hover:border-gray-600"
-              } bg-ink-bg`}
-              title="Giao diện Tối"
+              onClick={() => setTheme('dark')}
+              className={`w-8 h-8 rounded-full flex items-center justify-center mx-1 border ${theme === 'dark' ? 'border-gold ring-2 ring-gold/30' : 'border-transparent hover:border-gray-600'} bg-ink-bg`}
+              title="Nền tối"
             />
 
-            <div className={`w-px h-5 mx-1.5 ${theme === "dark" ? "bg-ink-border" : "bg-gray-300"}`} />
+            <div className={`w-px h-6 mx-1 ${theme === 'dark' ? 'bg-ink-border' : 'bg-gray-300'}`} />
 
             {/* Font size toggles */}
             <button
               onClick={() => setFontSize(Math.max(14, fontSize - 2))}
-              className="w-8 h-8 rounded-full flex items-center justify-center opacity-70 hover:opacity-100 hover:text-gold transition-colors font-serif font-bold text-xs"
+              className="w-10 h-10 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 transition-colors font-serif font-bold text-sm"
               title="Thu nhỏ chữ"
             >
               A-
             </button>
-            <span className="text-xs font-mono opacity-60 w-5 text-center">{fontSize}</span>
+            <span className="text-xs font-mono opacity-60 w-6 text-center">{fontSize}</span>
             <button
               onClick={() => setFontSize(Math.min(32, fontSize + 2))}
-              className="w-8 h-8 rounded-full flex items-center justify-center opacity-70 hover:opacity-100 hover:text-gold transition-colors font-serif font-bold text-sm"
+              className="w-10 h-10 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 transition-colors font-serif font-bold text-lg"
               title="Phóng to chữ"
             >
               A+
@@ -334,31 +231,19 @@ export default function ChapterReadPage() {
           </div>
         </div>
 
-        {/* Story breadcrumb / title */}
-        {story && (
-          <div className="text-center mb-2">
-            <Link
-              to={`/stories/${story.id}`}
-              className="text-xs font-medium text-ink-muted hover:text-gold transition-colors uppercase tracking-wider"
-            >
-              {story.title}
-            </Link>
-          </div>
-        )}
-
-        {/* Chapter Header */}
-        <div className={`text-center mb-12 border-b ${borderClasses[theme]} pb-8`}>
-          <h3 className="text-gold font-medium tracking-widest uppercase text-sm mb-3">
+        {/* Header */}
+        <div className={`text-center mb-12 border-b ${borderClasses[theme]} pb-10`}>
+          <h3 className="text-gold font-medium tracking-widest uppercase text-sm mb-4">
             Chương {chapter.chapterNumber}
           </h3>
-          <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl leading-tight font-bold">
+          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl leading-tight text-balance">
             {chapter.title}
           </h1>
         </div>
 
-        {/* Content */}
+        {/* Chapter Body */}
         <div
-          className="font-serif mx-auto opacity-95 transition-all"
+          className="font-serif mx-auto opacity-90"
           style={{
             fontSize: `${fontSize}px`,
             lineHeight: 1.85,
@@ -383,11 +268,10 @@ export default function ChapterReadPage() {
             <button
               onClick={() => prevChapter && goToChapter(prevChapter.id)}
               disabled={!prevChapter}
-              className={`w-full sm:w-auto px-5 py-3 rounded-xl border flex items-center justify-center gap-2 font-medium text-sm transition-all ${
-                prevChapter
+              className={`w-full sm:w-auto px-5 py-3 rounded-xl border flex items-center justify-center gap-2 font-medium text-sm transition-all ${prevChapter
                   ? `${borderClasses[theme]} hover:border-gold hover:text-gold ${cardClasses[theme]}`
                   : "opacity-40 border-transparent cursor-not-allowed"
-              }`}
+                }`}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -412,11 +296,10 @@ export default function ChapterReadPage() {
             <button
               onClick={() => nextChapter && goToChapter(nextChapter.id)}
               disabled={!nextChapter}
-              className={`w-full sm:w-auto px-6 py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm transition-all shadow-md ${
-                nextChapter
+              className={`w-full sm:w-auto px-6 py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm transition-all shadow-md ${nextChapter
                   ? "bg-gold text-ink-bg hover:bg-gold-dim shadow-gold/20"
                   : "opacity-40 bg-gray-500/20 text-ink-muted cursor-not-allowed"
-              }`}
+                }`}
             >
               <span>Chương sau</span>
               {nextChapter?.requiresAccess && (
@@ -435,13 +318,20 @@ export default function ChapterReadPage() {
           </p>
         </div>
 
-        {/* Footer 3 dots */}
-        <div className="mt-12 pb-8 flex justify-center">
-          <div className="flex gap-2 items-center text-gold/40">
+        {/* Footer Nav */}
+        <div className="mt-20 pb-10 flex justify-center">
+          <div className="flex gap-2 items-center text-gold/50">
             <div className="w-2 h-2 rounded-full bg-current" />
             <div className="w-2 h-2 rounded-full bg-current" />
             <div className="w-2 h-2 rounded-full bg-current" />
           </div>
+          <p className="text-xs uppercase tracking-widest opacity-50 mb-6">Hết chương {chapter.chapterNumber}</p>
+          <button
+            onClick={() => navigate(-1)}
+            className={`px-5 py-2 rounded-xl text-sm font-medium border ${borderClasses[theme]} hover:border-gold hover:text-gold transition-all`}
+          >
+            ← Quay lại chi tiết truyện
+          </button>
         </div>
       </div>
 
@@ -475,11 +365,10 @@ export default function ChapterReadPage() {
                   <button
                     key={c.id}
                     onClick={() => goToChapter(c.id)}
-                    className={`w-full text-left p-3 rounded-xl transition-all flex items-center justify-between gap-3 ${
-                      isCurrent
+                    className={`w-full text-left p-3 rounded-xl transition-all flex items-center justify-between gap-3 ${isCurrent
                         ? "bg-gold/15 text-gold border border-gold/30 font-medium"
                         : "hover:bg-ink-bg/60 text-ink-text"
-                    }`}
+                      }`}
                   >
                     <div className="min-w-0">
                       <span className="text-xs opacity-60 font-mono block">Chương {c.chapterNumber}</span>
