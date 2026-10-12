@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
@@ -57,7 +57,7 @@ function CreateStoryModal({
     register,
     handleSubmit,
     reset,
-    watch,
+    control,
     formState: { errors },
   } = useForm<CreateStoryInput>({
     defaultValues: {
@@ -68,7 +68,7 @@ function CreateStoryModal({
     },
   });
 
-  const accessPolicy = watch("accessPolicy");
+  const accessPolicy = useWatch({ control, name: "accessPolicy" });
 
   const mutation = useMutation({
     mutationFn: (data: CreateStoryInput) =>
@@ -484,8 +484,12 @@ function StoryDetailPanel({
                 <div className="flex gap-5 mb-6">
                   <div className="w-28 aspect-[2/3] shrink-0 rounded-xl overflow-hidden border border-ink-border bg-ink-bg">
                     <img
-                      src={story.coverImageUrl || "https://placehold.co/300x450?text=No+Cover"}
+                      src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
                       alt={story.title}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80";
+                      }}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -631,8 +635,12 @@ function StoryRow({
         <div className="flex items-center gap-3">
           <div className="w-10 h-14 rounded-lg overflow-hidden border border-ink-border bg-ink-bg shrink-0">
             <img
-              src={story.coverImageUrl || "https://placehold.co/60x84?text=N"}
+              src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
               alt=""
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80";
+              }}
               className="w-full h-full object-cover"
             />
           </div>

@@ -35,11 +35,12 @@ export default function LoginPage() {
       const result = await login(data.email, data.password);
       setAuth(result.accessToken, data.email, data.email);
       navigate(from);
-    } catch (err: any) {
-      if (!err?.response) {
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      if (!axiosErr?.response) {
         setError("Không thể kết nối đến máy chủ backend (cổng 5066).");
       } else {
-        setError(err.response?.data?.message || "Email hoặc mật khẩu không đúng.");
+        setError(axiosErr.response?.data?.message || "Email hoặc mật khẩu không đúng.");
       }
     } finally {
       setLoading(false);

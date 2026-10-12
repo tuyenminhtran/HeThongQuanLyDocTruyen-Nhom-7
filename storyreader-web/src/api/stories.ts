@@ -29,6 +29,7 @@ export interface StoryDetail {
   freeChapterCount: number;
   genres: string[];
   chapters: ChapterListItem[];
+  viewCount?: number;
 }
 
 export interface CreateStoryInput {

@@ -70,12 +70,13 @@ export default function RegisterPage() {
       );
       setAuth(result.accessToken, data.email, data.displayName);
       navigate("/");
-    } catch (err: any) {
-      if (!err?.response) {
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      if (!axiosErr?.response) {
         setError("Không thể kết nối đến máy chủ backend (cổng 5066).");
       } else {
         setError(
-          err.response?.data?.message ||
+          axiosErr.response?.data?.message ||
           "Đăng ký thất bại. Email có thể đã tồn tại hoặc mật khẩu chưa đạt yêu cầu."
         );
       }
