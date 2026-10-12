@@ -58,11 +58,18 @@ export default function HomePage() {
     queryFn: () => searchStories(keyword || undefined),
   });
 
-  const filteredStories = stories?.filter(story => {
-    if (statusFilter !== "all" && story.status !== statusFilter) return false;
-    if (accessFilter !== "all" && story.accessPolicy !== accessFilter) return false;
-    return true;
-  });
+  const filteredStories = stories
+    ? stories.filter(story => {
+        if (statusFilter !== "all" && story.status !== statusFilter) return false;
+        if (accessFilter !== "all" && story.accessPolicy !== accessFilter) return false;
+        return true;
+      })
+    : [];
+
+  // Top 5 truyện đề cử (lấy theo lượt đọc cao nhất)
+  const recommendedStories = stories
+    ? [...stories].sort((a, b) => b.viewCount - a.viewCount).slice(0, 5)
+    : [];
 
   // Derived data for sidebars
   const topViewedStories = stories
