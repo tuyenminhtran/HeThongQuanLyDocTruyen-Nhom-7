@@ -8,6 +8,7 @@ interface AuthState {
   displayName: string | null;
   roles: string[];
   setAuth: (token: string, email: string, displayName?: string) => void;
+  setDisplayName: (displayName: string) => void;
   logout: () => void;
 }
 
@@ -27,6 +28,7 @@ export const useAuthStore = create<AuthState>()(
           roles: getRoleFromToken(accessToken),
         });
       },
+      setDisplayName: (displayName) => set({ displayName }),
       logout: () => set({ accessToken: null, email: null, displayName: null, roles: [] }),
     }),
     { name: "storyreader-auth" }

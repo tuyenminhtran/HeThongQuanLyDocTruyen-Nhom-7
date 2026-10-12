@@ -1,17 +1,19 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
-import { getReadingHistory, getBookmarks, getPurchasedStories } from "../api/users";
+import { getReadingHistory, getBookmarks, getPurchasedStories, updateUserProfile } from "../api/users";
 import StoryCard from "../components/StoryCard";
 import { Navigate } from "react-router-dom";
 
 type Tab = "history" | "bookmarks" | "purchased";
 
 export default function ProfilePage() {
-  const { accessToken, displayName, email } = useAuthStore();
+  const { accessToken, displayName, email, setDisplayName } = useAuthStore();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>("history");
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editName, setEditName] = useState(displayName || "");
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   // Fetch data based on active tab
   const { data: stories, isLoading } = useQuery({
@@ -25,6 +27,20 @@ export default function ProfilePage() {
     enabled: !!accessToken,
   });
 
+  const updateMutation = useMutation({
+    mutationFn: (newName: string) => updateUserProfile(newName),
+    onSuccess: (data) => {
+      const updated = data.displayName || editName;
+      setDisplayName(updated);
+      setUpdateError(null);
+      setIsEditingProfile(false);
+      queryClient.invalidateQueries({ queryKey: ["user-library"] });
+    },
+    onError: () => {
+      setUpdateError("Không thể cập nhật tên hiển thị. Vui lòng thử lại.");
+    },
+  });
+
   // Protect route
   if (!accessToken) {
     return <Navigate to="/login" replace />;
@@ -32,9 +48,8 @@ export default function ProfilePage() {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API call to update profile
-    alert(`Đã cập nhật tên thành: ${editName}`);
-    setIsEditingProfile(false);
+    if (!editName.trim()) return;
+    updateMutation.mutate(editName.trim());
   };
 
   return (
@@ -96,6 +111,11 @@ export default function ProfilePage() {
                   className="w-full bg-ink-bg/50 border border-ink-border/50 rounded-xl px-4 py-2.5 text-sm text-ink-muted cursor-not-allowed"
                 />
               </div>
+              {updateError && (
+                <div className="mb-4 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+                  {updateError}
+                </div>
+              )}
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
@@ -106,9 +126,16 @@ export default function ProfilePage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl text-sm font-medium bg-gold text-ink-bg hover:bg-gold-dim transition-colors"
+                  disabled={updateMutation.isPending}
+                  className="px-4 py-2 rounded-xl text-sm font-medium bg-gold text-ink-bg hover:bg-gold-dim disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
-                  Lưu thay đổi
+                  {updateMutation.isPending && (
+                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  )}
+                  {updateMutation.isPending ? "Đang lưu..." : "Lưu thay đổi"}
                 </button>
               </div>
             </form>

@@ -259,7 +259,7 @@ export default function LoginPage() {
                     })}
                     type="email"
                     placeholder="ban@example.com"
-                    className="w-full bg-[#0A0D14] border border-ink-border rounded-xl pl-10 pr-4 py-3 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-200"
+                    className="w-full bg-ink-bg border border-ink-border rounded-xl pl-10 pr-4 py-3 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-200"
                   />
                 </div>
                 {errors.email && (
@@ -298,7 +298,7 @@ export default function LoginPage() {
                     })}
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    className="w-full bg-[#0A0D14] border border-ink-border rounded-xl pl-10 pr-11 py-3 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-200"
+                    className="w-full bg-ink-bg border border-ink-border rounded-xl pl-10 pr-11 py-3 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-200"
                   />
                   <button
                     type="button"
@@ -335,7 +335,7 @@ export default function LoginPage() {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-ink-border bg-[#0A0D14] text-amber-500 focus:ring-amber-400/30 focus:ring-offset-0 transition-colors"
+                    className="w-4 h-4 rounded border-ink-border bg-ink-bg text-amber-500 focus:ring-amber-400/30 focus:ring-offset-0 transition-colors"
                   />
                   <span className="text-xs text-ink-muted hover:text-slate-300 transition-colors">
                     Duy trì đăng nhập trên trình duyệt này
@@ -411,7 +411,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => handleSocialClick("Google")}
-                className="flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl bg-[#0A0D14] border border-ink-border hover:border-ink-border-hover hover:bg-ink-elevated text-xs font-medium text-slate-300 transition-all cursor-pointer"
+                className="flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl bg-ink-bg border border-ink-border hover:border-ink-border-hover hover:bg-ink-elevated text-xs font-medium text-slate-300 transition-all cursor-pointer"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path
@@ -437,7 +437,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => handleSocialClick("GitHub")}
-                className="flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl bg-[#0A0D14] border border-ink-border hover:border-ink-border-hover hover:bg-ink-elevated text-xs font-medium text-slate-300 transition-all cursor-pointer"
+                className="flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl bg-ink-bg border border-ink-border hover:border-ink-border-hover hover:bg-ink-elevated text-xs font-medium text-slate-300 transition-all cursor-pointer"
               >
                 <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
                   <path
