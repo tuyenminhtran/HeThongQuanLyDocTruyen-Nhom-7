@@ -25,7 +25,7 @@ export default function StoryDetailPage() {
     queryFn: async () => {
       try {
         return await getStoryDetail(id!);
-      } catch (err) {
+      } catch {
         return null;
       }
     },
@@ -108,6 +108,10 @@ export default function StoryDetailPage() {
             <img
               src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
               alt={story.title}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80";
+              }}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
             />
             <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl pointer-events-none" />
@@ -122,13 +126,13 @@ export default function StoryDetailPage() {
               <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400">
                 {accessPolicyLabel[story.accessPolicy] || "Miễn phí"}
               </span>
-              {((story as any).viewCount != null) && (
+              {(story.viewCount != null) && (
                 <span className="text-xs text-ink-muted flex items-center gap-1 font-medium ml-auto">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  {(story as any).viewCount >= 1000 ? `${((story as any).viewCount / 1000).toFixed(0)}k` : (story as any).viewCount} lượt xem
+                  {story.viewCount >= 1000 ? `${(story.viewCount / 1000).toFixed(0)}k` : story.viewCount} lượt xem
                 </span>
               )}
             </div>
@@ -220,6 +224,7 @@ export default function StoryDetailPage() {
                 {story.chapters.length > 0 && (
                   <Link
                     to={`/chapters/${story.chapters[0].id}`}
+                    state={{ storyId: story.id }}
                     className="px-8 py-3 rounded-xl font-medium bg-ink-text text-ink-bg hover:bg-white transition-all shadow-lg"
                   >
                     Đọc từ đầu
@@ -280,6 +285,7 @@ export default function StoryDetailPage() {
                 <Link
                   key={c.id}
                   to={`/chapters/${c.id}`}
+                  state={{ storyId: story.id }}
                   className="flex items-center justify-between p-3.5 rounded-xl border border-ink-border bg-ink-card hover:border-gold/50 hover:bg-ink-elevated transition-all group"
                 >
                   <div className="min-w-0 pr-3">

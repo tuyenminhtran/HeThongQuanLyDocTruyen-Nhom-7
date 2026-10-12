@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { searchStories, type StoryListItem } from "../api/stories";
 import StoryCard from "../components/StoryCard";
@@ -26,6 +26,10 @@ function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }
       <img
         src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
         alt={story.title}
+        onError={(e) => {
+          e.currentTarget.onerror = null;
+          e.currentTarget.src = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80";
+        }}
         className="w-10 h-13 object-cover rounded-lg shrink-0 border border-ink-border"
       />
       <div className="flex-1 min-w-0">
@@ -35,7 +39,7 @@ function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }
         <p className="text-xs text-ink-muted mt-0.5 flex items-center justify-between">
           <span>Chương Mới</span>
           <span className="flex items-center gap-1">
-            👁️ {story.viewCount >= 1000 ? `${(story.viewCount / 1000).toFixed(0)}K` : story.viewCount}
+            👁️ {(story.viewCount ?? 0) >= 1000 ? `${((story.viewCount ?? 0) / 1000).toFixed(0)}K` : (story.viewCount ?? 0)}
           </span>
         </p>
       </div>
@@ -48,10 +52,12 @@ export default function HomePage() {
   const [statusFilter, setStatusFilter] = useState<number | "all">("all");
   const [accessFilter, setAccessFilter] = useState<number | "all">("all");
   const [visibleCount, setVisibleCount] = useState(12);
-
-  useEffect(() => {
+  const [prevFilterKey, setPrevFilterKey] = useState(`${keyword}-${statusFilter}-${accessFilter}`);
+  const currentFilterKey = `${keyword}-${statusFilter}-${accessFilter}`;
+  if (prevFilterKey !== currentFilterKey) {
+    setPrevFilterKey(currentFilterKey);
     setVisibleCount(12);
-  }, [keyword, statusFilter, accessFilter]);
+  }
 
   const { data: stories, isLoading } = useQuery({
     queryKey: ["stories", keyword],
@@ -106,6 +112,10 @@ export default function HomePage() {
                 <img
                   src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
                   alt={story.title}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80";
+                  }}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
 
