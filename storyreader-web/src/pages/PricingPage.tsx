@@ -104,9 +104,7 @@ export default function PricingPage() {
           >
             {plan.recommended && (
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-bold uppercase tracking-wider rounded-full shadow-lg shadow-gold/25 flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
+                <i className="fa-solid fa-star text-xs text-ink-bg" />
                 Phổ biến nhất
               </div>
             )}
@@ -127,9 +125,7 @@ export default function PricingPage() {
               {plan.features.map((feature, idx) => (
                 <li key={idx} className="flex items-start gap-3">
                   <div className="w-5 h-5 rounded-full bg-gold/15 flex items-center justify-center shrink-0 mt-0.5">
-                    <svg className="w-3.5 h-3.5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
+                    <i className="fa-solid fa-check text-gold text-xs" />
                   </div>
                   <span className="text-sm text-slate-300">{feature}</span>
                 </li>

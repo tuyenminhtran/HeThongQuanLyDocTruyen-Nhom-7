@@ -12,6 +12,15 @@ export interface UserProfile {
   subscriptionEndAt?: string | null;
 }
 
+export interface AdminUserItem {
+  id: string;
+  email: string;
+  displayName: string;
+  role: string;
+  isRestricted: boolean;
+  createdAt: string;
+}
+
 export async function getUserProfile(): Promise<UserProfile> {
   const res = await apiClient.get<UserProfile>("/profile/me");
   return res.data;
@@ -49,4 +58,17 @@ export async function getPurchasedStories(): Promise<StoryListItem[]> {
   } catch {
     return [];
   }
+}
+
+export async function getAdminUsers(keyword?: string): Promise<AdminUserItem[]> {
+  const params = keyword ? { keyword: keyword.trim() } : {};
+  const res = await apiClient.get<AdminUserItem[]>("/admin/users", { params });
+  return res.data;
+}
+
+export async function toggleUserRestriction(id: string): Promise<{ id: string; isRestricted: boolean; message: string }> {
+  const res = await apiClient.put<{ id: string; isRestricted: boolean; message: string }>(
+    `/admin/users/${id}/toggle-restriction`
+  );
+  return res.data;
 }

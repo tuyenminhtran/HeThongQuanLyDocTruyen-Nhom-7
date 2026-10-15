@@ -13,6 +13,7 @@ import {
   type StoryDetail,
 } from "../api/stories";
 import { useIsAdmin } from "../store/authStore";
+import { getGenres } from "../api/genres";
 
 /* ────────────────────────── Access labels ────────────────────────── */
 const accessPolicyLabel: Record<number, string> = {
@@ -69,6 +70,7 @@ function CreateStoryModal({
   });
 
   const accessPolicy = useWatch({ control, name: "accessPolicy" });
+  const { data: genres } = useQuery({ queryKey: ["genres"], queryFn: getGenres });
 
   const mutation = useMutation({
     mutationFn: (data: CreateStoryInput) =>
@@ -104,9 +106,7 @@ function CreateStoryModal({
             onClick={onClose}
             className="p-1.5 rounded-lg text-ink-muted hover:text-ink-text hover:bg-ink-bg transition-all"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <i className="fa-solid fa-xmark text-lg" />
           </button>
         </div>
 
@@ -166,6 +166,28 @@ function CreateStoryModal({
             />
           </div>
 
+          {/* Genres */}
+          <div>
+            <label className={labelClass}>Thể loại</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-36 overflow-y-auto p-3 bg-ink-bg border border-ink-border rounded-xl">
+              {genres && genres.length > 0 ? (
+                genres.map((g) => (
+                  <label key={g.id} className="flex items-center gap-2 text-xs text-ink-text cursor-pointer hover:text-gold transition-colors select-none">
+                    <input
+                      type="checkbox"
+                      value={g.id}
+                      {...register("genreIds")}
+                      className="rounded border-ink-border text-gold focus:ring-gold/30 bg-ink-card cursor-pointer"
+                    />
+                    <span className="truncate">{g.name}</span>
+                  </label>
+                ))
+              ) : (
+                <p className="text-xs text-ink-muted col-span-3">Đang tải thể loại...</p>
+              )}
+            </div>
+          </div>
+
           {/* Access Policy */}
           <div>
             <label className={labelClass}>Chính sách truy cập</label>
@@ -221,9 +243,7 @@ function CreateStoryModal({
           {/* Error */}
           {mutation.isError && (
             <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-              <svg className="w-5 h-5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-              </svg>
+              <i className="fa-solid fa-circle-exclamation text-red-400 text-lg shrink-0" />
               <p className="text-red-400 text-sm">
                 Không tạo được truyện. Kiểm tra lại dữ liệu.
               </p>
@@ -245,10 +265,7 @@ function CreateStoryModal({
               className="px-5 py-2.5 rounded-xl text-sm font-medium bg-gold text-ink-bg hover:bg-gold-dim disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
             >
               {mutation.isPending && (
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
+                <i className="fa-solid fa-spinner fa-spin text-sm" />
               )}
               {mutation.isPending ? "Đang tạo..." : "Tạo truyện"}
             </button>
@@ -312,9 +329,7 @@ function AddChapterModal({
             onClick={onClose}
             className="p-1.5 rounded-lg text-ink-muted hover:text-ink-text hover:bg-ink-bg transition-all"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <i className="fa-solid fa-xmark text-lg" />
           </button>
         </div>
 
@@ -380,9 +395,7 @@ function AddChapterModal({
           {/* Success message */}
           {mutation.isSuccess && (
             <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3">
-              <svg className="w-5 h-5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <i className="fa-solid fa-circle-check text-green-400 text-lg shrink-0" />
               <p className="text-green-400 text-sm">
                 Thêm chương thành công! Bạn có thể tiếp tục thêm chương khác.
               </p>
@@ -391,9 +404,7 @@ function AddChapterModal({
 
           {mutation.isError && (
             <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-              <svg className="w-5 h-5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-              </svg>
+              <i className="fa-solid fa-circle-exclamation text-red-400 text-lg shrink-0" />
               <p className="text-red-400 text-sm">
                 Không thể thêm chương. Kiểm tra lại số chương có bị trùng không.
               </p>
@@ -414,10 +425,7 @@ function AddChapterModal({
               className="px-5 py-2.5 rounded-xl text-sm font-medium bg-gold text-ink-bg hover:bg-gold-dim disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
             >
               {mutation.isPending && (
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
+                <i className="fa-solid fa-spinner fa-spin text-sm" />
               )}
               {mutation.isPending ? "Đang thêm..." : "Thêm chương"}
             </button>
@@ -455,10 +463,7 @@ function StoryDetailPanel({
         <div className="relative w-full max-w-xl bg-ink-card border-l border-ink-border shadow-2xl shadow-black/50 overflow-y-auto">
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
-              <svg className="animate-spin h-8 w-8 text-gold" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
+              <i className="fa-solid fa-spinner fa-spin text-2xl text-gold" />
             </div>
           ) : !story ? (
             <div className="p-6 text-ink-muted">Không tìm thấy truyện.</div>
@@ -473,9 +478,7 @@ function StoryDetailPanel({
                   onClick={onClose}
                   className="p-1.5 rounded-lg text-ink-muted hover:text-ink-text hover:bg-ink-bg transition-all shrink-0"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <i className="fa-solid fa-xmark text-lg" />
                 </button>
               </div>
 
@@ -555,20 +558,16 @@ function StoryDetailPanel({
                     </h3>
                     <button
                       onClick={() => setShowAddChapter(true)}
-                      className="text-xs font-medium text-gold hover:text-gold-dim transition-colors flex items-center gap-1"
+                      className="text-xs font-medium text-gold hover:text-gold-dim transition-colors flex items-center gap-1.5"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                      </svg>
+                      <i className="fa-solid fa-plus text-xs" />
                       Thêm chương
                     </button>
                   </div>
 
                   {story.chapters.length === 0 ? (
                     <div className="text-center py-8 text-ink-muted/60">
-                      <svg className="w-10 h-10 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                      </svg>
+                      <i className="fa-solid fa-file-lines text-3xl mx-auto mb-2 opacity-50 block" />
                       <p className="text-sm">Chưa có chương nào</p>
                     </div>
                   ) : (
@@ -673,22 +672,15 @@ function StoryRow({
 
       {/* Views */}
       <td className="py-3 px-4 text-right hidden lg:table-cell">
-        <span className="text-sm text-ink-muted">
+        <span className="text-sm text-ink-muted inline-flex items-center gap-1.5">
+          <i className="fa-solid fa-eye text-xs text-ink-muted/70" />
           {story.viewCount.toLocaleString()}
         </span>
       </td>
 
       {/* Action */}
       <td className="py-3 px-4 text-right">
-        <svg
-          className="w-5 h-5 text-ink-muted group-hover:text-gold transition-colors inline-block"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.5}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-        </svg>
+        <i className="fa-solid fa-angle-right text-ink-muted group-hover:text-gold transition-colors inline-block text-sm" />
       </td>
     </tr>
   );
@@ -716,9 +708,7 @@ export default function AdminStoriesPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-          <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-          </svg>
+          <i className="fa-solid fa-ban text-2xl text-red-400" />
         </div>
         <p className="text-ink-text font-serif text-lg">Bạn không có quyền truy cập</p>
         <p className="text-ink-muted text-sm">Trang này chỉ dành cho quản trị viên.</p>
@@ -750,9 +740,7 @@ export default function AdminStoriesPage() {
             onClick={() => setShowCreateModal(true)}
             className="px-5 py-2.5 rounded-xl text-sm font-medium bg-gold text-ink-bg hover:bg-gold-dim transition-all shadow-sm hover:shadow-md hover:shadow-gold/10 flex items-center gap-2 self-start sm:self-auto"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
+            <i className="fa-solid fa-plus text-xs" />
             Tạo truyện mới
           </button>
         </div>
@@ -792,9 +780,7 @@ export default function AdminStoriesPage() {
         {/* Search bar */}
         <div className="relative mb-6">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-            </svg>
+            <i className="fa-solid fa-magnifying-glass text-sm" />
           </span>
           <input
             value={searchKeyword}
@@ -807,9 +793,7 @@ export default function AdminStoriesPage() {
               onClick={() => setSearchKeyword("")}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-text transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <i className="fa-solid fa-xmark text-sm" />
             </button>
           )}
         </div>
@@ -853,9 +837,7 @@ export default function AdminStoriesPage() {
               {!isLoading && stories && stories.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-12 text-center">
-                    <svg className="w-12 h-12 mx-auto mb-3 text-ink-muted/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                    </svg>
+                    <i className="fa-solid fa-book-open text-4xl mx-auto mb-3 text-ink-muted/30 block" />
                     <p className="text-ink-muted text-sm">Không tìm thấy truyện nào</p>
                     <p className="text-ink-muted/50 text-xs mt-1">
                       Hãy tạo truyện đầu tiên hoặc thử tìm kiếm khác
