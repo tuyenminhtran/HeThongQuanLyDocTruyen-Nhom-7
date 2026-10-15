@@ -129,9 +129,7 @@ export default function ChapterReadPage() {
         <div className={`flex flex-col items-center justify-center min-h-[calc(100vh-65px)] px-4 py-16 text-center ${themeClasses[theme]} transition-colors duration-300`}>
           <div className="relative mb-6">
             <div className="w-24 h-24 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center text-gold shadow-xl shadow-gold/10">
-              <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-              </svg>
+              <i className="fa-solid fa-lock text-3xl" />
             </div>
             <div className="absolute -top-1 -right-1 px-2 py-0.5 rounded-full bg-gold text-ink-bg text-[10px] font-bold tracking-wider uppercase">
               VIP
@@ -184,9 +182,7 @@ export default function ChapterReadPage() {
               className="w-10 h-10 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 transition-colors"
               title="Quay lại"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-              </svg>
+              <i className="fa-solid fa-arrow-left text-sm" />
             </button>
 
             <div className={`w-px h-6 mx-1 ${theme === 'dark' ? 'bg-ink-border' : 'bg-gray-300'}`} />
@@ -271,9 +267,7 @@ export default function ChapterReadPage() {
                   : "opacity-40 border-transparent cursor-not-allowed"
                 }`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-              </svg>
+              <i className="fa-solid fa-chevron-left text-xs" />
               <span>Chương trước</span>
             </button>
 
@@ -283,9 +277,7 @@ export default function ChapterReadPage() {
                 onClick={() => setShowChapterList(true)}
                 className={`w-full sm:w-auto px-5 py-3 rounded-xl border ${borderClasses[theme]} ${cardClasses[theme]} hover:border-gold hover:text-gold transition-all text-sm font-medium flex items-center justify-center gap-2`}
               >
-                <svg className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                </svg>
+                <i className="fa-solid fa-list-ul text-gold text-xs" />
                 <span>Mục lục ({sortedChapters.length})</span>
               </button>
             )}
@@ -301,18 +293,18 @@ export default function ChapterReadPage() {
             >
               <span>Chương sau</span>
               {nextChapter?.requiresAccess && (
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                </svg>
+                <i className="fa-solid fa-lock text-xs ml-1" />
               )}
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
+              <i className="fa-solid fa-chevron-right text-xs" />
             </button>
           </div>
 
-          <p className="text-center text-xs opacity-50 mt-4">
-            Mẹo: Bạn có thể nhấn phím mũi tên ⬅ hoặc ➡ trên bàn phím để chuyển chương nhanh.
+          <p className="text-center text-xs opacity-50 mt-4 flex items-center justify-center gap-1.5">
+            <span>Mẹo: Bạn có thể nhấn phím mũi tên</span>
+            <span className="inline-flex items-center gap-1 font-mono bg-black/20 px-1.5 py-0.5 rounded border border-white/10 text-[11px]">
+              <i className="fa-solid fa-arrow-left text-[10px]" /> / <i className="fa-solid fa-arrow-right text-[10px]" />
+            </span>
+            <span>trên bàn phím để chuyển chương nhanh.</span>
           </p>
         </div>
 
@@ -326,9 +318,10 @@ export default function ChapterReadPage() {
           <p className="text-xs uppercase tracking-widest opacity-50 mb-6">Hết chương {chapter.chapterNumber}</p>
           <button
             onClick={() => navigate(-1)}
-            className={`px-5 py-2 rounded-xl text-sm font-medium border ${borderClasses[theme]} hover:border-gold hover:text-gold transition-all`}
+            className={`px-5 py-2 rounded-xl text-sm font-medium border ${borderClasses[theme]} hover:border-gold hover:text-gold transition-all inline-flex items-center gap-2`}
           >
-            ← Quay lại chi tiết truyện
+            <i className="fa-solid fa-arrow-left text-xs" />
+            <span>Quay lại chi tiết truyện</span>
           </button>
         </div>
       </div>
@@ -350,9 +343,7 @@ export default function ChapterReadPage() {
                 onClick={() => setShowChapterList(false)}
                 className="p-1.5 rounded-lg text-ink-muted hover:text-ink-text hover:bg-ink-bg transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <i className="fa-solid fa-xmark text-lg" />
               </button>
             </div>
 

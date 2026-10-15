@@ -38,8 +38,9 @@ function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }
         </h4>
         <p className="text-xs text-ink-muted mt-0.5 flex items-center justify-between">
           <span>Chương Mới</span>
-          <span className="flex items-center gap-1">
-            👁️ {(story.viewCount ?? 0) >= 1000 ? `${((story.viewCount ?? 0) / 1000).toFixed(0)}K` : (story.viewCount ?? 0)}
+          <span className="flex items-center gap-1.5">
+            <i className="fa-solid fa-eye text-gold/80 text-xs" />
+            <span>{(story.viewCount ?? 0) >= 1000 ? `${((story.viewCount ?? 0) / 1000).toFixed(0)}K` : (story.viewCount ?? 0)}</span>
           </span>
         </p>
       </div>
@@ -91,11 +92,9 @@ export default function HomePage() {
         <section className="space-y-3">
           {/* Tiêu đề mục Truyện Đề Cử */}
           <div className="flex items-center justify-between border-b border-ink-border/80 pb-2">
-            <h2 className="font-serif text-xl md:text-2xl font-bold text-gold flex items-center gap-1.5 hover:opacity-80 transition-opacity cursor-pointer">
+            <h2 className="font-serif text-xl md:text-2xl font-bold text-gold flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
               <span>Truyện đề cử</span>
-              <svg className="w-5 h-5 inline-block stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
+              <i className="fa-solid fa-angle-right text-lg text-gold" />
             </h2>
           </div>
 
@@ -166,10 +165,8 @@ export default function HomePage() {
       {/* ========================================================= */}
       <div className="bg-ink-card border border-ink-border rounded-2xl p-5 shadow-lg">
         <div className="relative max-w-2xl mx-auto mb-3">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted">
-            <svg className="w-5 h-5 text-gold/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-            </svg>
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gold/80">
+            <i className="fa-solid fa-magnifying-glass text-sm" />
           </span>
           <input
             value={keyword}
@@ -182,9 +179,7 @@ export default function HomePage() {
               onClick={() => setKeyword("")}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-muted hover:text-white transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <i className="fa-solid fa-xmark text-base" />
             </button>
           )}
         </div>
@@ -228,9 +223,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between mb-6 pb-2 border-b border-ink-border">
             <h2 className="font-serif text-xl font-bold text-gold flex items-center gap-2">
               <span>{keyword ? "Kết quả tìm kiếm" : "StoryNest - Truyện gì cũng có!"}</span>
-              <svg className="w-5 h-5 inline-block stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
+              <i className="fa-solid fa-angle-right text-base text-gold" />
             </h2>
             <span className="text-xs text-ink-muted bg-ink-card border border-ink-border rounded-full px-3 py-1">
               {filteredStories.length} kết quả
@@ -254,9 +247,7 @@ export default function HomePage() {
           {!isLoading && filteredStories.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 bg-ink-card/30 border border-ink-border rounded-2xl text-center">
               <div className="w-20 h-20 rounded-full bg-ink-card border border-ink-border flex items-center justify-center mb-5">
-                <svg className="w-10 h-10 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                </svg>
+                <i className="fa-solid fa-book-open text-3xl text-ink-muted/50" />
               </div>
               <p className="text-white text-lg font-serif font-semibold">Không tìm thấy truyện nào</p>
               <p className="text-ink-muted text-sm mt-1">Hãy thử đổi từ khóa tìm kiếm hoặc chọn bộ lọc khác</p>

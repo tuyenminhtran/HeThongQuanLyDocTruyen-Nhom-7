@@ -10,6 +10,7 @@ namespace StoryReader.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/users")]
+[Authorize(Roles = "Admin")]
 public class AdminUsersController : ControllerBase
 {
     private readonly UserManager<AppUser> _userManager;
