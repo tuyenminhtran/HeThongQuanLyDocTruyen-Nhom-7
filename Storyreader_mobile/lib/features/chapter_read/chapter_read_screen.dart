@@ -3,19 +3,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../data/api/chapter_api.dart';
 import '../../data/models/chapter_model.dart';
 import '../../providers/reader_provider.dart';
+import '../../providers/auth_provider.dart';
+import 'chapter_navigation.dart';
 
-final chapterContentFamily = FutureProvider.autoDispose.family<ChapterContent, String>((ref, id) async {
-  return await ChapterApi.getChapterContent(id);
-});
+final chapterContentFamily = FutureProvider.autoDispose
+    .family<ChapterContent, String>((ref, id) async {
+      ref.watch(authProvider.select((auth) => auth.accessToken));
+      return await ChapterApi.getChapterContent(id);
+    });
 
 class ChapterReadScreen extends ConsumerWidget {
   final String chapterId;
+  final String? storyId;
 
-  const ChapterReadScreen({super.key, required this.chapterId});
+  const ChapterReadScreen({super.key, required this.chapterId, this.storyId});
+
+  void _back(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(storyId == null ? '/' : '/stories/$storyId');
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,6 +58,9 @@ class ChapterReadScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: bgColor,
+      bottomNavigationBar: storyId == null
+          ? null
+          : ChapterNavigation(storyId: storyId!, chapterId: chapterId),
       body: SafeArea(
         child: chapterAsync.when(
           data: (chapter) {
@@ -53,7 +70,11 @@ class ChapterReadScreen extends ConsumerWidget {
               children: [
                 // Scrollable content
                 SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 80),
+                  key: ValueKey(chapterId),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 80,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -165,16 +186,26 @@ class ChapterReadScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // Back button
                         IconButton(
-                          onPressed: () => context.pop(),
-                          icon: Icon(Icons.arrow_back, size: 18, color: textColor),
+                          onPressed: () => _back(context),
+                          icon: Icon(
+                            Icons.arrow_back,
+                            size: 18,
+                            color: textColor,
+                          ),
                           padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
                         ),
                         Container(width: 1, height: 18, color: borderColor),
                         const SizedBox(width: 6),
@@ -214,9 +245,14 @@ class ChapterReadScreen extends ConsumerWidget {
 
                         // A- font size
                         GestureDetector(
-                          onTap: () => ref.read(readerFontSizeProvider.notifier).decrease(),
+                          onTap: () => ref
+                              .read(readerFontSizeProvider.notifier)
+                              .decrease(),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 4,
+                            ),
                             child: Text(
                               'A-',
                               style: GoogleFonts.notoSerif(
@@ -239,9 +275,14 @@ class ChapterReadScreen extends ConsumerWidget {
                         ),
                         // A+ font size
                         GestureDetector(
-                          onTap: () => ref.read(readerFontSizeProvider.notifier).increase(),
+                          onTap: () => ref
+                              .read(readerFontSizeProvider.notifier)
+                              .increase(),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 4,
+                            ),
                             child: Text(
                               'A+',
                               style: GoogleFonts.notoSerif(
@@ -296,7 +337,8 @@ class ChapterReadScreen extends ConsumerWidget {
             ),
           ),
           error: (err, _) {
-            final is403 = err is DioException && err.response?.statusCode == 403;
+            final is403 =
+                err is DioException && err.response?.statusCode == 403;
 
             if (is403) {
               return Center(
@@ -347,7 +389,7 @@ class ChapterReadScreen extends ConsumerWidget {
                         runSpacing: 10,
                         children: [
                           OutlinedButton(
-                            onPressed: () => context.pop(),
+                            onPressed: () => _back(context),
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(color: borderColor),
                               shape: RoundedRectangleBorder(
@@ -360,7 +402,10 @@ class ChapterReadScreen extends ConsumerWidget {
                             ),
                             child: Text(
                               '← Quay lại',
-                              style: GoogleFonts.inter(color: textColor, fontSize: 13),
+                              style: GoogleFonts.inter(
+                                color: textColor,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                           ElevatedButton(
@@ -379,7 +424,10 @@ class ChapterReadScreen extends ConsumerWidget {
                             ),
                             child: Text(
                               'Xem Gói VIP',
-                              style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                           OutlinedButton(
@@ -396,7 +444,11 @@ class ChapterReadScreen extends ConsumerWidget {
                             ),
                             child: Text(
                               'Đăng nhập',
-                              style: GoogleFonts.inter(color: AppColors.gold, fontWeight: FontWeight.w600, fontSize: 13),
+                              style: GoogleFonts.inter(
+                                color: AppColors.gold,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                         ],
@@ -420,7 +472,7 @@ class ChapterReadScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     TextButton(
-                      onPressed: () => context.pop(),
+                      onPressed: () => _back(context),
                       child: Text(
                         'Quay lại',
                         style: GoogleFonts.inter(color: AppColors.gold),

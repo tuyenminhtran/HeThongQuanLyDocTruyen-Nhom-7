@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../data/api/story_api.dart';
 import '../../data/models/story_model.dart';
 import '../../providers/story_provider.dart';
+import '../../providers/admin_provider.dart';
+import '../../widgets/request_error.dart';
 
 class AdminStoriesScreen extends ConsumerStatefulWidget {
   const AdminStoriesScreen({super.key});
@@ -37,7 +40,9 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
       ),
       builder: (ctx) => _CreateStorySheet(
         onCreated: (newId) {
-          ref.invalidate(storiesFamily(null));
+          ref.invalidate(storiesFamily);
+          ref.invalidate(genresProvider);
+          ref.invalidate(dashboardProvider);
           _openStoryDetailSheet(newId);
         },
       ),
@@ -58,7 +63,9 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final storiesAsync = ref.watch(storiesFamily(_searchKeyword.isEmpty ? null : _searchKeyword));
+    final storiesAsync = ref.watch(
+      storiesFamily(_searchKeyword.isEmpty ? null : _searchKeyword),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.inkBg,
@@ -104,7 +111,10 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                   ),
                 ),
               ],
@@ -116,20 +126,35 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
             storiesAsync.when(
               data: (stories) {
                 final totalStories = stories.length;
-                final freeStories = stories.where((s) => s.accessPolicy == 0).length;
-                final paidStories = stories.where((s) => s.accessPolicy == 1).length;
-                final totalViews = stories.fold<int>(0, (sum, s) => sum + s.viewCount);
+                final freeStories = stories
+                    .where((s) => s.accessPolicy == 0)
+                    .length;
+                final paidStories = stories
+                    .where((s) => s.accessPolicy == 1)
+                    .length;
+                final totalViews = stories.fold<int>(
+                  0,
+                  (sum, s) => sum + s.viewCount,
+                );
 
                 return Column(
                   children: [
                     Row(
                       children: [
                         Expanded(
-                          child: _buildStatItem('Tổng truyện', '$totalStories', AppColors.inkText),
+                          child: _buildStatItem(
+                            'Tổng truyện',
+                            '$totalStories',
+                            AppColors.inkText,
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: _buildStatItem('Miễn phí', '$freeStories', AppColors.green400),
+                          child: _buildStatItem(
+                            'Miễn phí',
+                            '$freeStories',
+                            AppColors.green400,
+                          ),
                         ),
                       ],
                     ),
@@ -137,11 +162,19 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: _buildStatItem('Trả phí', '$paidStories', AppColors.gold),
+                          child: _buildStatItem(
+                            'Trả phí',
+                            '$paidStories',
+                            AppColors.gold,
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: _buildStatItem('Tổng lượt xem', '$totalViews', AppColors.inkText),
+                          child: _buildStatItem(
+                            'Tổng lượt xem',
+                            '$totalViews',
+                            AppColors.inkText,
+                          ),
                         ),
                       ],
                     ),
@@ -163,17 +196,28 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
               ),
               child: TextField(
                 controller: _searchController,
-                style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 13),
+                style: GoogleFonts.inter(
+                  color: AppColors.inkText,
+                  fontSize: 13,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Tìm truyện theo tên hoặc tác giả...',
                   hintStyle: GoogleFonts.inter(
                     color: AppColors.inkMuted.withValues(alpha: 0.5),
                     fontSize: 13,
                   ),
-                  prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.inkMuted),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    size: 18,
+                    color: AppColors.inkMuted,
+                  ),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.close, size: 16, color: AppColors.inkMuted),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: AppColors.inkMuted,
+                          ),
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _searchKeyword = '');
@@ -183,7 +227,10 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                 ),
                 onSubmitted: (val) {
                   setState(() => _searchKeyword = val.trim());
@@ -206,7 +253,11 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
                     ),
                     child: Column(
                       children: [
-                        const Icon(Icons.auto_stories, size: 36, color: AppColors.inkMuted),
+                        const Icon(
+                          Icons.auto_stories,
+                          size: 36,
+                          color: AppColors.inkMuted,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           'Không tìm thấy truyện nào',
@@ -239,8 +290,10 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: stories.length,
-                    separatorBuilder: (context, _) =>
-                        Divider(color: AppColors.inkBorder.withValues(alpha: 0.6), height: 1),
+                    separatorBuilder: (context, _) => Divider(
+                      color: AppColors.inkBorder.withValues(alpha: 0.6),
+                      height: 1,
+                    ),
                     itemBuilder: (context, idx) {
                       final story = stories[idx];
                       final statusTxt = story.status < statusLabels.length
@@ -262,7 +315,9 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
                                 decoration: BoxDecoration(
                                   color: AppColors.inkBg,
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: AppColors.inkBorder),
+                                  border: Border.all(
+                                    color: AppColors.inkBorder,
+                                  ),
                                 ),
                                 clipBehavior: Clip.antiAlias,
                                 child: CachedNetworkImage(
@@ -366,7 +421,10 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 11)),
+          Text(
+            label,
+            style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 11),
+          ),
           const SizedBox(height: 2),
           Text(
             value,
@@ -391,23 +449,27 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
       ),
       child: Text(
         text,
-        style: GoogleFonts.inter(color: color, fontSize: 10, fontWeight: FontWeight.w500),
+        style: GoogleFonts.inter(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
 }
 
 /* ────────────────────────── CREATE STORY SHEET ────────────────────────── */
-class _CreateStorySheet extends StatefulWidget {
+class _CreateStorySheet extends ConsumerStatefulWidget {
   final Function(String id) onCreated;
 
   const _CreateStorySheet({required this.onCreated});
 
   @override
-  State<_CreateStorySheet> createState() => _CreateStorySheetState();
+  ConsumerState<_CreateStorySheet> createState() => _CreateStorySheetState();
 }
 
-class _CreateStorySheetState extends State<_CreateStorySheet> {
+class _CreateStorySheetState extends ConsumerState<_CreateStorySheet> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _authorController = TextEditingController();
@@ -415,6 +477,7 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
   final _descController = TextEditingController();
   final _priceController = TextEditingController();
   final _freeCountController = TextEditingController(text: '0');
+  final Set<String> _selectedGenreIds = {};
 
   int _accessPolicy = 0; // 0: Miễn phí, 1: Trả phí, 2: Mixed
   bool _loading = false;
@@ -442,9 +505,14 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
         author: _authorController.text.trim(),
         coverImageUrl: _coverController.text.trim(),
         description: _descController.text.trim(),
+        genreIds: _selectedGenreIds.toList(),
         accessPolicy: _accessPolicy,
-        price: _accessPolicy == 0 ? null : double.tryParse(_priceController.text.trim()),
-        freeChapterCount: _accessPolicy == 0 ? 0 : int.tryParse(_freeCountController.text.trim()) ?? 0,
+        price: _accessPolicy == 0
+            ? null
+            : double.tryParse(_priceController.text.trim()),
+        freeChapterCount: _accessPolicy == 0
+            ? 0
+            : int.tryParse(_freeCountController.text.trim()) ?? 0,
       );
 
       final newId = await StoryApi.createStory(input);
@@ -496,56 +564,160 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
               ),
               const SizedBox(height: 16),
 
-              Text('Tên truyện *', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13)),
+              Text(
+                'Tên truyện *',
+                style: GoogleFonts.inter(
+                  color: AppColors.inkMuted,
+                  fontSize: 13,
+                ),
+              ),
               const SizedBox(height: 4),
               TextFormField(
                 controller: _titleController,
-                style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 14),
+                style: GoogleFonts.inter(
+                  color: AppColors.inkText,
+                  fontSize: 14,
+                ),
                 decoration: const InputDecoration(hintText: 'Nhập tên truyện'),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Vui lòng nhập tên truyện' : null,
+                validator: (v) => v == null || v.trim().isEmpty
+                    ? 'Vui lòng nhập tên truyện'
+                    : null,
               ),
 
               const SizedBox(height: 12),
-              Text('Tác giả *', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13)),
+              Text(
+                'Tác giả *',
+                style: GoogleFonts.inter(
+                  color: AppColors.inkMuted,
+                  fontSize: 13,
+                ),
+              ),
               const SizedBox(height: 4),
               TextFormField(
                 controller: _authorController,
-                style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 14),
+                style: GoogleFonts.inter(
+                  color: AppColors.inkText,
+                  fontSize: 14,
+                ),
                 decoration: const InputDecoration(hintText: 'Nhập tên tác giả'),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Vui lòng nhập tên tác giả' : null,
+                validator: (v) => v == null || v.trim().isEmpty
+                    ? 'Vui lòng nhập tên tác giả'
+                    : null,
               ),
 
               const SizedBox(height: 12),
-              Text('URL ảnh bìa', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13)),
+              Text(
+                'URL ảnh bìa',
+                style: GoogleFonts.inter(
+                  color: AppColors.inkMuted,
+                  fontSize: 13,
+                ),
+              ),
               const SizedBox(height: 4),
               TextFormField(
                 controller: _coverController,
-                style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 14),
-                decoration: const InputDecoration(hintText: 'https://example.com/cover.jpg'),
+                style: GoogleFonts.inter(
+                  color: AppColors.inkText,
+                  fontSize: 14,
+                ),
+                decoration: const InputDecoration(
+                  hintText: 'https://example.com/cover.jpg',
+                ),
               ),
 
               const SizedBox(height: 12),
-              Text('Mô tả', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13)),
+              Text(
+                'Mô tả',
+                style: GoogleFonts.inter(
+                  color: AppColors.inkMuted,
+                  fontSize: 13,
+                ),
+              ),
               const SizedBox(height: 4),
               TextFormField(
                 controller: _descController,
                 maxLines: 3,
-                style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 14),
-                decoration: const InputDecoration(hintText: 'Nhập mô tả nội dung truyện...'),
+                style: GoogleFonts.inter(
+                  color: AppColors.inkText,
+                  fontSize: 14,
+                ),
+                decoration: const InputDecoration(
+                  hintText: 'Nhập mô tả nội dung truyện...',
+                ),
               ),
 
               const SizedBox(height: 12),
-              Text('Chính sách truy cập', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13)),
+              Text(
+                'Thể loại (có thể chọn nhiều)',
+                style: GoogleFonts.inter(
+                  color: AppColors.inkMuted,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ref
+                  .watch(genresProvider)
+                  .when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (error, _) => RequestError(
+                      error: error,
+                      onRetry: () => ref.invalidate(genresProvider),
+                    ),
+                    data: (genres) => genres.isEmpty
+                        ? const Text(
+                            'Chưa có thể loại. Bạn có thể thêm trong Quản lý thể loại.',
+                            style: TextStyle(color: AppColors.inkMuted),
+                          )
+                        : Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: genres
+                                .map(
+                                  (genre) => FilterChip(
+                                    label: Text(genre.name),
+                                    selected: _selectedGenreIds.contains(
+                                      genre.id,
+                                    ),
+                                    onSelected: _loading
+                                        ? null
+                                        : (selected) => setState(() {
+                                            if (selected) {
+                                              _selectedGenreIds.add(genre.id);
+                                            } else {
+                                              _selectedGenreIds.remove(
+                                                genre.id,
+                                              );
+                                            }
+                                          }),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                  ),
+              const SizedBox(height: 12),
+              Text(
+                'Chính sách truy cập',
+                style: GoogleFonts.inter(
+                  color: AppColors.inkMuted,
+                  fontSize: 13,
+                ),
+              ),
               const SizedBox(height: 4),
               DropdownButtonFormField<int>(
                 initialValue: _accessPolicy,
                 dropdownColor: AppColors.inkCard,
-                style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 14),
+                style: GoogleFonts.inter(
+                  color: AppColors.inkText,
+                  fontSize: 14,
+                ),
                 decoration: const InputDecoration(),
                 items: const [
                   DropdownMenuItem(value: 0, child: Text('Miễn phí')),
                   DropdownMenuItem(value: 1, child: Text('Trả phí')),
-                  DropdownMenuItem(value: 2, child: Text('Mixed (một phần miễn phí)')),
+                  DropdownMenuItem(
+                    value: 2,
+                    child: Text('Mixed (một phần miễn phí)'),
+                  ),
                 ],
                 onChanged: (val) {
                   setState(() => _accessPolicy = val ?? 0);
@@ -560,16 +732,29 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Giá (VNĐ) *', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13)),
+                          Text(
+                            'Giá (VNĐ) *',
+                            style: GoogleFonts.inter(
+                              color: AppColors.inkMuted,
+                              fontSize: 13,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           TextFormField(
                             controller: _priceController,
                             keyboardType: TextInputType.number,
-                            style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 14),
-                            decoration: const InputDecoration(hintText: 'VD: 50000'),
+                            style: GoogleFonts.inter(
+                              color: AppColors.inkText,
+                              fontSize: 14,
+                            ),
+                            decoration: const InputDecoration(
+                              hintText: 'VD: 50000',
+                            ),
                             validator: (v) {
                               if (_accessPolicy != 0) {
-                                if (v == null || v.trim().isEmpty) return 'Vui lòng nhập giá';
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Vui lòng nhập giá';
+                                }
                               }
                               return null;
                             },
@@ -582,13 +767,24 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Số chương free', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13)),
+                          Text(
+                            'Số chương free',
+                            style: GoogleFonts.inter(
+                              color: AppColors.inkMuted,
+                              fontSize: 13,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           TextFormField(
                             controller: _freeCountController,
                             keyboardType: TextInputType.number,
-                            style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 14),
-                            decoration: const InputDecoration(hintText: 'VD: 3'),
+                            style: GoogleFonts.inter(
+                              color: AppColors.inkText,
+                              fontSize: 14,
+                            ),
+                            decoration: const InputDecoration(
+                              hintText: 'VD: 3',
+                            ),
                           ),
                         ],
                       ),
@@ -599,7 +795,13 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
 
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(_error!, style: GoogleFonts.inter(color: AppColors.red400, fontSize: 13)),
+                Text(
+                  _error!,
+                  style: GoogleFonts.inter(
+                    color: AppColors.red400,
+                    fontSize: 13,
+                  ),
+                ),
               ],
 
               const SizedBox(height: 20),
@@ -608,7 +810,10 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text('Hủy', style: GoogleFonts.inter(color: AppColors.inkMuted)),
+                    child: Text(
+                      'Hủy',
+                      style: GoogleFonts.inter(color: AppColors.inkMuted),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -616,15 +821,25 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.gold,
                       foregroundColor: AppColors.inkBg,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: _loading
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.inkBg),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.inkBg,
+                            ),
                           )
-                        : Text('Tạo truyện', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                        : Text(
+                            'Tạo truyện',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ],
               ),
@@ -643,10 +858,12 @@ class _AdminStoryDetailSheet extends ConsumerStatefulWidget {
   const _AdminStoryDetailSheet({required this.storyId});
 
   @override
-  ConsumerState<_AdminStoryDetailSheet> createState() => _AdminStoryDetailSheetState();
+  ConsumerState<_AdminStoryDetailSheet> createState() =>
+      _AdminStoryDetailSheetState();
 }
 
-class _AdminStoryDetailSheetState extends ConsumerState<_AdminStoryDetailSheet> {
+class _AdminStoryDetailSheetState
+    extends ConsumerState<_AdminStoryDetailSheet> {
   void _openAddChapterModal(StoryDetail story) {
     showDialog(
       context: context,
@@ -694,7 +911,10 @@ class _AdminStoryDetailSheetState extends ConsumerState<_AdminStoryDetailSheet> 
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close, color: AppColors.inkMuted),
+                        icon: const Icon(
+                          Icons.close,
+                          color: AppColors.inkMuted,
+                        ),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
@@ -728,7 +948,10 @@ class _AdminStoryDetailSheetState extends ConsumerState<_AdminStoryDetailSheet> 
                           children: [
                             Text(
                               'Tác giả: ${story.author}',
-                              style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 13),
+                              style: GoogleFonts.inter(
+                                color: AppColors.inkText,
+                                fontSize: 13,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             if (story.price != null && story.price! > 0)
@@ -743,15 +966,30 @@ class _AdminStoryDetailSheetState extends ConsumerState<_AdminStoryDetailSheet> 
                             const SizedBox(height: 6),
                             Wrap(
                               spacing: 6,
-                              children: story.genres.map((g) => Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.inkBg,
-                                  border: Border.all(color: AppColors.inkBorder),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(g, style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 11)),
-                              )).toList(),
+                              children: story.genres
+                                  .map(
+                                    (g) => Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.inkBg,
+                                        border: Border.all(
+                                          color: AppColors.inkBorder,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        g,
+                                        style: GoogleFonts.inter(
+                                          color: AppColors.inkMuted,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
                             ),
                           ],
                         ),
@@ -772,7 +1010,11 @@ class _AdminStoryDetailSheetState extends ConsumerState<_AdminStoryDetailSheet> 
                     const SizedBox(height: 4),
                     Text(
                       story.description,
-                      style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13, height: 1.4),
+                      style: GoogleFonts.inter(
+                        color: AppColors.inkMuted,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
                     ),
                   ],
 
@@ -790,10 +1032,17 @@ class _AdminStoryDetailSheetState extends ConsumerState<_AdminStoryDetailSheet> 
                       ),
                       TextButton.icon(
                         onPressed: () => _openAddChapterModal(story),
-                        icon: const Icon(Icons.add, size: 16, color: AppColors.gold),
+                        icon: const Icon(
+                          Icons.add,
+                          size: 16,
+                          color: AppColors.gold,
+                        ),
                         label: Text(
                           'Thêm chương',
-                          style: GoogleFonts.inter(color: AppColors.gold, fontSize: 13),
+                          style: GoogleFonts.inter(
+                            color: AppColors.gold,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ],
@@ -806,7 +1055,10 @@ class _AdminStoryDetailSheetState extends ConsumerState<_AdminStoryDetailSheet> 
                       child: Center(
                         child: Text(
                           'Chưa có chương nào',
-                          style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13),
+                          style: GoogleFonts.inter(
+                            color: AppColors.inkMuted,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     )
@@ -828,15 +1080,23 @@ class _AdminStoryDetailSheetState extends ConsumerState<_AdminStoryDetailSheet> 
                         itemBuilder: (context, idx) {
                           final c = story.chapters[idx];
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
                             child: Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.inkCard,
                                     borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: AppColors.inkBorder),
+                                    border: Border.all(
+                                      color: AppColors.inkBorder,
+                                    ),
                                   ),
                                   child: Text(
                                     '#${c.chapterNumber}',
@@ -861,15 +1121,27 @@ class _AdminStoryDetailSheetState extends ConsumerState<_AdminStoryDetailSheet> 
                                 if (c.requiresAccess) ...[
                                   const SizedBox(width: 8),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.gold.withValues(alpha: 0.1),
-                                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+                                      color: AppColors.gold.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      border: Border.all(
+                                        color: AppColors.gold.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
                                       'Trả phí',
-                                      style: GoogleFonts.inter(color: AppColors.gold, fontSize: 10),
+                                      style: GoogleFonts.inter(
+                                        color: AppColors.gold,
+                                        fontSize: 10,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -962,7 +1234,9 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Không thể thêm chương. Kiểm tra lại số chương.');
+        setState(
+          () => _error = 'Không thể thêm chương. Kiểm tra lại số chương.',
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -1010,13 +1284,23 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Số *', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 12)),
+                          Text(
+                            'Số *',
+                            style: GoogleFonts.inter(
+                              color: AppColors.inkMuted,
+                              fontSize: 12,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           TextFormField(
                             controller: _numController,
                             keyboardType: TextInputType.number,
-                            style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 13),
-                            validator: (v) => v == null || v.isEmpty ? 'Bắt buộc' : null,
+                            style: GoogleFonts.inter(
+                              color: AppColors.inkText,
+                              fontSize: 13,
+                            ),
+                            validator: (v) =>
+                                v == null || v.isEmpty ? 'Bắt buộc' : null,
                           ),
                         ],
                       ),
@@ -1026,13 +1310,26 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Tiêu đề *', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 12)),
+                          Text(
+                            'Tiêu đề *',
+                            style: GoogleFonts.inter(
+                              color: AppColors.inkMuted,
+                              fontSize: 12,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           TextFormField(
                             controller: _titleController,
-                            style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 13),
-                            decoration: const InputDecoration(hintText: 'Nhập tiêu đề'),
-                            validator: (v) => v == null || v.trim().isEmpty ? 'Nhập tiêu đề' : null,
+                            style: GoogleFonts.inter(
+                              color: AppColors.inkText,
+                              fontSize: 13,
+                            ),
+                            decoration: const InputDecoration(
+                              hintText: 'Nhập tiêu đề',
+                            ),
+                            validator: (v) => v == null || v.trim().isEmpty
+                                ? 'Nhập tiêu đề'
+                                : null,
                           ),
                         ],
                       ),
@@ -1040,14 +1337,26 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text('Nội dung *', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 12)),
+                Text(
+                  'Nội dung *',
+                  style: GoogleFonts.inter(
+                    color: AppColors.inkMuted,
+                    fontSize: 12,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 TextFormField(
                   controller: _contentController,
                   maxLines: 8,
-                  style: GoogleFonts.notoSerif(color: AppColors.inkText, fontSize: 13),
-                  decoration: const InputDecoration(hintText: 'Nhập nội dung chương...'),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Nhập nội dung' : null,
+                  style: GoogleFonts.notoSerif(
+                    color: AppColors.inkText,
+                    fontSize: 13,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: 'Nhập nội dung chương...',
+                  ),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Nhập nội dung' : null,
                 ),
 
                 if (_success) ...[
@@ -1060,7 +1369,10 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
                     ),
                     child: Text(
                       'Thêm chương thành công! Bạn có thể tiếp tục thêm chương khác.',
-                      style: GoogleFonts.inter(color: AppColors.green400, fontSize: 12),
+                      style: GoogleFonts.inter(
+                        color: AppColors.green400,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],
@@ -1075,7 +1387,10 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
                     ),
                     child: Text(
                       _error!,
-                      style: GoogleFonts.inter(color: AppColors.red400, fontSize: 12),
+                      style: GoogleFonts.inter(
+                        color: AppColors.red400,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],
@@ -1087,7 +1402,10 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Đóng', style: GoogleFonts.inter(color: AppColors.inkMuted)),
+          child: Text(
+            'Đóng',
+            style: GoogleFonts.inter(color: AppColors.inkMuted),
+          ),
         ),
         ElevatedButton(
           onPressed: _loading ? null : _submit,
@@ -1099,9 +1417,15 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.inkBg),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.inkBg,
+                  ),
                 )
-              : Text('Thêm chương', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              : Text(
+                  'Thêm chương',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                ),
         ),
       ],
     );

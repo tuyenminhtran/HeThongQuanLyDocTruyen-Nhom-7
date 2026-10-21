@@ -1,296 +1,202 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_error.dart';
+import '../../data/models/admin_model.dart';
+import '../../providers/admin_provider.dart';
+import '../../widgets/request_error.dart';
 
-class AdminUsersScreen extends StatefulWidget {
+class AdminUsersScreen extends ConsumerStatefulWidget {
   const AdminUsersScreen({super.key});
-
   @override
-  State<AdminUsersScreen> createState() => _AdminUsersScreenState();
+  ConsumerState<AdminUsersScreen> createState() => _AdminUsersScreenState();
 }
 
-class _AdminUsersScreenState extends State<AdminUsersScreen> {
-  final _searchController = TextEditingController();
-
-  final List<Map<String, dynamic>> _users = [
-    {
-      'id': 1,
-      'name': 'Anh Tuấn',
-      'email': 'tuan@example.com',
-      'role': 'User',
-      'status': 'Active',
-      'joinDate': '2023-10-01',
-    },
-    {
-      'id': 2,
-      'name': 'Minh Phượng',
-      'email': 'phuong@example.com',
-      'role': 'User',
-      'status': 'Active',
-      'joinDate': '2023-10-05',
-    },
-    {
-      'id': 3,
-      'name': 'Hải Đăng',
-      'email': 'dang@example.com',
-      'role': 'VIP',
-      'status': 'Active',
-      'joinDate': '2023-10-10',
-    },
-    {
-      'id': 4,
-      'name': 'Spammer123',
-      'email': 'spam@example.com',
-      'role': 'User',
-      'status': 'Blocked',
-      'joinDate': '2023-10-15',
-    },
-  ];
+class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
+  final _search = TextEditingController();
+  final Set<String> _pending = {};
+  Timer? _debounce;
+  String _keyword = '';
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _debounce?.cancel();
+    _search.dispose();
     super.dispose();
+  }
+
+  void _searchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) setState(() => _keyword = value.trim());
+    });
+  }
+
+  Future<void> _toggle(AdminUser user) async {
+    if (user.isAdmin || _pending.contains(user.id)) return;
+    final action = user.isRestricted ? 'mở khóa' : 'khóa';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Xác nhận $action tài khoản'),
+        content: Text('Bạn muốn $action tài khoản ${user.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xác nhận'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _pending.add(user.id));
+    try {
+      await ref.read(adminApiProvider).toggleUserRestriction(user.id);
+      if (!mounted) return;
+      ref.invalidate(adminUsersProvider);
+      ref.invalidate(dashboardProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đã $action tài khoản ${user.name}.')),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              apiErrorMessage(
+                error,
+                'Không thay đổi được trạng thái tài khoản.',
+              ),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _pending.remove(user.id));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    final users = ref.watch(adminUsersProvider(_keyword));
+    return RefreshIndicator(
+      onRefresh: () => ref
+          .refresh(adminUsersProvider(_keyword).future)
+          .then<void>((_) {}, onError: (Object error, StackTrace stack) {}),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          // Header
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Quản lý Người dùng',
-                style: GoogleFonts.notoSerif(
-                  color: AppColors.inkText,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Xem và quản lý tài khoản thành viên',
-                style: GoogleFonts.inter(
-                  color: AppColors.inkMuted,
-                  fontSize: 12,
-                ),
-              ),
-            ],
+          const Text(
+            'Quản lý người dùng',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
-
           const SizedBox(height: 16),
-
-          // Search bar
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.inkCard,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.inkBorder),
-            ),
-            child: TextField(
-              controller: _searchController,
-              style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 13),
-              decoration: const InputDecoration(
-                hintText: 'Tìm theo email hoặc tên...',
-                prefixIcon: Icon(Icons.search, size: 18, color: AppColors.inkMuted),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              ),
+          TextField(
+            controller: _search,
+            onChanged: _searchChanged,
+            decoration: const InputDecoration(
+              hintText: 'Tìm theo email hoặc tên...',
+              prefixIcon: Icon(Icons.search),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Users Table
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.inkCard,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.inkBorder),
+          users.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => RequestError(
+              error: error,
+              onRetry: () => ref.invalidate(adminUsersProvider(_keyword)),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(
-                  AppColors.inkBg.withValues(alpha: 0.5),
-                ),
-                columns: [
-                  DataColumn(
-                    label: Text(
-                      'ID',
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'THÀNH VIÊN',
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'NGÀY THAM GIA',
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'VAI TRÒ',
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'TRẠNG THÁI',
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'HÀNH ĐỘNG',
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-                rows: _users.map((u) {
-                  final isVip = u['role'] == 'VIP';
-                  final isActive = u['status'] == 'Active';
-
-                  return DataRow(
-                    cells: [
-                      DataCell(Text('#${u['id']}', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13))),
-                      DataCell(
-                        Row(
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.inkBg,
-                                border: Border.all(color: AppColors.inkBorder),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                (u['name'] as String)[0],
-                                style: GoogleFonts.inter(
-                                  color: AppColors.inkText,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
+            data: (items) => items.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text('Không tìm thấy người dùng phù hợp.'),
+                  )
+                : Column(
+                    children: items
+                        .map(
+                          (user) => Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    user.name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(user.email),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Tham gia: ${DateFormat('dd/MM/yyyy').format(user.createdAt.toLocal())}',
+                                    style: const TextStyle(
+                                      color: AppColors.inkMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 10,
+                                    runSpacing: 4,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      Chip(label: Text(user.role)),
+                                      Text(
+                                        user.isRestricted
+                                            ? 'Đã khóa'
+                                            : 'Hoạt động',
+                                        style: TextStyle(
+                                          color: user.isRestricted
+                                              ? AppColors.red400
+                                              : AppColors.green400,
+                                        ),
+                                      ),
+                                      if (user.isAdmin)
+                                        const Text(
+                                          'Tài khoản quản trị',
+                                          style: TextStyle(
+                                            color: AppColors.inkMuted,
+                                          ),
+                                        )
+                                      else
+                                        OutlinedButton.icon(
+                                          onPressed: _pending.contains(user.id)
+                                              ? null
+                                              : () => _toggle(user),
+                                          icon: Icon(
+                                            user.isRestricted
+                                                ? Icons.lock_open
+                                                : Icons.lock_outline,
+                                            size: 18,
+                                          ),
+                                          label: Text(
+                                            _pending.contains(user.id)
+                                                ? 'Đang lưu...'
+                                                : user.isRestricted
+                                                ? 'Mở khóa'
+                                                : 'Khóa',
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('${u['name']}', style: GoogleFonts.inter(color: AppColors.inkText, fontWeight: FontWeight.w500, fontSize: 13)),
-                                Text('${u['email']}', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 11)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      DataCell(Text('${u['joinDate']}', style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 13))),
-                      DataCell(
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isVip
-                                ? AppColors.gold.withValues(alpha: 0.1)
-                                : AppColors.inkBg,
-                            border: Border.all(
-                              color: isVip
-                                  ? AppColors.gold.withValues(alpha: 0.2)
-                                  : AppColors.inkBorder,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Text(
-                            '${u['role']}',
-                            style: GoogleFonts.inter(
-                              color: isVip ? AppColors.gold : AppColors.inkMuted,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                      DataCell(
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? AppColors.green400.withValues(alpha: 0.1)
-                                : AppColors.red400.withValues(alpha: 0.1),
-                            border: Border.all(
-                              color: isActive
-                                  ? AppColors.green400.withValues(alpha: 0.2)
-                                  : AppColors.red400.withValues(alpha: 0.2),
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            isActive ? 'Hoạt động' : 'Đã khóa',
-                            style: GoogleFonts.inter(
-                              color: isActive ? AppColors.green400 : AppColors.red400,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                      DataCell(
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              u['status'] = isActive ? 'Blocked' : 'Active';
-                            });
-                          },
-                          child: Text(
-                            isActive ? 'Khóa' : 'Mở khóa',
-                            style: GoogleFonts.inter(color: AppColors.gold, fontSize: 12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
+                        )
+                        .toList(),
+                  ),
           ),
         ],
       ),

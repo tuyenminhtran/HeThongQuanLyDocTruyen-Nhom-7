@@ -1,169 +1,255 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../core/constants/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AdminCategoriesScreen extends StatelessWidget {
+import '../../core/constants/app_colors.dart';
+import '../../core/network/api_error.dart';
+import '../../data/models/admin_model.dart';
+import '../../providers/admin_provider.dart';
+import '../../providers/story_provider.dart';
+import '../../widgets/request_error.dart';
+
+class AdminCategoriesScreen extends ConsumerStatefulWidget {
   const AdminCategoriesScreen({super.key});
+  @override
+  ConsumerState<AdminCategoriesScreen> createState() =>
+      _AdminCategoriesScreenState();
+}
+
+class _AdminCategoriesScreenState extends ConsumerState<AdminCategoriesScreen> {
+  final Set<String> _deleting = {};
+
+  void _refreshGenres() {
+    ref.invalidate(genresProvider);
+    ref.invalidate(storyDetailFamily);
+  }
+
+  Future<void> _edit([Genre? genre]) async {
+    final saved = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _GenreEditor(genre: genre),
+    );
+    if (saved == true && mounted) _refreshGenres();
+  }
+
+  Future<void> _delete(Genre genre) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa thể loại?'),
+        content: Text(
+          'Xóa "${genre.name}" khỏi danh mục và khỏi ${genre.storyCount} truyện đang gắn thể loại này? Các truyện vẫn được giữ lại.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _deleting.add(genre.id));
+    try {
+      await ref.read(adminApiProvider).deleteGenre(genre.id);
+      if (!mounted) return;
+      _refreshGenres();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã xóa thể loại.')));
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(apiErrorMessage(error, 'Không thể xóa thể loại.')),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _deleting.remove(genre.id));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final categories = [
-      {'id': 1, 'name': 'Tiên Hiệp', 'slug': 'tien-hiep', 'storyCount': 1540},
-      {'id': 2, 'name': 'Kiếm Hiệp', 'slug': 'kiem-hiep', 'storyCount': 890},
-      {'id': 3, 'name': 'Ngôn Tình', 'slug': 'ngon-tinh', 'storyCount': 3200},
-      {'id': 4, 'name': 'Đô Thị', 'slug': 'do-thi', 'storyCount': 1205},
-      {'id': 5, 'name': 'Xuyên Không', 'slug': 'xuyen-khong', 'storyCount': 950},
-    ];
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    final genres = ref.watch(genresProvider);
+    return RefreshIndicator(
+      onRefresh: () => ref
+          .refresh(genresProvider.future)
+          .then<void>((_) {}, onError: (Object error, StackTrace stack) {}),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Quản lý Thể loại',
-                    style: GoogleFonts.notoSerif(
-                      color: AppColors.inkText,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Thêm, sửa, xóa các thể loại truyện',
-                    style: GoogleFonts.inter(
-                      color: AppColors.inkMuted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Chức năng thêm thể loại mới'),
-                      backgroundColor: AppColors.inkCard,
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Thêm'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.gold,
-                  foregroundColor: AppColors.inkBg,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              const Expanded(
+                child: Text(
+                  'Quản lý thể loại',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
+              ),
+              FilledButton.icon(
+                onPressed: () => _edit(),
+                icon: const Icon(Icons.add),
+                label: const Text('Thêm'),
               ),
             ],
           ),
-
-          const SizedBox(height: 20),
-
-          // Categories table
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.inkCard,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.inkBorder),
+          const SizedBox(height: 16),
+          genres.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => RequestError(
+              error: error,
+              onRetry: () => ref.invalidate(genresProvider),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(
-                  AppColors.inkBg.withValues(alpha: 0.5),
-                ),
-                columns: [
-                  DataColumn(
-                    label: Text(
-                      'ID',
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+            data: (items) => items.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Chưa có thể loại. Nhấn Thêm để tạo thể loại đầu tiên.',
                     ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'TÊN THỂ LOẠI',
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'SLUG',
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'SỐ TRUYỆN',
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'HÀNH ĐỘNG',
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-                rows: categories.map((cat) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text('#${cat['id']}', style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13))),
-                      DataCell(Text('${cat['name']}', style: GoogleFonts.inter(color: AppColors.inkText, fontWeight: FontWeight.w500, fontSize: 13))),
-                      DataCell(Text('${cat['slug']}', style: GoogleFonts.robotoMono(color: AppColors.inkMuted, fontSize: 12))),
-                      DataCell(Text('${cat['storyCount']}', style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 13))),
-                      DataCell(
-                        Row(
-                          children: [
-                            TextButton(
-                              onPressed: () {},
-                              child: Text('Sửa', style: GoogleFonts.inter(color: AppColors.gold, fontSize: 12)),
+                  )
+                : Column(
+                    children: items
+                        .map(
+                          (genre) => Card(
+                            child: ListTile(
+                              title: Text(genre.name),
+                              subtitle: Text(
+                                '${genre.slug}\n${genre.storyCount} truyện',
+                              ),
+                              isThreeLine: true,
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    tooltip: 'Sửa thể loại',
+                                    onPressed: _deleting.contains(genre.id)
+                                        ? null
+                                        : () => _edit(genre),
+                                    icon: const Icon(
+                                      Icons.edit_outlined,
+                                      color: AppColors.gold,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Xóa thể loại',
+                                    onPressed: _deleting.contains(genre.id)
+                                        ? null
+                                        : () => _delete(genre),
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: AppColors.red400,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            TextButton(
-                              onPressed: () {},
-                              child: Text('Xóa', style: GoogleFonts.inter(color: AppColors.red400, fontSize: 12)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
           ),
         ],
       ),
     );
   }
+}
+
+class _GenreEditor extends ConsumerStatefulWidget {
+  final Genre? genre;
+  const _GenreEditor({this.genre});
+  @override
+  ConsumerState<_GenreEditor> createState() => _GenreEditorState();
+}
+
+class _GenreEditorState extends ConsumerState<_GenreEditor> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _name = TextEditingController(
+    text: widget.genre?.name ?? '',
+  );
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final api = ref.read(adminApiProvider);
+      if (widget.genre == null) {
+        await api.createGenre(_name.text);
+      } else {
+        await api.updateGenre(widget.genre!.id, _name.text);
+      }
+      if (mounted) Navigator.pop(context, true);
+    } catch (error) {
+      if (mounted) {
+        setState(
+          () => _error = apiErrorMessage(error, 'Không lưu được thể loại.'),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: !_saving,
+    child: AlertDialog(
+      title: Text(widget.genre == null ? 'Thêm thể loại' : 'Sửa thể loại'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _name,
+              enabled: !_saving,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Tên thể loại'),
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Vui lòng nhập tên thể loại.'
+                  : null,
+              onFieldSubmitted: (_) {
+                if (!_saving) _save();
+              },
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: AppColors.red400),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context),
+          child: const Text('Hủy'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? 'Đang lưu...' : 'Lưu'),
+        ),
+      ],
+    ),
+  );
 }

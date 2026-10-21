@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../features/admin/admin_layout_screen.dart';
 import '../../features/auth/login_screen.dart';
@@ -43,10 +44,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const HomeScreen(),
-      ),
+      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/stories/:id',
         builder: (context, state) {
@@ -58,13 +56,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/chapters/:id',
         builder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
-          return ChapterReadScreen(chapterId: id);
+          return ChapterReadScreen(
+            chapterId: id,
+            storyId: state.uri.queryParameters['storyId'],
+          );
         },
       ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
@@ -102,7 +100,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: AppColors.red400),
+              const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppColors.red400,
+              ),
               const SizedBox(height: 16),
               Text(
                 'Không tìm thấy trang: ${state.uri}',
