@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
 
@@ -21,6 +22,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _loading = false;
   String? _errorMessage;
 
+  void _fillDemo(bool admin) {
+    setState(() {
+      _emailController.text = admin
+          ? 'admin@storynest.local'
+          : 'reader@storyreader.vn';
+      _passwordController.text = admin ? 'Admin@123456' : 'Reader@123456';
+      _errorMessage = null;
+    });
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -34,10 +45,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     setState(() => _loading = true);
     try {
-      await ref.read(authProvider.notifier).login(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
+      await ref
+          .read(authProvider.notifier)
+          .login(_emailController.text.trim(), _passwordController.text);
       if (mounted) {
         context.go('/');
       }
@@ -107,7 +117,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   shape: BoxShape.circle,
                                   color: AppColors.gold.withValues(alpha: 0.1),
                                   border: Border.all(
-                                    color: AppColors.gold.withValues(alpha: 0.2),
+                                    color: AppColors.gold.withValues(
+                                      alpha: 0.2,
+                                    ),
                                   ),
                                 ),
                                 alignment: Alignment.center,
@@ -140,6 +152,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         const SizedBox(height: 28),
 
+                        const Text(
+                          'Điền nhanh tài khoản demo',
+                          style: TextStyle(
+                            color: AppColors.inkMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: _loading
+                                  ? null
+                                  : () => _fillDemo(false),
+                              icon: const Icon(Icons.person_outline),
+                              label: const Text('Độc giả'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: _loading
+                                  ? null
+                                  : () => _fillDemo(true),
+                              icon: const Icon(
+                                Icons.admin_panel_settings_outlined,
+                              ),
+                              label: const Text('Quản trị viên'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
                         // Email
                         Text(
                           'Email',
@@ -152,7 +195,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 14),
+                          style: GoogleFonts.inter(
+                            color: AppColors.inkText,
+                            fontSize: 14,
+                          ),
                           decoration: const InputDecoration(
                             hintText: 'you@example.com',
                             prefixIcon: Icon(
@@ -165,8 +211,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             if (value == null || value.trim().isEmpty) {
                               return 'Vui lòng nhập email';
                             }
-                            final emailRegex =
-                                RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                            final emailRegex = RegExp(
+                              r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                            );
                             if (!emailRegex.hasMatch(value.trim())) {
                               return 'Email không hợp lệ';
                             }
@@ -188,7 +235,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: !_showPassword,
-                          style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 14),
+                          style: GoogleFonts.inter(
+                            color: AppColors.inkText,
+                            fontSize: 14,
+                          ),
                           decoration: InputDecoration(
                             hintText: '••••••••',
                             prefixIcon: const Icon(
@@ -313,9 +363,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         // Divider
                         Row(
                           children: [
-                            Expanded(child: Divider(color: AppColors.inkBorder)),
+                            Expanded(
+                              child: Divider(color: AppColors.inkBorder),
+                            ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
                               child: Text(
                                 'HOẶC',
                                 style: GoogleFonts.inter(
@@ -325,7 +379,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ),
                             ),
-                            Expanded(child: Divider(color: AppColors.inkBorder)),
+                            Expanded(
+                              child: Divider(color: AppColors.inkBorder),
+                            ),
                           ],
                         ),
 

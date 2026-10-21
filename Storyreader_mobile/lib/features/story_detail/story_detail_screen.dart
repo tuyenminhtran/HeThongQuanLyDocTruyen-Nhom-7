@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../data/api/payment_api.dart';
 import '../../providers/auth_provider.dart';
@@ -27,6 +28,16 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
   bool _isAscending = true;
 
   static const accessLabels = ["Miễn phí", "Trả phí", "Mixed"];
+
+  Future<void> _openChapter(String chapterId) async {
+    await context.push(
+      Uri(
+        path: '/chapters/$chapterId',
+        queryParameters: {'storyId': widget.storyId},
+      ).toString(),
+    );
+    if (mounted) ref.invalidate(readingHistoryProvider);
+  }
 
   Future<void> _handleBuyStory() async {
     setState(() {
@@ -59,7 +70,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text('Đóng', style: GoogleFonts.inter(color: AppColors.inkMuted)),
+                child: Text(
+                  'Đóng',
+                  style: GoogleFonts.inter(color: AppColors.inkMuted),
+                ),
               ),
               if (res.paymentUrl.isNotEmpty)
                 ElevatedButton(
@@ -67,14 +81,20 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                     Navigator.pop(ctx);
                     final uri = Uri.tryParse(res.paymentUrl);
                     if (uri != null) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.gold,
                     foregroundColor: AppColors.inkBg,
                   ),
-                  child: Text('Mở liên kết', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  child: Text(
+                    'Mở liên kết',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
                 ),
             ],
           ),
@@ -105,7 +125,8 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       appBar: const AppHeader(),
       body: storyAsync.when(
         data: (story) {
-          final accessLabel = (story.accessPolicy >= 0 &&
+          final accessLabel =
+              (story.accessPolicy >= 0 &&
                   story.accessPolicy < accessLabels.length)
               ? accessLabels[story.accessPolicy]
               : 'N/A';
@@ -119,7 +140,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -186,7 +210,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 5,
+                            ),
                             decoration: BoxDecoration(
                               color: story.status == 1
                                   ? AppColors.green400.withValues(alpha: 0.15)
@@ -201,7 +228,9 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                             child: Text(
                               statusLabel,
                               style: GoogleFonts.inter(
-                                color: story.status == 1 ? AppColors.green400 : AppColors.inkMuted,
+                                color: story.status == 1
+                                    ? AppColors.green400
+                                    : AppColors.inkMuted,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -209,10 +238,15 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 5,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.gold.withValues(alpha: 0.15),
-                              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                              border: Border.all(
+                                color: AppColors.gold.withValues(alpha: 0.3),
+                              ),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -247,7 +281,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                       RichText(
                         textAlign: TextAlign.center,
                         text: TextSpan(
-                          style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 16),
+                          style: GoogleFonts.inter(
+                            color: AppColors.inkMuted,
+                            fontSize: 16,
+                          ),
                           children: [
                             const TextSpan(text: 'Tác giả: '),
                             TextSpan(
@@ -271,7 +308,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                           runSpacing: 8,
                           children: story.genres.map((g) {
                             return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.gold.withValues(alpha: 0.1),
                                 border: Border.all(
@@ -318,7 +358,9 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                       ),
 
                       const SizedBox(height: 24),
-                      Divider(color: AppColors.inkBorder.withValues(alpha: 0.5)),
+                      Divider(
+                        color: AppColors.inkBorder.withValues(alpha: 0.5),
+                      ),
                       const SizedBox(height: 20),
 
                       // Pricing & CTA Box
@@ -334,10 +376,12 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         '${story.price?.toInt() ?? 0}đ',
@@ -368,11 +412,14 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
                                   ),
                                   child: _isBuying
                                       ? const Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             SizedBox(
                                               width: 16,
@@ -398,11 +445,15 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                 OutlinedButton(
                                   onPressed: () => context.push('/login'),
                                   style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: AppColors.gold),
+                                    side: const BorderSide(
+                                      color: AppColors.gold,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
                                   ),
                                   child: Text(
                                     'Đăng nhập để mua',
@@ -429,8 +480,11 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.error_outline,
-                                    size: 18, color: AppColors.red400),
+                                const Icon(
+                                  Icons.error_outline,
+                                  size: 18,
+                                  color: AppColors.red400,
+                                ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
@@ -463,7 +517,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                           ),
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              context.push('/chapters/${story.chapters.first.id}');
+                              _openChapter(story.chapters.first.id);
                             },
                             icon: const Icon(Icons.menu_book, size: 20),
                             label: Text(
@@ -509,7 +563,9 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: AppColors.inkCard,
-                                  border: Border.all(color: AppColors.inkBorder),
+                                  border: Border.all(
+                                    color: AppColors.inkBorder,
+                                  ),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -531,11 +587,16 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                             },
                             borderRadius: BorderRadius.circular(8),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
                               child: Row(
                                 children: [
                                   Icon(
-                                    _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                                    _isAscending
+                                        ? Icons.arrow_upward
+                                        : Icons.arrow_downward,
                                     size: 14,
                                     color: AppColors.gold,
                                   ),
@@ -571,17 +632,29 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                 _chapterSearch = val;
                               });
                             },
-                            style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 13),
+                            style: GoogleFonts.inter(
+                              color: AppColors.inkText,
+                              fontSize: 13,
+                            ),
                             decoration: InputDecoration(
                               hintText: 'Tìm theo số chương hoặc tiêu đề...',
                               hintStyle: GoogleFonts.inter(
-                                color: AppColors.inkMuted.withValues(alpha: 0.5),
+                                color: AppColors.inkMuted.withValues(
+                                  alpha: 0.5,
+                                ),
                                 fontSize: 13,
                               ),
-                              prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.inkMuted),
+                              prefixIcon: const Icon(
+                                Icons.search,
+                                size: 18,
+                                color: AppColors.inkMuted,
+                              ),
                               isDense: true,
                               border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
                             ),
                           ),
                         ),
@@ -594,7 +667,9 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                           if (_chapterSearch.trim().isEmpty) return true;
                           final q = _chapterSearch.toLowerCase().trim();
                           return c.title.toLowerCase().contains(q) ||
-                              'chương ${c.chapterNumber}'.toLowerCase().contains(q);
+                              'chương ${c.chapterNumber}'
+                                  .toLowerCase()
+                                  .contains(q);
                         }).toList();
 
                         if (!_isAscending) {
@@ -626,7 +701,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                             alignment: Alignment.center,
                             child: Text(
                               'Không tìm thấy chương phù hợp.',
-                              style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13),
+                              style: GoogleFonts.inter(
+                                color: AppColors.inkMuted,
+                                fontSize: 13,
+                              ),
                             ),
                           );
                         }
@@ -635,29 +713,40 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: filtered.length,
-                          separatorBuilder: (context, _) => const SizedBox(height: 8),
+                          separatorBuilder: (context, _) =>
+                              const SizedBox(height: 8),
                           itemBuilder: (context, idx) {
                             final c = filtered[idx];
                             return InkWell(
                               onTap: () {
-                                context.push('/chapters/${c.id}');
+                                _openChapter(c.id);
                               },
                               borderRadius: BorderRadius.circular(12),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppColors.inkCard,
-                                  border: Border.all(color: AppColors.inkBorder),
+                                  border: Border.all(
+                                    color: AppColors.inkBorder,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: AppColors.inkBg,
                                         borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(color: AppColors.inkBorder),
+                                        border: Border.all(
+                                          color: AppColors.inkBorder,
+                                        ),
                                       ),
                                       child: Text(
                                         'C.${c.chapterNumber}',
@@ -684,10 +773,17 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                     if (c.requiresAccess) ...[
                                       const SizedBox(width: 8),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 3,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: AppColors.gold.withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(6),
+                                          color: AppColors.gold.withValues(
+                                            alpha: 0.12,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
                                         ),
                                         child: const Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -719,7 +815,9 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                       }(),
 
                       const SizedBox(height: 36),
-                      Divider(color: AppColors.inkBorder.withValues(alpha: 0.5)),
+                      Divider(
+                        color: AppColors.inkBorder.withValues(alpha: 0.5),
+                      ),
                       const SizedBox(height: 24),
 
                       // Reviews & Comments Section
@@ -793,7 +891,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
             children: [
               TextField(
                 maxLines: 3,
-                style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 13),
+                style: GoogleFonts.inter(
+                  color: AppColors.inkText,
+                  fontSize: 13,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Viết đánh giá của bạn về truyện này...',
                   hintStyle: GoogleFonts.inter(
@@ -929,7 +1030,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                     ),
                     Text(
                       time,
-                      style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 12),
+                      style: GoogleFonts.inter(
+                        color: AppColors.inkMuted,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),

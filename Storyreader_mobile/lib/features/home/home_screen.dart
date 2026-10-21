@@ -1,8 +1,10 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../data/models/story_model.dart';
 import '../../providers/story_provider.dart';
@@ -55,7 +57,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final storiesAsync = ref.watch(storiesFamily(_keyword.isEmpty ? null : _keyword));
+    final storiesAsync = ref.watch(
+      storiesFamily(_keyword.isEmpty ? null : _keyword),
+    );
 
     return Scaffold(
       appBar: const AppHeader(),
@@ -71,7 +75,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -92,7 +99,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: TextField(
                         controller: _searchController,
                         onChanged: _onSearchChanged,
-                        style: GoogleFonts.inter(color: AppColors.inkText, fontSize: 14),
+                        style: GoogleFonts.inter(
+                          color: AppColors.inkText,
+                          fontSize: 14,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Tìm truyện theo tên hoặc tác giả...',
                           hintStyle: GoogleFonts.inter(
@@ -241,10 +251,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     storiesAsync.when(
                       data: (stories) {
                         final filtered = stories.where((s) {
-                          if (_statusFilter != null && s.status != _statusFilter) {
+                          if (_statusFilter != null &&
+                              s.status != _statusFilter) {
                             return false;
                           }
-                          if (_accessFilter != null && s.accessPolicy != _accessFilter) {
+                          if (_accessFilter != null &&
+                              s.accessPolicy != _accessFilter) {
                             return false;
                           }
                           return true;
@@ -253,7 +265,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            if (_keyword.isEmpty && _statusFilter == null && _accessFilter == null)
+                            if (_keyword.isEmpty &&
+                                _statusFilter == null &&
+                                _accessFilter == null)
                               _buildFeaturedSection(stories),
 
                             Row(
@@ -271,7 +285,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Divider(
-                                    color: AppColors.inkBorder.withValues(alpha: 0.5),
+                                    color: AppColors.inkBorder.withValues(
+                                      alpha: 0.5,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -282,7 +298,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: AppColors.inkCard,
-                                    border: Border.all(color: AppColors.inkBorder),
+                                    border: Border.all(
+                                      color: AppColors.inkBorder,
+                                    ),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
@@ -301,7 +319,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             if (filtered.isEmpty)
                               const EmptyState(
                                 title: 'Không tìm thấy truyện nào',
-                                subtitle: 'Hãy thử đổi từ khóa hoặc bộ lọc khác',
+                                subtitle:
+                                    'Hãy thử đổi từ khóa hoặc bộ lọc khác',
                               )
                             else ...[
                               // 2-column Grid
@@ -310,11 +329,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 physics: const NeverScrollableScrollPhysics(),
                                 gridDelegate:
                                     const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 24,
-                                  childAspectRatio: 0.48,
-                                ),
+                                      crossAxisCount: 2,
+                                      crossAxisSpacing: 16,
+                                      mainAxisSpacing: 24,
+                                      childAspectRatio: 0.48,
+                                    ),
                                 itemCount: filtered.length > _visibleCount
                                     ? _visibleCount
                                     : filtered.length,
@@ -334,7 +353,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       });
                                     },
                                     style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(color: AppColors.inkBorder),
+                                      side: const BorderSide(
+                                        color: AppColors.inkBorder,
+                                      ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -398,7 +419,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildFeaturedSection(List<StoryListItem> allStories) {
     if (allStories.isEmpty) return const SizedBox.shrink();
-    final featured = allStories.take(5).toList();
+    final ranked = [...allStories]
+      ..sort((a, b) => b.viewCount.compareTo(a.viewCount));
+    final featured = ranked.take(5).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,7 +472,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       // Book Cover with Spine effect
                       Expanded(
                         child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(16),
+                          ),
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
@@ -460,7 +485,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 fit: BoxFit.cover,
                                 errorBuilder: (ctx, err, stack) => Container(
                                   color: AppColors.inkBg,
-                                  child: const Icon(Icons.menu_book, color: AppColors.inkMuted),
+                                  child: const Icon(
+                                    Icons.menu_book,
+                                    color: AppColors.inkMuted,
+                                  ),
                                 ),
                               ),
                               // 3D Spine Highlight
@@ -549,7 +577,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.local_fire_department, color: AppColors.gold, size: 22),
+              const Icon(
+                Icons.local_fire_department,
+                color: AppColors.gold,
+                size: 22,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Bảng Xếp Hạng Đọc Nhiều',
@@ -568,7 +600,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text(
                   'Chưa có dữ liệu',
-                  style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13),
+                  style: GoogleFonts.inter(
+                    color: AppColors.inkMuted,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             )
@@ -616,7 +651,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   onTap: () => context.push('/stories/${story.id}'),
                   borderRadius: BorderRadius.circular(10),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 6,
+                    ),
                     child: Row(
                       children: [
                         Container(
@@ -631,11 +669,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ? [
                                     BoxShadow(
                                       color: rank == 1
-                                          ? AppColors.gold.withValues(alpha: 0.3)
+                                          ? AppColors.gold.withValues(
+                                              alpha: 0.3,
+                                            )
                                           : Colors.black.withValues(alpha: 0.2),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
-                                    )
+                                    ),
                                   ]
                                 : null,
                           ),
@@ -675,7 +715,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text('•', style: TextStyle(color: AppColors.inkMuted, fontSize: 10)),
+                                  const Text(
+                                    '•',
+                                    style: TextStyle(
+                                      color: AppColors.inkMuted,
+                                      fontSize: 10,
+                                    ),
+                                  ),
                                   const SizedBox(width: 8),
                                   const Icon(
                                     Icons.remove_red_eye_outlined,
@@ -738,7 +784,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: AppColors.gold.withValues(alpha: 0.15),
               border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
             ),
-            child: const Icon(Icons.workspace_premium, color: AppColors.gold, size: 28),
+            child: const Icon(
+              Icons.workspace_premium,
+              color: AppColors.gold,
+              size: 28,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
