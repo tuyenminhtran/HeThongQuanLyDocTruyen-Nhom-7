@@ -147,7 +147,7 @@ Hệ thống đã được tạo sẵn các tài khoản để kiểm thử:
 ## Nhóm Thực Hiện
 
 - Nhóm: Nhóm 7
-- Môn học: Đồ án chuyên ngành / Cuối khóa 2026
+- Môn học: Công nghệ phần mềm nâng cao
 - Danh sách thành viên:
   - Lê Hoàng
   - Trần Mỹ Duyên
