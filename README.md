@@ -1,125 +1,125 @@
-# He Thong Quan Ly Doc Truyen - StoryReader
+# Hệ Thống Quản Lý Đọc Truyện - StoryReader
 
-He thong quan ly va doc truyen truc tuyen da nen tang (Web va Mobile), ho tro doc truyen chu, truyen tranh (Comic/Manga), tich hop co che bao ve ban quyen chong sao chep, quan ly goi hoi vien va giao dich thanh toan.
+Hệ thống quản lý và đọc truyện trực tuyến đa nền tảng (Web và Mobile), hỗ trợ đọc truyện chữ, truyện tranh (Comic/Manga), tích hợp cơ chế bảo vệ bản quyền chống sao chép, quản lý gói hội viên và giao dịch thanh toán.
 
 ---
 
-## Cong Nghe Su Dung
+## Công Nghệ Sử Dụng
 
 - Backend: ASP.NET Core Web API (.NET 8), Entity Framework Core 8
-- Co so du lieu va bo dem: PostgreSQL 16, Redis
+- Cơ sở dữ liệu và bộ nhớ đệm: PostgreSQL 16, Redis
 - Frontend Web: React 18, TypeScript, Vite, TailwindCSS, TanStack Query
 - Mobile App: Flutter (Dart)
-- Thu vien xu ly do hoa: SkiaSharp (chuyen doi van ban thanh hinh anh chong sao chep)
-- Xac thuc va phan quyen: JSON Web Token (JWT) ket hop ASP.NET Core Identity
-- Ao hoa moi truong: Docker Compose
+- Thư viện xử lý đồ họa: SkiaSharp (chuyển đổi văn bản thành hình ảnh chống sao chép)
+- Xác thực và phân quyền: JSON Web Token (JWT) kết hợp ASP.NET Core Identity
+- Ảo hóa môi trường: Docker Compose
 
 ---
 
-## Cac Tinh Nang Chinh
+## Các Tính Năng Chính
 
-### 1. Danh Cho Doc Gia (Member / Guest)
-- Duyet va tim kiem: Tim kiem truyen theo tu khoa, loc theo the loai, phan loai truyen chu hoac truyen tranh.
-- Trai nghiem doc truyen:
-  - Che do doc truyen chu tuy chinh co chu, mau nen (Dark, Light, Sepia).
-  - Che do doc Webtoon cuon doc lien mach cho truyen tranh va chuong bao ve ban quyen.
-  - Chuyen chuong nhanh bang ban phim hoac thanh dieu huong cuoi trang.
-  - Tu dong luu tien do doc theo tung chuong.
-- Tinh nang tuong tac:
-  - Theo doi truyen va nhan thong bao khi co chuong moi phat hanh.
-  - Thao luan, gui binh luan theo tung chuong truyen.
-- Goi doc va mua le:
-  - Dang ky goi doc hoi vien theo thoi han (1 thang, 3 thang, 12 thang).
-  - Mua le truyen co phi.
-  - Xem lich su giao dich va trang thai kich hoat.
+### 1. Dành Cho Độc Giả (Member / Guest)
+- Duyệt và tìm kiếm: Tìm kiếm truyện theo từ khóa, lọc theo thể loại, phân loại truyện chữ hoặc truyện tranh.
+- Trải nghiệm đọc truyện:
+  - Chế độ đọc truyện chữ tùy chỉnh cỡ chữ, màu nền (Tối, Sáng, Sepia).
+  - Chế độ đọc Webtoon cuộn dọc liền mạch cho truyện tranh và các chương bảo vệ bản quyền.
+  - Chuyển chương nhanh bằng bàn phím hoặc thanh điều hướng cuối trang.
+  - Tự động lưu tiến độ đọc theo từng chương.
+- Tính năng tương tác:
+  - Theo dõi truyện và nhận thông báo khi có chương mới phát hành.
+  - Thảo luận, gửi bình luận theo từng chương truyện.
+- Gói đọc và mua lẻ:
+  - Đăng ký gói đọc hội viên theo thời hạn (1 tháng, 3 tháng, 12 tháng).
+  - Mua lẻ truyện có phí.
+  - Xem lịch sử giao dịch và trạng thái kích hoạt.
 
-### 2. Danh Cho Quan Tri Vien (Admin)
-- Quan ly noi dung truyen:
-  - Them, sua, xoa thong tin truyen, the loai, anh bia va tac gia.
-  - Them va sua chuong cho truyen chu va truyen tranh.
-  - Chuc nang chong sao chep: Tu dong render van ban thanh tap hop hinh anh co watermark de doc gia khong the sao chep van ban.
-  - Thiet lap chinh sach truy cap: Mien phi, tra phi toan bo hoac ket hop so chuong mien phi dau tien.
-- Quan ly kinh doanh va doi soat:
-  - Quan ly danh muc goi hoi vien.
-  - Theo doi lich su giao dich thanh toan.
-  - Kich hoat thu cong cac giao dich hop le nhung chua duoc xu ly tu dong.
-  - Danh dau that bai cho cac giao dich khong hop le.
-- Quan ly nguoi dung va kiem duyet:
-  - Danh sach tai khoan thanh vien.
-  - Kiem duyet va an cac binh luan vi pham tieu chuan cong dong.
-- Bang dieu khien thong ke:
-  - Tong so truyen, chuong, tai khoan nguoi dung va luot xem toan he thong.
+### 2. Dành Cho Quản Trị Viên (Admin)
+- Quản lý nội dung truyện:
+  - Thêm, sửa, xóa thông tin truyện, thể loại, ảnh bìa và tác giả.
+  - Thêm và sửa chương cho truyện chữ và truyện tranh.
+  - Chức năng chống sao chép: Tự động render văn bản thành tập hợp hình ảnh có watermark để độc giả không thể sao chép văn bản.
+  - Thiết lập chính sách truy cập: Miễn phí, trả phí toàn bộ hoặc kết hợp số chương miễn phí đầu tiên.
+- Quản lý kinh doanh và đối soát:
+  - Quản lý danh mục gói hội viên.
+  - Theo dõi lịch sử giao dịch thanh toán.
+  - Kích hoạt thủ công các giao dịch hợp lệ nhưng chưa được xử lý tự động.
+  - Đánh dấu thất bại cho các giao dịch không hợp lệ.
+- Quản lý người dùng và kiểm duyệt:
+  - Danh sách tài khoản thành viên.
+  - Kiểm duyệt và ẩn các bình luận vi phạm tiêu chuẩn cộng đồng.
+- Bảng điều khiển thống kê:
+  - Tổng số truyện, chương, tài khoản người dùng và lượt xem toàn hệ thống.
 
 ---
 
-## Cau Truc Thu Muc Du An
+## Cấu Trúc Thư Mục Dự Án
 
 ```text
 HeThongQuanLyDocTruyen-Nhom-7/
-├── StoryReader.Api/           # Ma nguon Backend (ASP.NET Core Web API)
-│   ├── Controllers/           # Cac bo dieu khien API
-│   ├── Data/                  # DbContext, DataSeeder va Migrations
-│   ├── Models/                # Entity va DTOs
-│   ├── Services/              # Logic nghiep vu va xu ly hinh anh SkiaSharp
-│   └── wwwroot/               # Thu muc luu tru anh chuong render tinh
-├── storyreader-web/           # Ma nguon Frontend Web (React + Vite)
+├── StoryReader.Api/           # Mã nguồn Backend (ASP.NET Core Web API)
+│   ├── Controllers/           # Các bộ điều khiển API
+│   ├── Data/                  # DbContext, DataSeeder và Migrations
+│   ├── Models/                # Entity và DTOs
+│   ├── Services/              # Logic nghiệp vụ và xử lý hình ảnh SkiaSharp
+│   └── wwwroot/               # Thư mục lưu trữ ảnh chương render tĩnh
+├── storyreader-web/           # Mã nguồn Frontend Web (React + Vite)
 │   ├── src/
-│   │   ├── api/               # Cac ham goi API backend
-│   │   ├── components/        # Cac thanh phan giao dien dung chung
-│   │   ├── pages/             # Cac trang nguoi dung va trang quan tri
-│   │   └── store/             # Quan ly trang thai dang nhap (Zustand)
-├── Storyreader_mobile/        # Ma nguon Mobile App (Flutter)
-├── db/                        # Script khoi tao co so du lieu
-├── docker-compose.yml         # Cau hinh Docker cho PostgreSQL va Redis
-└── README.md                  # Tai lieu huong dan du an
+│   │   ├── api/               # Các hàm gọi API backend
+│   │   ├── components/        # Các thành phần giao diện dùng chung
+│   │   ├── pages/             # Các trang người dùng và trang quản trị
+│   │   └── store/             # Quản lý trạng thái đăng nhập (Zustand)
+├── Storyreader_mobile/        # Mã nguồn Mobile App (Flutter)
+├── db/                        # Script khởi tạo cơ sở dữ liệu
+├── docker-compose.yml         # Cấu hình Docker cho PostgreSQL và Redis
+└── README.md                  # Tài liệu hướng dẫn dự án
 ```
 
 ---
 
-## Huong Dan Khoi Chay He Thong
+## Hướng Dẫn Khởi Chạy Hệ Thống
 
-### 1. Yeu Cau Moi Truong
+### 1. Yêu Cầu Môi Trường
 - .NET 8 SDK
-- Node.js (phien ban 18 hoac 20 LTS)
-- Flutter SDK (cho ung dung di dong)
-- Docker va Docker Compose
+- Node.js (phiên bản 18 hoặc 20 LTS)
+- Flutter SDK (cho ứng dụng di động)
+- Docker và Docker Compose
 
-### 2. Khoi Dong Ha Tang Co So Du Lieu
-Chay PostgreSQL va Redis thong qua Docker Compose tai thu muc goc cua du an:
+### 2. Khởi Động Hạ Tầng Cơ Sở Dữ Liệu
+Chạy PostgreSQL và Redis thông qua Docker Compose tại thư mục gốc của dự án:
 ```bash
 docker-compose up -d
 ```
-Thong so ket noi mac dinh:
+Thông số kết nối mặc định:
 - Host: localhost
 - Port: 5432
 - Database: storyreader
 - User: storynest
 - Password: storynest123
 
-### 3. Khoi Chay Backend API
-Chuyen vao thu muc backend va khoi chay:
+### 3. Khởi Chạy Backend API
+Chuyển vào thư mục backend và khởi chạy:
 ```bash
 cd StoryReader.Api
 dotnet restore
 dotnet run
 ```
-API se khoi chay tai dia chi:
+API sẽ khởi chạy tại địa chỉ:
 - Swagger UI: http://localhost:5066/swagger
 - API Base URL: http://localhost:5066/api
 
-Co so du lieu se duoc tu dong seed cac the loai, goi hoi vien, tai khoan mau va truyen mau ngay trong lan khoi dong dau tien.
+Cơ sở dữ liệu sẽ được tự động seed các thể loại, gói hội viên, tài khoản mẫu và truyện mẫu ngay trong lần khởi động đầu tiên.
 
-### 4. Khoi Chay Frontend Web
-Chuyen vao thu muc web va chay development server:
+### 4. Khởi Chạy Frontend Web
+Chuyển vào thư mục web và chạy development server:
 ```bash
 cd storyreader-web
 npm install
 npm run dev
 ```
-Trang web se hoat dong tai dia chi: http://localhost:5173
+Trang web sẽ hoạt động tại địa chỉ: http://localhost:5173
 
-### 5. Khoi Chay Frontend Mobile (Tuy chon)
-Chuyen vao thu muc mobile de chay tren thiet bi hoac trinh gia lap:
+### 5. Khởi Chạy Frontend Mobile (Tùy chọn)
+Chuyển vào thư mục mobile để chạy trên thiết bị hoặc trình giả lập:
 ```bash
 cd Storyreader_mobile
 flutter pub get
@@ -128,28 +128,28 @@ flutter run
 
 ---
 
-## Tai Khoan Mac Dinh
+## Tài Khoản Mặc Định
 
-He thong da duoc tao san cac tai khoan de kiem thu:
+Hệ thống đã được tạo sẵn các tài khoản để kiểm thử:
 
-1. Tai khoan Quan tri vien (Admin):
+1. Tài khoản Quản trị viên (Admin):
 - Email: admin@storynest.local
-- Mat khau: Admin@123456
-- Quyen han: Toan quyen quan tri he thong
+- Mật khẩu: Admin@123456
+- Quyền hạn: Toàn quyền quản trị hệ thống
 
-2. Tai khoan Doc gia (Member):
+2. Tài khoản Độc giả (Member):
 - Email: reader@storyreader.vn
-- Mat khau: Reader@123456
-- Quyen han: Doc truyen, binh luan, theo doi truyen va mua goi
+- Mật khẩu: Reader@123456
+- Quyền hạn: Đọc truyện, bình luận, theo dõi truyện và mua gói
 
 ---
 
-## Nhom Thuc Hien
+## Nhóm Thực Hiện
 
-- Nhom: Nhom 7
-- Mon hoc: Do an chuyen nganh / Cuoi khoa 2026
-- Danh sach thanh vien:
-  - Le Hoang
-  - Tran My Duyen
-  - Tran Minh Tuyen
-  - Ho Minh Tuyen
+- Nhóm: Nhóm 7
+- Môn học: Đồ án chuyên ngành / Cuối khóa 2026
+- Danh sách thành viên:
+  - Lê Hoàng
+  - Trần Mỹ Duyên
+  - Trần Minh Tuyên
+  - Hồ Minh Tuyền
