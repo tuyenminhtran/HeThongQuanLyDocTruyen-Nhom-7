@@ -6,12 +6,18 @@ import {
   searchStories,
   getStoryDetail,
   createStory,
+  updateStory,
+  deleteStory,
   addChapter,
+  updateChapter,
+  deleteChapter,
   type StoryListItem,
+  type ChapterListItem,
   type CreateStoryInput,
   type CreateChapterInput,
   type StoryDetail,
 } from "../api/stories";
+import { getChapterContent } from "../api/chapters";
 import { useIsAdmin } from "../store/authStore";
 import { getGenres } from "../api/genres";
 
@@ -310,6 +316,446 @@ function CreateStoryModal({
 }
 
 /* ══════════════════════════════════════════════════════════════════════
+   EDIT STORY MODAL
+   ══════════════════════════════════════════════════════════════════════ */
+function EditStoryModal({
+  story,
+  open,
+  onClose,
+  onUpdated,
+}: {
+  story: StoryDetail;
+  open: boolean;
+  onClose: () => void;
+  onUpdated: () => void;
+}) {
+  const { data: genres } = useQuery({ queryKey: ["genres"], queryFn: getGenres });
+  const defaultGenreIds = genres
+    ? genres.filter((g) => story.genres?.includes(g.name)).map((g) => g.id)
+    : [];
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<CreateStoryInput & { status: number }>({
+    values: {
+      title: story.title,
+      author: story.author,
+      type: story.type ?? 0,
+      status: story.status ?? 0,
+      coverImageUrl: story.coverImageUrl ?? "",
+      description: story.description ?? "",
+      accessPolicy: story.accessPolicy ?? 0,
+      price: story.price ?? null,
+      freeChapterCount: story.freeChapterCount ?? 0,
+      genreIds: defaultGenreIds,
+    },
+  });
+
+  const accessPolicy = useWatch({ control, name: "accessPolicy" });
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateStoryInput & { status: number }) =>
+      updateStory(story.id, {
+        ...data,
+        type: Number(data.type) || 0,
+        status: Number(data.status) || 0,
+        price: Number(data.accessPolicy) === 0 ? null : data.price ? Number(data.price) : null,
+        freeChapterCount:
+          Number(data.accessPolicy) === 0 ? 0 : Number(data.freeChapterCount) || 0,
+      }),
+    onSuccess: () => {
+      onUpdated();
+      onClose();
+    },
+  });
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-lg bg-ink-card border border-ink-border rounded-2xl shadow-2xl shadow-black/50 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-ink-border">
+          <h2 className="font-serif text-lg text-ink-text">Chỉnh sửa thông tin truyện</h2>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-ink-muted hover:text-ink-text hover:bg-ink-bg transition-all"
+          >
+            <i className="fa-solid fa-xmark text-lg" />
+          </button>
+        </div>
+
+        <form
+          onSubmit={handleSubmit((d) => mutation.mutate(d))}
+          className="p-6 space-y-4"
+        >
+          {/* Title */}
+          <div>
+            <label className={labelClass}>
+              Tên truyện <span className="text-red-400">*</span>
+            </label>
+            <input
+              {...register("title", { required: "Vui lòng nhập tên truyện" })}
+              className={inputClass}
+            />
+            {errors.title && (
+              <p className="text-red-400 text-xs mt-1">{errors.title.message}</p>
+            )}
+          </div>
+
+          {/* Author */}
+          <div>
+            <label className={labelClass}>
+              Tác giả <span className="text-red-400">*</span>
+            </label>
+            <input
+              {...register("author", { required: "Vui lòng nhập tên tác giả" })}
+              className={inputClass}
+            />
+            {errors.author && (
+              <p className="text-red-400 text-xs mt-1">{errors.author.message}</p>
+            )}
+          </div>
+
+          {/* Story Type */}
+          <div>
+            <label className={labelClass}>Hình thức truyện</label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-ink-border bg-ink-bg cursor-pointer hover:border-gold/50 transition-colors">
+                <input
+                  type="radio"
+                  value={0}
+                  {...register("type", { valueAsNumber: true })}
+                  className="text-gold focus:ring-gold"
+                />
+                <div>
+                  <span className="text-sm font-medium text-ink-text block">Truyện chữ</span>
+                  <span className="text-xs text-ink-muted">Tiểu thuyết, văn bản</span>
+                </div>
+              </label>
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-ink-border bg-ink-bg cursor-pointer hover:border-gold/50 transition-colors">
+                <input
+                  type="radio"
+                  value={1}
+                  {...register("type", { valueAsNumber: true })}
+                  className="text-gold focus:ring-gold"
+                />
+                <div>
+                  <span className="text-sm font-medium text-ink-text block">Truyện tranh</span>
+                  <span className="text-xs text-ink-muted">Manga, Comic (ảnh)</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className={labelClass}>Trạng thái phát hành</label>
+            <select
+              {...register("status", { valueAsNumber: true })}
+              className={inputClass}
+            >
+              <option value={0}>Đang phát hành</option>
+              <option value={1}>Hoàn thành</option>
+              <option value={2}>Tạm ngưng</option>
+            </select>
+          </div>
+
+          {/* Cover URL */}
+          <div>
+            <label className={labelClass}>URL ảnh bìa</label>
+            <input
+              {...register("coverImageUrl")}
+              placeholder="https://example.com/cover.jpg"
+              className={inputClass}
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className={labelClass}>Mô tả</label>
+            <textarea
+              {...register("description")}
+              rows={3}
+              className={inputClass + " resize-none"}
+            />
+          </div>
+
+          {/* Genres */}
+          <div>
+            <label className={labelClass}>Thể loại</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-36 overflow-y-auto p-3 bg-ink-bg border border-ink-border rounded-xl">
+              {genres && genres.length > 0 ? (
+                genres.map((g) => (
+                  <label key={g.id} className="flex items-center gap-2 text-xs text-ink-text cursor-pointer hover:text-gold transition-colors select-none">
+                    <input
+                      type="checkbox"
+                      value={g.id}
+                      {...register("genreIds")}
+                      className="rounded border-ink-border text-gold focus:ring-gold/30 bg-ink-card cursor-pointer"
+                    />
+                    <span className="truncate">{g.name}</span>
+                  </label>
+                ))
+              ) : (
+                <p className="text-xs text-ink-muted col-span-3">Đang tải thể loại...</p>
+              )}
+            </div>
+          </div>
+
+          {/* Access Policy */}
+          <div>
+            <label className={labelClass}>Chính sách truy cập</label>
+            <select
+              {...register("accessPolicy", { valueAsNumber: true })}
+              className={inputClass}
+            >
+              <option value={0}>Miễn phí</option>
+              <option value={1}>Trả phí</option>
+              <option value={2}>Mixed (một phần miễn phí)</option>
+            </select>
+          </div>
+
+          {/* Price & Free chapters */}
+          {Number(accessPolicy) !== 0 && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass}>Giá (VNĐ)</label>
+                <input
+                  {...register("price", {
+                    valueAsNumber: true,
+                  })}
+                  type="number"
+                  min={0}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Số chương miễn phí</label>
+                <input
+                  {...register("freeChapterCount", { valueAsNumber: true })}
+                  type="number"
+                  min={0}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          )}
+
+          {mutation.isError && (
+            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+              <i className="fa-solid fa-circle-exclamation text-red-400 text-lg shrink-0" />
+              <p className="text-red-400 text-sm">
+                Không thể cập nhật truyện. Vui lòng kiểm tra lại.
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 rounded-xl text-sm text-ink-muted hover:text-ink-text hover:bg-ink-bg border border-ink-border transition-all"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={mutation.isPending}
+              className="px-5 py-2.5 rounded-xl text-sm font-medium bg-gold text-ink-bg hover:bg-gold-dim disabled:opacity-50 transition-all flex items-center gap-2"
+            >
+              {mutation.isPending && (
+                <i className="fa-solid fa-spinner fa-spin text-sm" />
+              )}
+              {mutation.isPending ? "Đang lưu..." : "Lưu thay đổi"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EDIT CHAPTER MODAL
+   ══════════════════════════════════════════════════════════════════════ */
+function EditChapterModal({
+  story,
+  chapter,
+  onClose,
+  onUpdated,
+}: {
+  story: StoryDetail;
+  chapter: ChapterListItem;
+  onClose: () => void;
+  onUpdated: () => void;
+}) {
+  const { data: chapterDetail, isLoading: isLoadingContent } = useQuery({
+    queryKey: ["chapterContent", chapter.id],
+    queryFn: () => getChapterContent(chapter.id),
+  });
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CreateChapterInput>({
+    values: {
+      chapterNumber: chapter.chapterNumber,
+      title: chapter.title,
+      content: chapterDetail?.content || "",
+      publishAt: null,
+    },
+  });
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateChapterInput) =>
+      updateChapter(story.id, chapter.id, {
+        ...data,
+        chapterNumber: Number(data.chapterNumber),
+        publishAt: null,
+      }),
+    onSuccess: () => {
+      onUpdated();
+      onClose();
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-2xl bg-ink-card border border-ink-border rounded-2xl shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-ink-border shrink-0">
+          <div>
+            <h2 className="font-serif text-lg text-ink-text">Chỉnh sửa chương #{chapter.chapterNumber}</h2>
+            <p className="text-xs text-ink-muted mt-0.5">{story.title}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-ink-muted hover:text-ink-text hover:bg-ink-bg transition-all"
+          >
+            <i className="fa-solid fa-xmark text-lg" />
+          </button>
+        </div>
+
+        {isLoadingContent ? (
+          <div className="p-12 text-center text-ink-muted flex items-center justify-center gap-2">
+            <i className="fa-solid fa-spinner fa-spin text-gold text-lg" />
+            <span>Đang tải nội dung chương...</span>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSubmit((d) => mutation.mutate(d))}
+            className="p-6 space-y-4 overflow-y-auto flex-1"
+          >
+            <div className="grid grid-cols-4 gap-3">
+              <div className="col-span-1">
+                <label className={labelClass}>
+                  Chương số <span className="text-red-400">*</span>
+                </label>
+                <input
+                  {...register("chapterNumber", {
+                    required: "Bắt buộc",
+                    valueAsNumber: true,
+                    min: { value: 1, message: "≥ 1" },
+                  })}
+                  type="number"
+                  className={inputClass}
+                />
+                {errors.chapterNumber && (
+                  <p className="text-red-400 text-xs mt-1">
+                    {errors.chapterNumber.message}
+                  </p>
+                )}
+              </div>
+              <div className="col-span-3">
+                <label className={labelClass}>
+                  Tiêu đề chương <span className="text-red-400">*</span>
+                </label>
+                <input
+                  {...register("title", { required: "Vui lòng nhập tiêu đề" })}
+                  className={inputClass}
+                />
+                {errors.title && (
+                  <p className="text-red-400 text-xs mt-1">{errors.title.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>
+                {story.type === 1 ? (
+                  <span className="flex items-center justify-between">
+                    <span>
+                      Danh sách URL ảnh các trang <span className="text-red-400">*</span>
+                    </span>
+                    <span className="text-xs text-gold font-normal">
+                      (Mỗi dòng 1 link ảnh)
+                    </span>
+                  </span>
+                ) : (
+                  <span>
+                    Nội dung chương <span className="text-red-400">*</span>
+                  </span>
+                )}
+              </label>
+              <textarea
+                {...register("content", { required: "Vui lòng nhập nội dung" })}
+                rows={story.type === 1 ? 8 : 10}
+                className={
+                  inputClass +
+                  (story.type === 1
+                    ? " font-mono text-xs leading-relaxed"
+                    : " resize-none font-serif leading-relaxed")
+                }
+              />
+            </div>
+
+            {mutation.isError && (
+              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                <i className="fa-solid fa-circle-exclamation text-red-400 text-lg shrink-0" />
+                <p className="text-red-400 text-sm">
+                  Không thể lưu chỉnh sửa chương. Vui lòng thử lại.
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl text-sm text-ink-muted hover:text-ink-text hover:bg-ink-bg border border-ink-border transition-all"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={mutation.isPending}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium bg-gold text-ink-bg hover:bg-gold-dim disabled:opacity-50 transition-all flex items-center gap-2"
+              >
+                {mutation.isPending && (
+                  <i className="fa-solid fa-spinner fa-spin text-sm" />
+                )}
+                {mutation.isPending ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════
    ADD CHAPTER MODAL
    ══════════════════════════════════════════════════════════════════════ */
 function AddChapterModal({
@@ -504,12 +950,58 @@ function StoryDetailPanel({
   storyId: string;
   onClose: () => void;
 }) {
+  const queryClient = useQueryClient();
   const [showAddChapter, setShowAddChapter] = useState(false);
+  const [showEditStory, setShowEditStory] = useState(false);
+  const [editingChapter, setEditingChapter] = useState<ChapterListItem | null>(null);
 
   const { data: story, isLoading } = useQuery({
     queryKey: ["storyDetail", storyId],
     queryFn: () => getStoryDetail(storyId),
   });
+
+  const deleteStoryMutation = useMutation({
+    mutationFn: () => deleteStory(storyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      onClose();
+    },
+    onError: () => {
+      alert("Không thể xóa truyện này. Vui lòng thử lại sau.");
+    },
+  });
+
+  const deleteChapterMutation = useMutation({
+    mutationFn: (chapterId: string) => deleteChapter(storyId, chapterId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["storyDetail", storyId] });
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+    },
+    onError: () => {
+      alert("Không thể xóa chương này. Vui lòng thử lại sau.");
+    },
+  });
+
+  const handleDeleteStory = () => {
+    if (!story) return;
+    if (
+      confirm(
+        `Bạn có chắc chắn muốn xóa vĩnh viễn truyện "${story.title}"?\nToàn bộ ${story.chapters.length} chương liên quan sẽ bị xóa.`
+      )
+    ) {
+      deleteStoryMutation.mutate();
+    }
+  };
+
+  const handleDeleteChapter = (c: ChapterListItem) => {
+    if (
+      confirm(
+        `Bạn có chắc chắn muốn xóa chương #${c.chapterNumber}: "${c.title}"?`
+      )
+    ) {
+      deleteChapterMutation.mutate(c.id);
+    }
+  };
 
   return (
     <>
@@ -528,16 +1020,35 @@ function StoryDetailPanel({
           ) : (
             <>
               {/* Header */}
-              <div className="sticky top-0 z-10 bg-ink-card/95 backdrop-blur-sm border-b border-ink-border px-6 py-4 flex items-center justify-between">
-                <h2 className="font-serif text-lg text-ink-text truncate pr-4">
+              <div className="sticky top-0 z-10 bg-ink-card/95 backdrop-blur-sm border-b border-ink-border px-6 py-4 flex items-center justify-between gap-3">
+                <h2 className="font-serif text-lg text-ink-text truncate flex-1 min-w-0">
                   {story.title}
                 </h2>
-                <button
-                  onClick={onClose}
-                  className="p-1.5 rounded-lg text-ink-muted hover:text-ink-text hover:bg-ink-bg transition-all shrink-0"
-                >
-                  <i className="fa-solid fa-xmark text-lg" />
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setShowEditStory(true)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gold/15 text-gold border border-gold/30 hover:bg-gold/25 transition-all flex items-center gap-1.5"
+                    title="Chỉnh sửa thông tin truyện"
+                  >
+                    <i className="fa-solid fa-pen-to-square text-xs" />
+                    Sửa
+                  </button>
+                  <button
+                    onClick={handleDeleteStory}
+                    disabled={deleteStoryMutation.isPending}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center gap-1.5"
+                    title="Xóa truyện"
+                  >
+                    <i className="fa-solid fa-trash-can text-xs" />
+                    Xóa
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="p-1.5 rounded-lg text-ink-muted hover:text-ink-text hover:bg-ink-bg transition-all"
+                  >
+                    <i className="fa-solid fa-xmark text-lg" />
+                  </button>
+                </div>
               </div>
 
               {/* Story info */}
@@ -608,7 +1119,7 @@ function StoryDetailPanel({
                     <h3 className="text-sm font-medium text-ink-text mb-2">
                       Mô tả
                     </h3>
-                    <p className="text-sm text-ink-muted leading-relaxed">
+                    <p className="text-sm text-ink-muted leading-relaxed whitespace-pre-line">
                       {story.description}
                     </p>
                   </div>
@@ -654,11 +1165,28 @@ function StoryDetailPanel({
                                 {c.title}
                               </span>
                             </div>
-                            {c.requiresAccess && (
-                              <span className="text-xs text-gold bg-gold/10 border border-gold/20 rounded-full px-2 py-0.5 shrink-0 ml-2">
-                                Trả phí
-                              </span>
-                            )}
+                            <div className="flex items-center gap-2 shrink-0 ml-2">
+                              {c.requiresAccess && (
+                                <span className="text-xs text-gold bg-gold/10 border border-gold/20 rounded-full px-2 py-0.5">
+                                  Trả phí
+                                </span>
+                              )}
+                              <button
+                                onClick={() => setEditingChapter(c)}
+                                className="p-1.5 rounded-lg text-ink-muted hover:text-gold hover:bg-ink-bg transition-colors"
+                                title="Chỉnh sửa chương"
+                              >
+                                <i className="fa-solid fa-pen-to-square text-xs" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteChapter(c)}
+                                disabled={deleteChapterMutation.isPending}
+                                className="p-1.5 rounded-lg text-ink-muted hover:text-red-400 hover:bg-ink-bg transition-colors"
+                                title="Xóa chương"
+                              >
+                                <i className="fa-solid fa-trash-can text-xs" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                     </div>
@@ -669,6 +1197,32 @@ function StoryDetailPanel({
           )}
         </div>
       </div>
+
+      {/* Edit Story modal */}
+      {showEditStory && story && (
+        <EditStoryModal
+          open={showEditStory}
+          story={story}
+          onClose={() => setShowEditStory(false)}
+          onUpdated={() => {
+            queryClient.invalidateQueries({ queryKey: ["storyDetail", storyId] });
+            queryClient.invalidateQueries({ queryKey: ["stories"] });
+          }}
+        />
+      )}
+
+      {/* Edit Chapter modal */}
+      {editingChapter && story && (
+        <EditChapterModal
+          story={story}
+          chapter={editingChapter}
+          onClose={() => setEditingChapter(null)}
+          onUpdated={() => {
+            queryClient.invalidateQueries({ queryKey: ["storyDetail", storyId] });
+            queryClient.invalidateQueries({ queryKey: ["stories"] });
+          }}
+        />
+      )}
 
       {/* Add chapter modal */}
       {showAddChapter && story && (

@@ -12,4 +12,6 @@ public interface IStoryService
     Task AddChapterAsync(Guid storyId, CreateChapterDto dto);
     Task UpdateChapterAsync(Guid storyId, Guid chapterId, UpdateChapterDto dto);
     Task DeleteChapterAsync(Guid storyId, Guid chapterId);
+    Task<bool> ToggleFollowAsync(Guid userId, Guid storyId);
+    Task<bool> IsFollowingAsync(Guid userId, Guid storyId);
 }

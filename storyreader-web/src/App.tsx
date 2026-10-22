@@ -15,6 +15,7 @@ import DashboardPage from "./pages/admin/DashboardPage";
 import AdminStoriesPage from "./pages/AdminStoriesPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
+import AdminTransactionsPage from "./pages/admin/AdminTransactionsPage";
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="stories" element={<AdminStoriesPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="categories" element={<AdminCategoriesPage />} />
+            <Route path="transactions" element={<AdminTransactionsPage />} />
           </Route>
         </Routes>
       </main>

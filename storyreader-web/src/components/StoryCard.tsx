@@ -49,6 +49,15 @@ export default function StoryCard({ story }: { story: StoryListItem }) {
           </span>
         </div>
 
+        {/* Story Type badge */}
+        {story.type === 1 && (
+          <div className="absolute top-2 right-2 z-20">
+            <span className="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-md bg-sky-500/90 text-white font-semibold border border-sky-400/40 shadow-sm backdrop-blur-md">
+              Tranh
+            </span>
+          </div>
+        )}
+
         {/* Views count on cover bottom right */}
         <div className="absolute bottom-1.5 right-2 z-20 flex items-center gap-1.5 text-[11px] text-slate-200 font-medium drop-shadow-md">
           <i className="fa-solid fa-eye text-slate-300 text-[10px]" />

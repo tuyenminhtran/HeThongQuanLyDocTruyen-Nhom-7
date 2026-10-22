@@ -1,7 +1,9 @@
 import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChapterContent } from "../api/chapters";
 import { getStoryDetail } from "../api/stories";
+import { getChapterDiscussions, postChapterDiscussion, hideDiscussion } from "../api/discussions";
+import { useAuthStore, useIsAdmin } from "../store/authStore";
 import { AxiosError } from "axios";
 import { useState, useEffect, useCallback } from "react";
 
@@ -23,6 +25,40 @@ export default function ChapterReadPage() {
   });
 
   const [showChapterList, setShowChapterList] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const queryClient = useQueryClient();
+  const isLoggedIn = useAuthStore((s) => !!s.accessToken);
+  const isAdmin = useIsAdmin();
+
+  const { data: discussions, isLoading: isDiscussionsLoading } = useQuery({
+    queryKey: ["discussions", id],
+    queryFn: () => getChapterDiscussions(id!),
+    enabled: !!id,
+  });
+
+  const postCommentMutation = useMutation({
+    mutationFn: (text: string) => postChapterDiscussion(id!, text),
+    onSuccess: () => {
+      setCommentText("");
+      queryClient.invalidateQueries({ queryKey: ["discussions", id] });
+    },
+    onError: () => {
+      alert("Không thể gửi bình luận. Tài khoản có thể đang bị hạn chế tương tác.");
+    },
+  });
+
+  const hideCommentMutation = useMutation({
+    mutationFn: (discussionId: string) => hideDiscussion(id!, discussionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["discussions", id] });
+    },
+  });
+
+  const handlePostComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    postCommentMutation.mutate(commentText.trim());
+  };
 
   useEffect(() => {
     localStorage.setItem("storyreader-font-size", fontSize.toString());
@@ -355,20 +391,133 @@ export default function ChapterReadPage() {
         </div>
 
         {/* Footer Nav */}
-        <div className="mt-20 pb-10 flex justify-center">
-          <div className="flex gap-2 items-center text-gold/50">
+        <div className="mt-16 pb-10 flex flex-col items-center justify-center text-center">
+          <div className="flex gap-2 items-center text-gold/50 mb-3">
             <div className="w-2 h-2 rounded-full bg-current" />
             <div className="w-2 h-2 rounded-full bg-current" />
             <div className="w-2 h-2 rounded-full bg-current" />
           </div>
-          <p className="text-xs uppercase tracking-widest opacity-50 mb-6">Hết chương {chapter.chapterNumber}</p>
+          <p className="text-xs uppercase tracking-widest opacity-50 mb-6">
+            Hết chương {chapter.chapterNumber}
+          </p>
           <button
-            onClick={() => navigate(-1)}
-            className={`px-5 py-2 rounded-xl text-sm font-medium border ${borderClasses[theme]} hover:border-gold hover:text-gold transition-all inline-flex items-center gap-2`}
+            onClick={() => {
+              if (activeStoryId) {
+                navigate(`/stories/${activeStoryId}`);
+              } else {
+                navigate(-1);
+              }
+            }}
+            className={`px-6 py-2.5 rounded-xl text-sm font-medium border ${borderClasses[theme]} ${cardClasses[theme]} hover:border-gold hover:text-gold transition-all inline-flex items-center gap-2 shadow-sm`}
           >
             <i className="fa-solid fa-arrow-left text-xs" />
             <span>Quay lại chi tiết truyện</span>
           </button>
+        </div>
+
+        {/* Discussions Section */}
+        <div className={`mt-8 pt-8 border-t ${borderClasses[theme]}`}>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-serif text-xl font-bold flex items-center gap-2">
+              <i className="fa-regular fa-comments text-gold text-lg" />
+              Thảo luận chương ({discussions?.length || 0})
+            </h3>
+          </div>
+
+          {/* Comment Form */}
+          {isLoggedIn ? (
+            <form onSubmit={handlePostComment} className="mb-8">
+              <div className={`p-4 rounded-2xl border ${borderClasses[theme]} ${cardClasses[theme]}`}>
+                <textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Chia sẻ cảm nghĩ của bạn về chương này..."
+                  rows={3}
+                  className="w-full bg-transparent resize-none text-sm placeholder:opacity-50 focus:outline-none"
+                />
+                <div className="flex items-center justify-between pt-2 border-t border-current/10 mt-2">
+                  <span className="text-xs opacity-50">Tôn trọng cộng đồng khi bình luận</span>
+                  <button
+                    type="submit"
+                    disabled={postCommentMutation.isPending || !commentText.trim()}
+                    className="px-5 py-2 rounded-xl text-xs font-semibold bg-gold text-ink-bg hover:bg-gold-dim disabled:opacity-40 transition-all flex items-center gap-2 shadow-sm"
+                  >
+                    {postCommentMutation.isPending && (
+                      <i className="fa-solid fa-spinner fa-spin text-xs" />
+                    )}
+                    Gửi bình luận
+                  </button>
+                </div>
+              </div>
+            </form>
+          ) : (
+            <div className={`p-6 rounded-2xl border ${borderClasses[theme]} ${cardClasses[theme]} text-center mb-8`}>
+              <p className="text-sm opacity-70 mb-3">Vui lòng đăng nhập để tham gia thảo luận chương này.</p>
+              <Link
+                to="/login"
+                className="px-5 py-2 rounded-xl text-xs font-semibold bg-gold text-ink-bg hover:bg-gold-dim transition-all inline-block shadow-sm"
+              >
+                Đăng nhập ngay
+              </Link>
+            </div>
+          )}
+
+          {/* Comment List */}
+          <div className="space-y-3">
+            {isDiscussionsLoading ? (
+              <div className="py-6 text-center opacity-60 flex items-center justify-center gap-2 text-sm">
+                <i className="fa-solid fa-spinner fa-spin text-gold" />
+                <span>Đang tải bình luận...</span>
+              </div>
+            ) : discussions && discussions.length > 0 ? (
+              discussions.map((d) => (
+                <div
+                  key={d.id}
+                  className={`p-4 rounded-2xl border ${borderClasses[theme]} ${cardClasses[theme]} transition-all`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-gold/15 text-gold border border-gold/25 font-bold text-xs flex items-center justify-center shrink-0">
+                        {(d.user || "U").charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold block">{d.user || "Độc giả"}</span>
+                        <span className="text-[10px] opacity-50 block">
+                          {new Date(d.createdAt).toLocaleDateString("vi-VN", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          if (confirm("Admin: Bạn có chắc muốn ẩn bình luận này không?")) {
+                            hideCommentMutation.mutate(d.id);
+                          }
+                        }}
+                        className="text-xs text-rose-400 hover:text-rose-300 opacity-60 hover:opacity-100 p-1"
+                        title="Ẩn bình luận vi phạm"
+                      >
+                        <i className="fa-solid fa-eye-slash" />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-sm opacity-90 leading-relaxed whitespace-pre-line pl-10">
+                    {d.content}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center opacity-50 text-xs">
+                Chưa có bình luận nào cho chương này. Hãy là người đầu tiên để lại ý kiến!
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

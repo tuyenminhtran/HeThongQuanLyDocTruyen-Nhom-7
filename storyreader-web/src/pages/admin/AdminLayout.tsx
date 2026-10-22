@@ -32,6 +32,12 @@ export default function AdminLayout() {
       path: "/admin/users",
       exact: false,
       icon: <i className="fa-solid fa-users text-base w-5 text-center" />
+    },
+    {
+      name: "Quản lý Giao Dịch",
+      path: "/admin/transactions",
+      exact: false,
+      icon: <i className="fa-solid fa-receipt text-base w-5 text-center" />
     }
   ];
 

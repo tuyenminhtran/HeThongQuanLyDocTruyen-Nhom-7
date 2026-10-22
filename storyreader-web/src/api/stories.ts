@@ -89,3 +89,14 @@ export async function updateChapter(storyId: string, chapterId: string, input: C
 export async function deleteChapter(storyId: string, chapterId: string) {
   await apiClient.delete(`/stories/${storyId}/chapters/${chapterId}`);
 }
+
+export async function toggleFollowStory(storyId: string) {
+  const res = await apiClient.post<{ isFollowing: boolean; message: string }>(`/stories/${storyId}/follow`);
+  return res.data;
+}
+
+export async function getIsFollowing(storyId: string) {
+  const res = await apiClient.get<{ isFollowing: boolean }>(`/stories/${storyId}/is-following`);
+  return res.data.isFollowing;
+}
+
