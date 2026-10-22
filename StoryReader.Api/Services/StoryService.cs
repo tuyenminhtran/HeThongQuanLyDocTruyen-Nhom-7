@@ -10,11 +10,13 @@ public class StoryService : IStoryService
 {
     private readonly AppDbContext _db;
     private readonly IChapterAccessService _access;
+    private readonly ITextToImageService _textToImageService;
 
-    public StoryService(AppDbContext db, IChapterAccessService access)
+    public StoryService(AppDbContext db, IChapterAccessService access, ITextToImageService textToImageService)
     {
         _db = db;
         _access = access;
+        _textToImageService = textToImageService;
     }
 
     public async Task<IEnumerable<StoryListItemDto>> SearchAsync(string? keyword, Guid? genreId, int page, int pageSize)
@@ -134,12 +136,25 @@ public class StoryService : IStoryService
         var story = await _db.Stories.FindAsync(storyId)
             ?? throw new InvalidOperationException("Không tìm thấy truyện.");
 
+        var chapterId = Guid.NewGuid();
+        var content = dto.Content;
+
+        if (dto.RenderAsImages && !string.IsNullOrWhiteSpace(dto.Content))
+        {
+            var imageUrls = await _textToImageService.RenderTextToImagesAsync(dto.Content, chapterId);
+            if (imageUrls.Count > 0)
+            {
+                content = string.Join("\n", imageUrls);
+            }
+        }
+
         var chapter = new Chapter
         {
+            Id = chapterId,
             StoryId = storyId,
             ChapterNumber = dto.ChapterNumber,
             Title = dto.Title,
-            Content = dto.Content,
+            Content = content,
             PublishAt = dto.PublishAt
         };
         _db.Chapters.Add(chapter);
@@ -172,9 +187,19 @@ public class StoryService : IStoryService
         var chapter = await _db.Chapters.FirstOrDefaultAsync(c => c.Id == chapterId && c.StoryId == storyId)
             ?? throw new InvalidOperationException("Không tìm thấy chương truyện.");
 
+        var content = dto.Content;
+        if (dto.RenderAsImages && !string.IsNullOrWhiteSpace(dto.Content))
+        {
+            var imageUrls = await _textToImageService.RenderTextToImagesAsync(dto.Content, chapterId);
+            if (imageUrls.Count > 0)
+            {
+                content = string.Join("\n", imageUrls);
+            }
+        }
+
         chapter.ChapterNumber = dto.ChapterNumber;
         chapter.Title = dto.Title;
-        chapter.Content = dto.Content;
+        chapter.Content = content;
         chapter.PublishAt = dto.PublishAt;
         chapter.UpdatedAt = DateTime.UtcNow;
 

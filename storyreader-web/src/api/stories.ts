@@ -51,6 +51,7 @@ export interface CreateChapterInput {
   title: string;
   content: string;
   publishAt: string | null;
+  renderAsImages?: boolean;
 }
 
 export async function searchStories(keyword?: string) {

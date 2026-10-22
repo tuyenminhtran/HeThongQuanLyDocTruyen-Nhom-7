@@ -82,6 +82,7 @@ builder.Services.AddScoped<IChapterAccessService, ChapterAccessService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
+builder.Services.AddScoped<ITextToImageService, TextToImageService>();
 
 builder.Services.AddCors(opt =>
     opt.AddDefaultPolicy(p => p.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin()));
@@ -106,6 +107,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

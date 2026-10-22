@@ -59,13 +59,26 @@ public class ChaptersController : ControllerBase
             await _db.SaveChangesAsync();
         }
 
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
         var isComic = chapter.Story?.Type == StoryType.Comic;
-        var imageUrls = (isComic && !string.IsNullOrWhiteSpace(chapter.Content))
+        var contentLines = !string.IsNullOrWhiteSpace(chapter.Content)
             ? chapter.Content
                 .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Where(line => line.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
-                               line.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
-                               line.StartsWith("/", StringComparison.OrdinalIgnoreCase))
+                .ToList()
+            : new List<string>();
+
+        var isImageChapter = isComic || (contentLines.Count > 0 && contentLines.All(line =>
+            line.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+            line.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+            line.StartsWith("/", StringComparison.OrdinalIgnoreCase)));
+
+        var imageUrls = isImageChapter
+            ? contentLines
+                .Where(line =>
+                    line.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+                    line.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+                    line.StartsWith("/", StringComparison.OrdinalIgnoreCase))
+                .Select(line => line.StartsWith("/") ? $"{baseUrl}{line}" : line)
                 .ToList()
             : new List<string>();
 

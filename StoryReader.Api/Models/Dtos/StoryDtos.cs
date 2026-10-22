@@ -23,6 +23,6 @@ public record UpdateStoryDto(string Title, string CoverImageUrl, string Descript
     ReleaseStatus Status, AccessPolicy AccessPolicy, decimal? Price, int FreeChapterCount, List<Guid> GenreIds,
     StoryType Type = StoryType.Novel);
 
-public record CreateChapterDto(int ChapterNumber, string Title, string Content, DateTime? PublishAt);
+public record CreateChapterDto(int ChapterNumber, string Title, string Content, DateTime? PublishAt, bool RenderAsImages = false);
 
-public record UpdateChapterDto(int ChapterNumber, string Title, string Content, DateTime? PublishAt);
+public record UpdateChapterDto(int ChapterNumber, string Title, string Content, DateTime? PublishAt, bool RenderAsImages = false);
