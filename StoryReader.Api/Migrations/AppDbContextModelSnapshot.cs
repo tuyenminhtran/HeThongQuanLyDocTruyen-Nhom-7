@@ -313,6 +313,40 @@ namespace StoryReader.Api.Migrations
                     b.ToTable("Genres");
                 });
 
+            modelBuilder.Entity("StoryReader.Api.Models.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LinkUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("StoryReader.Api.Models.Entities.Purchase", b =>
                 {
                     b.Property<Guid>("Id")
@@ -407,6 +441,9 @@ namespace StoryReader.Api.Migrations
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -637,6 +674,17 @@ namespace StoryReader.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StoryReader.Api.Models.Entities.Notification", b =>
+                {
+                    b.HasOne("StoryReader.Api.Models.Entities.AppUser", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("StoryReader.Api.Models.Entities.Purchase", b =>
                 {
                     b.HasOne("StoryReader.Api.Models.Entities.Story", "Story")
@@ -772,6 +820,8 @@ namespace StoryReader.Api.Migrations
                     b.Navigation("Discussions");
 
                     b.Navigation("FollowedStories");
+
+                    b.Navigation("Notifications");
 
                     b.Navigation("Purchases");
 
