@@ -77,20 +77,133 @@ public class StoryService : IStoryService
         return story.Id;
     }
 
+    public async Task UpdateAsync(Guid storyId, UpdateStoryDto dto)
+    {
+        var story = await _db.Stories
+            .Include(s => s.StoryGenres)
+            .FirstOrDefaultAsync(s => s.Id == storyId)
+            ?? throw new InvalidOperationException("Không tìm thấy truyện.");
+
+        story.Title = dto.Title;
+        story.CoverImageUrl = dto.CoverImageUrl;
+        story.Description = dto.Description;
+        story.Author = dto.Author;
+        story.Status = dto.Status;
+        story.AccessPolicy = dto.AccessPolicy;
+        story.Price = dto.Price;
+        story.FreeChapterCount = dto.FreeChapterCount;
+        story.UpdatedAt = DateTime.UtcNow;
+
+        story.StoryGenres.Clear();
+        foreach (var genreId in dto.GenreIds)
+            story.StoryGenres.Add(new StoryGenre { StoryId = storyId, GenreId = genreId });
+
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(Guid storyId)
+    {
+        var story = await _db.Stories
+            .Include(s => s.Chapters)
+            .Include(s => s.StoryGenres)
+            .Include(s => s.Followers)
+            .Include(s => s.Purchases)
+            .FirstOrDefaultAsync(s => s.Id == storyId)
+            ?? throw new InvalidOperationException("Không tìm thấy truyện.");
+
+        var chapterIds = story.Chapters.Select(c => c.Id).ToList();
+        var discussions = await _db.Discussions.Where(d => chapterIds.Contains(d.ChapterId)).ToListAsync();
+        _db.Discussions.RemoveRange(discussions);
+
+        var progresses = await _db.ReadingProgresses.Where(p => p.StoryId == storyId).ToListAsync();
+        _db.ReadingProgresses.RemoveRange(progresses);
+
+        _db.Chapters.RemoveRange(story.Chapters);
+        _db.StoryGenres.RemoveRange(story.StoryGenres);
+        _db.StoryFollows.RemoveRange(story.Followers);
+        _db.Purchases.RemoveRange(story.Purchases);
+
+        _db.Stories.Remove(story);
+        await _db.SaveChangesAsync();
+    }
+
     public async Task AddChapterAsync(Guid storyId, CreateChapterDto dto)
     {
         var story = await _db.Stories.FindAsync(storyId)
-            ?? throw new InvalidOperationException("Story not found");
+            ?? throw new InvalidOperationException("Không tìm thấy truyện.");
 
-        _db.Chapters.Add(new Chapter
+        var chapter = new Chapter
         {
             StoryId = storyId,
             ChapterNumber = dto.ChapterNumber,
             Title = dto.Title,
             Content = dto.Content,
             PublishAt = dto.PublishAt
-        });
+        };
+        _db.Chapters.Add(chapter);
         story.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        // Kích hoạt thông báo cho các độc giả đang theo dõi truyện này
+        var followerUserIds = await _db.StoryFollows
+            .Where(f => f.StoryId == storyId)
+            .Select(f => f.UserId)
+            .ToListAsync();
+
+        if (followerUserIds.Count > 0)
+        {
+            var notifications = followerUserIds.Select(uid => new Notification
+            {
+                UserId = uid,
+                Title = $"Chương mới: {story.Title}",
+                Message = $"Chương {dto.ChapterNumber}: {dto.Title} vừa được công bố!",
+                LinkUrl = $"/chapters/{chapter.Id}",
+                CreatedAt = DateTime.UtcNow
+            });
+            _db.Notifications.AddRange(notifications);
+            await _db.SaveChangesAsync();
+        }
+    }
+
+    public async Task UpdateChapterAsync(Guid storyId, Guid chapterId, UpdateChapterDto dto)
+    {
+        var chapter = await _db.Chapters.FirstOrDefaultAsync(c => c.Id == chapterId && c.StoryId == storyId)
+            ?? throw new InvalidOperationException("Không tìm thấy chương truyện.");
+
+        chapter.ChapterNumber = dto.ChapterNumber;
+        chapter.Title = dto.Title;
+        chapter.Content = dto.Content;
+        chapter.PublishAt = dto.PublishAt;
+        chapter.UpdatedAt = DateTime.UtcNow;
+
+        var story = await _db.Stories.FindAsync(storyId);
+        if (story != null) story.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task DeleteChapterAsync(Guid storyId, Guid chapterId)
+    {
+        var chapter = await _db.Chapters.FirstOrDefaultAsync(c => c.Id == chapterId && c.StoryId == storyId)
+            ?? throw new InvalidOperationException("Không tìm thấy chương truyện.");
+
+        var discussions = await _db.Discussions.Where(d => d.ChapterId == chapterId).ToListAsync();
+        _db.Discussions.RemoveRange(discussions);
+
+        var progresses = await _db.ReadingProgresses.Where(p => p.LastChapterId == chapterId).ToListAsync();
+        foreach (var p in progresses)
+        {
+            var fallback = await _db.Chapters
+                .Where(c => c.StoryId == storyId && c.Id != chapterId)
+                .OrderByDescending(c => c.ChapterNumber)
+                .FirstOrDefaultAsync();
+            if (fallback != null)
+                p.LastChapterId = fallback.Id;
+            else
+                _db.ReadingProgresses.Remove(p);
+        }
+
+        _db.Chapters.Remove(chapter);
         await _db.SaveChangesAsync();
     }
 }

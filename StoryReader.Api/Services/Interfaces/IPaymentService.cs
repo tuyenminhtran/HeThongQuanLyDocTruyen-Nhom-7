@@ -13,4 +13,9 @@ public interface IPaymentService
     /// Idempotent — gọi lại nhiều lần với cùng providerRef không tạo trùng bản ghi.
     /// </summary>
     Task HandleGatewayCallbackAsync(string providerTransactionRef, bool success);
+
+    /// <summary>
+    /// Cho phép Admin xử lý sự cố thanh toán (PB28): Cấp bù quyền đọc hoặc kích hoạt gói khi giao dịch gặp lỗi.
+    /// </summary>
+    Task ForceActivateTransactionAsync(Guid transactionId);
 }

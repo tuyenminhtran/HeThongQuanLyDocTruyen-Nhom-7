@@ -45,11 +45,43 @@ public class StoriesController : ControllerBase
         return CreatedAtAction(nameof(GetDetail), new { id }, new { id });
     }
 
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStoryDto dto)
+    {
+        await _stories.UpdateAsync(id, dto);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        await _stories.DeleteAsync(id);
+        return NoContent();
+    }
+
     [HttpPost("{id:guid}/chapters")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> AddChapter(Guid id, [FromBody] CreateChapterDto dto)
     {
         await _stories.AddChapterAsync(id, dto);
+        return NoContent();
+    }
+
+    [HttpPut("{id:guid}/chapters/{chapterId:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateChapter(Guid id, Guid chapterId, [FromBody] UpdateChapterDto dto)
+    {
+        await _stories.UpdateChapterAsync(id, chapterId, dto);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}/chapters/{chapterId:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteChapter(Guid id, Guid chapterId)
+    {
+        await _stories.DeleteChapterAsync(id, chapterId);
         return NoContent();
     }
 }

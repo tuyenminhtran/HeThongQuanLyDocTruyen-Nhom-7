@@ -39,6 +39,10 @@ public class DiscussionsController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Post(Guid chapterId, CreateDiscussionDto dto)
     {
+        var user = await _db.Users.FindAsync(CurrentUserId);
+        if (user is null || user.IsRestricted)
+            return Forbid();
+
         _db.Discussions.Add(new Discussion { ChapterId = chapterId, UserId = CurrentUserId, Content = dto.Content });
         await _db.SaveChangesAsync();
         return NoContent();

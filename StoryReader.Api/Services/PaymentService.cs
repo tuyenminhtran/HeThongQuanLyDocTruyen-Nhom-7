@@ -20,6 +20,10 @@ public class PaymentService : IPaymentService
 
     public async Task<(Guid transactionId, string paymentUrl)> InitiateStoryPurchaseAsync(Guid userId, Guid storyId)
     {
+        var user = await _db.Users.FindAsync(userId);
+        if (user is null || user.IsRestricted)
+            throw new InvalidOperationException("Tài khoản đang bị hạn chế giao dịch.");
+
         var story = await _db.Stories.FindAsync(storyId)
             ?? throw new InvalidOperationException("Story not found");
 
@@ -53,6 +57,10 @@ public class PaymentService : IPaymentService
 
     public async Task<(Guid transactionId, string paymentUrl)> InitiateSubscriptionAsync(Guid userId, Guid planId)
     {
+        var user = await _db.Users.FindAsync(userId);
+        if (user is null || user.IsRestricted)
+            throw new InvalidOperationException("Tài khoản đang bị hạn chế giao dịch.");
+
         var plan = await _db.SubscriptionPlans.FindAsync(planId)
             ?? throw new InvalidOperationException("Plan not found");
 
@@ -125,6 +133,56 @@ public class PaymentService : IPaymentService
                         TransactionId = tx.Id
                     });
                 }
+            }
+        }
+
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task ForceActivateTransactionAsync(Guid transactionId)
+    {
+        var tx = await _db.Transactions.FirstOrDefaultAsync(t => t.Id == transactionId)
+            ?? throw new InvalidOperationException("Không tìm thấy giao dịch.");
+
+        tx.Status = TransactionStatus.Success;
+        tx.CompletedAt = DateTime.UtcNow;
+
+        if (tx.Type == TransactionType.StoryPurchase)
+        {
+            var alreadyOwned = await _db.Purchases
+                .AnyAsync(p => p.UserId == tx.UserId && p.StoryId == tx.TargetId);
+
+            if (!alreadyOwned)
+            {
+                _db.Purchases.Add(new Purchase
+                {
+                    UserId = tx.UserId,
+                    StoryId = tx.TargetId,
+                    PricePaid = tx.Amount,
+                    TransactionId = tx.Id
+                });
+            }
+        }
+        else if (tx.Type == TransactionType.Subscription)
+        {
+            var plan = await _db.SubscriptionPlans.FindAsync(tx.TargetId);
+            if (plan is not null)
+            {
+                var currentActive = await _db.UserSubscriptions
+                    .Where(s => s.UserId == tx.UserId && s.EndAt > DateTime.UtcNow)
+                    .OrderByDescending(s => s.EndAt)
+                    .FirstOrDefaultAsync();
+
+                var startAt = currentActive?.EndAt ?? DateTime.UtcNow;
+
+                _db.UserSubscriptions.Add(new UserSubscription
+                {
+                    UserId = tx.UserId,
+                    PlanId = plan.Id,
+                    StartAt = startAt,
+                    EndAt = startAt.AddDays(plan.DurationDays),
+                    TransactionId = tx.Id
+                });
             }
         }
 

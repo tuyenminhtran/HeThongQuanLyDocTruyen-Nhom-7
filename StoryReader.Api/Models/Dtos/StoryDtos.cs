@@ -16,4 +16,9 @@ public record ChapterContentDto(Guid Id, int ChapterNumber, string Title, string
 public record CreateStoryDto(string Title, string CoverImageUrl, string Description, string Author,
     AccessPolicy AccessPolicy, decimal? Price, int FreeChapterCount, List<Guid> GenreIds);
 
+public record UpdateStoryDto(string Title, string CoverImageUrl, string Description, string Author,
+    ReleaseStatus Status, AccessPolicy AccessPolicy, decimal? Price, int FreeChapterCount, List<Guid> GenreIds);
+
 public record CreateChapterDto(int ChapterNumber, string Title, string Content, DateTime? PublishAt);
+
+public record UpdateChapterDto(int ChapterNumber, string Title, string Content, DateTime? PublishAt);

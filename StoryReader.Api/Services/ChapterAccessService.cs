@@ -37,6 +37,14 @@ public class ChapterAccessService : IChapterAccessService
         if (userId is null)
             return false;
 
+        var isRestricted = await _db.Users
+            .Where(u => u.Id == userId)
+            .Select(u => u.IsRestricted)
+            .FirstOrDefaultAsync();
+
+        if (isRestricted)
+            return false;
+
         // 3. Đã mua riêng truyện này.
         var hasPurchased = await _db.Purchases
             .AnyAsync(p => p.UserId == userId && p.StoryId == story.Id);

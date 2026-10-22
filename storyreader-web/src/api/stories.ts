@@ -67,6 +67,22 @@ export async function createStory(input: CreateStoryInput) {
   return res.data;
 }
 
+export async function updateStory(id: string, input: CreateStoryInput & { status?: number }) {
+  await apiClient.put(`/stories/${id}`, input);
+}
+
+export async function deleteStory(id: string) {
+  await apiClient.delete(`/stories/${id}`);
+}
+
 export async function addChapter(storyId: string, input: CreateChapterInput) {
   await apiClient.post(`/stories/${storyId}/chapters`, input);
+}
+
+export async function updateChapter(storyId: string, chapterId: string, input: CreateChapterInput) {
+  await apiClient.put(`/stories/${storyId}/chapters/${chapterId}`, input);
+}
+
+export async function deleteChapter(storyId: string, chapterId: string) {
+  await apiClient.delete(`/stories/${storyId}/chapters/${chapterId}`);
 }

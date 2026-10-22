@@ -13,4 +13,5 @@ public class AppUser : IdentityUser<Guid>
     public ICollection<ReadingProgress> ReadingProgresses { get; set; } = new List<ReadingProgress>();
     public ICollection<Discussion> Discussions { get; set; } = new List<Discussion>();
     public ICollection<StoryFollow> FollowedStories { get; set; } = new List<StoryFollow>();
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 }
