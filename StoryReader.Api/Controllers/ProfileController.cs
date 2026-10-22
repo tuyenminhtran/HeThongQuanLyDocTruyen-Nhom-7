@@ -146,7 +146,8 @@ public class ProfileController : ControllerBase
                 r.Story.Author,
                 r.Story.Status,
                 r.Story.AccessPolicy,
-                r.Story.ViewCount
+                r.Story.ViewCount,
+                r.Story.Type
             ))
             .ToListAsync();
 
@@ -168,7 +169,8 @@ public class ProfileController : ControllerBase
                 f.Story.Author,
                 f.Story.Status,
                 f.Story.AccessPolicy,
-                f.Story.ViewCount
+                f.Story.ViewCount,
+                f.Story.Type
             ))
             .ToListAsync();
 
@@ -190,7 +192,8 @@ public class ProfileController : ControllerBase
                 p.Story.Author,
                 p.Story.Status,
                 p.Story.AccessPolicy,
-                p.Story.ViewCount
+                p.Story.ViewCount,
+                p.Story.Type
             ))
             .ToListAsync();
 

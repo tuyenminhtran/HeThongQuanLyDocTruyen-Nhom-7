@@ -66,6 +66,7 @@ function CreateStoryModal({
       freeChapterCount: 0,
       price: null,
       genreIds: [],
+      type: 0,
     },
   });
 
@@ -76,6 +77,7 @@ function CreateStoryModal({
     mutationFn: (data: CreateStoryInput) =>
       createStory({
         ...data,
+        type: Number(data.type) || 0,
         price: data.accessPolicy === 0 ? null : data.price ? Number(data.price) : null,
         freeChapterCount:
           data.accessPolicy === 0 ? 0 : Number(data.freeChapterCount) || 0,
@@ -143,6 +145,37 @@ function CreateStoryModal({
             {errors.author && (
               <p className="text-red-400 text-xs mt-1">{errors.author.message}</p>
             )}
+          </div>
+
+          {/* Story Type */}
+          <div>
+            <label className={labelClass}>Hình thức truyện</label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-ink-border bg-ink-bg cursor-pointer hover:border-gold/50 transition-colors">
+                <input
+                  type="radio"
+                  value={0}
+                  {...register("type", { valueAsNumber: true })}
+                  className="text-gold focus:ring-gold"
+                />
+                <div>
+                  <span className="text-sm font-medium text-ink-text block">Truyện chữ</span>
+                  <span className="text-xs text-ink-muted">Tiểu thuyết, văn bản</span>
+                </div>
+              </label>
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-ink-border bg-ink-bg cursor-pointer hover:border-gold/50 transition-colors">
+                <input
+                  type="radio"
+                  value={1}
+                  {...register("type", { valueAsNumber: true })}
+                  className="text-gold focus:ring-gold"
+                />
+                <div>
+                  <span className="text-sm font-medium text-ink-text block">Truyện tranh</span>
+                  <span className="text-xs text-ink-muted">Manga, Comic (ảnh)</span>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* Cover URL */}
@@ -375,15 +408,40 @@ function AddChapterModal({
 
           <div>
             <label className={labelClass}>
-              Nội dung <span className="text-red-400">*</span>
+              {story.type === 1 ? (
+                <span className="flex items-center justify-between">
+                  <span>
+                    Danh sách URL ảnh các trang <span className="text-red-400">*</span>
+                  </span>
+                  <span className="text-xs text-gold font-normal">
+                    (Mỗi dòng 1 link ảnh trang truyện)
+                  </span>
+                </span>
+              ) : (
+                <span>
+                  Nội dung chương <span className="text-red-400">*</span>
+                </span>
+              )}
             </label>
             <textarea
               {...register("content", {
-                required: "Vui lòng nhập nội dung chương",
+                required:
+                  story.type === 1
+                    ? "Vui lòng nhập ít nhất một link ảnh"
+                    : "Vui lòng nhập nội dung chương",
               })}
-              placeholder="Nhập nội dung chương..."
-              rows={10}
-              className={inputClass + " resize-none font-serif leading-relaxed"}
+              placeholder={
+                story.type === 1
+                  ? "Dán các link ảnh trang truyện tại đây, mỗi trang một dòng:\nhttps://example.com/trang-1.jpg\nhttps://example.com/trang-2.jpg\nhttps://example.com/trang-3.jpg"
+                  : "Nhập nội dung chương..."
+              }
+              rows={story.type === 1 ? 8 : 10}
+              className={
+                inputClass +
+                (story.type === 1
+                  ? " font-mono text-xs leading-relaxed"
+                  : " resize-none font-serif leading-relaxed")
+              }
             />
             {errors.content && (
               <p className="text-red-400 text-xs mt-1">
@@ -512,6 +570,15 @@ function StoryDetailPanel({
                       >
                         {accessPolicyLabel[story.accessPolicy] ?? "N/A"}
                       </span>
+                      {story.type === 1 ? (
+                        <span className="text-xs px-2.5 py-1 rounded-full border text-sky-400 bg-sky-400/10 border-sky-400/20 font-medium">
+                          Truyện tranh (Manga)
+                        </span>
+                      ) : (
+                        <span className="text-xs px-2.5 py-1 rounded-full border text-amber-400 bg-amber-400/10 border-amber-400/20 font-medium">
+                          Truyện chữ
+                        </span>
+                      )}
                     </div>
                     {story.price != null && story.price > 0 && (
                       <p className="text-sm text-ink-muted">
@@ -644,9 +711,20 @@ function StoryRow({
             />
           </div>
           <div className="min-w-0">
-            <p className="text-sm text-ink-text font-medium truncate group-hover:text-gold transition-colors">
-              {story.title}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-ink-text font-medium truncate group-hover:text-gold transition-colors">
+                {story.title}
+              </p>
+              {story.type === 1 ? (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 shrink-0 font-medium">
+                  Tranh
+                </span>
+              ) : (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0 font-medium">
+                  Chữ
+                </span>
+              )}
+            </div>
             <p className="text-xs text-ink-muted truncate">{story.author}</p>
           </div>
         </div>

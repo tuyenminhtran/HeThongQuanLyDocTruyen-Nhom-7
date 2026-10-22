@@ -4,10 +4,13 @@ public enum ReleaseStatus { Ongoing, Completed }
 
 public enum AccessPolicy { Free, Paid, Mixed }
 
+public enum StoryType { Novel = 0, Comic = 1 }
+
 public class Story
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Title { get; set; } = string.Empty;
+    public StoryType Type { get; set; } = StoryType.Novel;
     public string CoverImageUrl { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Author { get; set; } = string.Empty;

@@ -8,6 +8,7 @@ export interface StoryListItem {
   status: number;
   accessPolicy: number;
   viewCount: number;
+  type?: number; // 0 = Novel (Truyện chữ), 1 = Comic (Truyện tranh)
 }
 
 export interface ChapterListItem {
@@ -30,6 +31,7 @@ export interface StoryDetail {
   genres: string[];
   chapters: ChapterListItem[];
   viewCount?: number;
+  type?: number;
 }
 
 export interface CreateStoryInput {
@@ -41,6 +43,7 @@ export interface CreateStoryInput {
   price: number | null;
   freeChapterCount: number;
   genreIds: string[];
+  type?: number;
 }
 
 export interface CreateChapterInput {

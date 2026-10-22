@@ -33,7 +33,7 @@ public class ChaptersController : ControllerBase
         if (!canRead)
             return Forbid();
 
-        var chapter = await _db.Chapters.FirstOrDefaultAsync(c => c.Id == id);
+        var chapter = await _db.Chapters.Include(c => c.Story).FirstOrDefaultAsync(c => c.Id == id);
         if (chapter is null || !chapter.IsPublished) return NotFound();
 
         chapter.ViewCount++;
@@ -59,6 +59,16 @@ public class ChaptersController : ControllerBase
             await _db.SaveChangesAsync();
         }
 
-        return Ok(new ChapterContentDto(chapter.Id, chapter.ChapterNumber, chapter.Title, chapter.Content));
+        var isComic = chapter.Story?.Type == StoryType.Comic;
+        var imageUrls = (isComic && !string.IsNullOrWhiteSpace(chapter.Content))
+            ? chapter.Content
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(line => line.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+                               line.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+                               line.StartsWith("/", StringComparison.OrdinalIgnoreCase))
+                .ToList()
+            : new List<string>();
+
+        return Ok(new ChapterContentDto(chapter.Id, chapter.ChapterNumber, chapter.Title, chapter.Content, chapter.Story?.Type ?? StoryType.Novel, imageUrls));
     }
 }

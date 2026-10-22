@@ -6,6 +6,8 @@ export interface ChapterContent {
   chapterNumber: number;
   title: string;
   content: string;
+  storyType?: number;
+  imageUrls?: string[];
 }
 
 export async function getChapterContent(id: string) {
