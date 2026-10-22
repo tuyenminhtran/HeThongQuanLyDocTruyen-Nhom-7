@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore, useIsAdmin } from "../store/authStore";
 import { useState } from "react";
+import NotificationBell from "./NotificationBell";
 
 export default function Header() {
   const { accessToken, displayName, logout } = useAuthStore();
@@ -60,6 +61,9 @@ export default function Header() {
                 {/* Divider */}
                 <div className="w-px h-5 bg-ink-border mx-2" />
 
+                {/* Notification Bell */}
+                <NotificationBell />
+
                 {/* User menu */}
                 <div className="flex items-center gap-2">
                   <Link
@@ -105,18 +109,21 @@ export default function Header() {
             )}
           </nav>
 
-          {/* Mobile hamburger */}
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden p-2 rounded-xl text-ink-muted hover:text-white hover:bg-ink-card transition-all border border-transparent hover:border-ink-border w-10 h-10 flex items-center justify-center"
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? (
-              <i className="fa-solid fa-xmark text-lg" />
-            ) : (
-              <i className="fa-solid fa-bars text-lg" />
-            )}
-          </button>
+          {/* Mobile actions (Bell + Hamburger) */}
+          <div className="flex items-center gap-2 md:hidden">
+            {accessToken && <NotificationBell />}
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="p-2 rounded-xl text-ink-muted hover:text-white hover:bg-ink-card transition-all border border-transparent hover:border-ink-border w-10 h-10 flex items-center justify-center"
+              aria-label="Toggle menu"
+            >
+              {mobileOpen ? (
+                <i className="fa-solid fa-xmark text-lg" />
+              ) : (
+                <i className="fa-solid fa-bars text-lg" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

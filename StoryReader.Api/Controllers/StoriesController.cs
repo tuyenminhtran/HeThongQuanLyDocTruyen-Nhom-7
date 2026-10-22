@@ -84,4 +84,26 @@ public class StoriesController : ControllerBase
         await _stories.DeleteChapterAsync(id, chapterId);
         return NoContent();
     }
+
+    [HttpPost("{id:guid}/follow")]
+    [Authorize]
+    public async Task<IActionResult> ToggleFollow(Guid id)
+    {
+        if (CurrentUserId is not Guid userId)
+            return Unauthorized();
+
+        var isFollowing = await _stories.ToggleFollowAsync(userId, id);
+        return Ok(new { isFollowing, message = isFollowing ? "Đã theo dõi truyện thành công." : "Đã hủy theo dõi truyện." });
+    }
+
+    [HttpGet("{id:guid}/is-following")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetIsFollowing(Guid id)
+    {
+        if (CurrentUserId is not Guid userId)
+            return Ok(new { isFollowing = false });
+
+        var isFollowing = await _stories.IsFollowingAsync(userId, id);
+        return Ok(new { isFollowing });
+    }
 }

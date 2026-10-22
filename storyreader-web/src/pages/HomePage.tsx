@@ -52,9 +52,10 @@ export default function HomePage() {
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState<number | "all">("all");
   const [accessFilter, setAccessFilter] = useState<number | "all">("all");
+  const [typeFilter, setTypeFilter] = useState<number | "all">("all");
   const [visibleCount, setVisibleCount] = useState(12);
-  const [prevFilterKey, setPrevFilterKey] = useState(`${keyword}-${statusFilter}-${accessFilter}`);
-  const currentFilterKey = `${keyword}-${statusFilter}-${accessFilter}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(`${keyword}-${statusFilter}-${accessFilter}-${typeFilter}`);
+  const currentFilterKey = `${keyword}-${statusFilter}-${accessFilter}-${typeFilter}`;
   if (prevFilterKey !== currentFilterKey) {
     setPrevFilterKey(currentFilterKey);
     setVisibleCount(12);
@@ -69,6 +70,7 @@ export default function HomePage() {
     ? stories.filter(story => {
         if (statusFilter !== "all" && story.status !== statusFilter) return false;
         if (accessFilter !== "all" && story.accessPolicy !== accessFilter) return false;
+        if (typeFilter !== "all" && (story.type ?? 0) !== typeFilter) return false;
         return true;
       })
     : [];
@@ -147,10 +149,10 @@ export default function HomePage() {
                   </h3>
                   <div className="mt-1.5 flex items-center justify-between text-[11px] text-gray-300 font-medium">
                     <span className="bg-black/60 px-1.5 py-0.5 rounded text-gold border border-gold/30">
-                      Chapter {Math.floor(story.viewCount / 2000) || 120}
+                      {story.type === 1 ? "Truyện tranh" : "Truyện chữ"}
                     </span>
                     <span className="text-[10px] text-gray-400 italic">
-                      {idx % 2 === 0 ? "1 ngày trước" : "3 ngày trước"}
+                      {idx % 2 === 0 ? "Mới cập nhật" : "Đọc nhiều"}
                     </span>
                   </div>
                 </div>
@@ -187,11 +189,24 @@ export default function HomePage() {
         {/* Filters */}
         <div className="flex flex-wrap items-center justify-center gap-4 max-w-3xl mx-auto">
           <div className="flex items-center gap-2">
-            <span className="text-ink-muted">Trạng thái:</span>
+            <span className="text-ink-muted text-sm">Hình thức:</span>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
+              className="bg-ink-bg border border-ink-border rounded-lg px-3 py-1.5 text-ink-text focus:outline-none focus:border-gold text-sm"
+            >
+              <option value="all">Tất cả hình thức</option>
+              <option value={0}>Truyện chữ</option>
+              <option value={1}>Truyện tranh</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-ink-muted text-sm">Trạng thái:</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="bg-ink-bg border border-ink-border rounded-lg px-3 py-1.5 text-ink-text focus:outline-none focus:border-gold"
+              className="bg-ink-bg border border-ink-border rounded-lg px-3 py-1.5 text-ink-text focus:outline-none focus:border-gold text-sm"
             >
               <option value="all">Tất cả</option>
               <option value={0}>Đang phát hành</option>
@@ -199,12 +214,13 @@ export default function HomePage() {
               <option value={2}>Tạm ngưng</option>
             </select>
           </div>
+
           <div className="flex items-center gap-2">
-            <span className="text-ink-muted">Phân loại:</span>
+            <span className="text-ink-muted text-sm">Phân loại:</span>
             <select
               value={accessFilter}
               onChange={(e) => setAccessFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="bg-ink-bg border border-ink-border rounded-lg px-3 py-1.5 text-ink-text focus:outline-none focus:border-gold"
+              className="bg-ink-bg border border-ink-border rounded-lg px-3 py-1.5 text-ink-text focus:outline-none focus:border-gold text-sm"
             >
               <option value="all">Tất cả</option>
               <option value={0}>Miễn phí</option>

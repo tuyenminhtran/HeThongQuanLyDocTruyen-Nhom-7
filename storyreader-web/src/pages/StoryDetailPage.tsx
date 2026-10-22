@@ -1,6 +1,6 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getStoryDetail } from "../api/stories";
+import { getStoryDetail, getIsFollowing, toggleFollowStory } from "../api/stories";
 import { buyStory } from "../api/payments";
 import { useAuthStore } from "../store/authStore";
 import { useState } from "react";
@@ -14,6 +14,7 @@ const accessPolicyLabel: Record<number, string> = {
 
 export default function StoryDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
   const queryClient = useQueryClient();
   const [buyError, setBuyError] = useState<string | null>(null);
@@ -31,6 +32,27 @@ export default function StoryDetailPage() {
     },
     enabled: !!id,
   });
+
+  const { data: isFollowing = false } = useQuery({
+    queryKey: ["isFollowing", id],
+    queryFn: () => getIsFollowing(id!),
+    enabled: !!id && isLoggedIn,
+  });
+
+  const followMutation = useMutation({
+    mutationFn: () => toggleFollowStory(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["isFollowing", id] });
+    },
+  });
+
+  const handleToggleFollow = () => {
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
+    followMutation.mutate();
+  };
 
   // Sử dụng dữ liệu API nếu có, ngược lại dùng fallback data để đảm bảo luôn hiển thị
   const story = apiStory || (id ? getFallbackStoryDetail(id) : null);
@@ -124,6 +146,17 @@ export default function StoryDetailPage() {
               <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400">
                 {accessPolicyLabel[story.accessPolicy] || "Miễn phí"}
               </span>
+              {story.type === 1 ? (
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-400 flex items-center gap-1.5">
+                  <i className="fa-solid fa-image text-[10px]" />
+                  Truyện tranh
+                </span>
+              ) : (
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center gap-1.5">
+                  <i className="fa-solid fa-book-open text-[10px]" />
+                  Truyện chữ
+                </span>
+              )}
               {(story.viewCount != null) && (
                 <span className="text-xs text-ink-muted flex items-center gap-1.5 font-medium ml-auto">
                   <i className="fa-solid fa-eye text-xs text-ink-muted" />
@@ -206,16 +239,31 @@ export default function StoryDetailPage() {
                 </div>
               )}
 
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-3">
                 {story.chapters.length > 0 && (
                   <Link
                     to={`/chapters/${story.chapters[0].id}`}
                     state={{ storyId: story.id }}
-                    className="px-8 py-3 rounded-xl font-medium bg-ink-text text-ink-bg hover:bg-white transition-all shadow-lg"
+                    className="px-8 py-3 rounded-xl font-medium bg-ink-text text-ink-bg hover:bg-white transition-all shadow-lg flex items-center gap-2"
                   >
-                    Đọc từ đầu
+                    <i className="fa-solid fa-book-open-reader text-sm" />
+                    <span>Đọc từ đầu</span>
                   </Link>
                 )}
+
+                <button
+                  onClick={handleToggleFollow}
+                  disabled={followMutation.isPending}
+                  className={`px-5 py-3 rounded-xl font-medium transition-all flex items-center gap-2 border ${
+                    isFollowing
+                      ? "bg-red-500/15 border-red-500/30 text-red-400 hover:bg-red-500/25"
+                      : "bg-ink-card border-ink-border text-ink-text hover:border-gold hover:text-gold"
+                  }`}
+                  title={isFollowing ? "Bỏ theo dõi truyện này" : "Nhận thông báo khi có chương mới"}
+                >
+                  <i className={`${isFollowing ? "fa-solid text-red-400" : "fa-regular"} fa-heart text-sm`} />
+                  <span>{isFollowing ? "Đang theo dõi" : "Theo dõi truyện"}</span>
+                </button>
               </div>
             </div>
           </div>

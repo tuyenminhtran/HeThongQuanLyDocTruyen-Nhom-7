@@ -208,4 +208,32 @@ public class StoryService : IStoryService
         _db.Chapters.Remove(chapter);
         await _db.SaveChangesAsync();
     }
+
+    public async Task<bool> ToggleFollowAsync(Guid userId, Guid storyId)
+    {
+        var existing = await _db.StoryFollows
+            .FirstOrDefaultAsync(f => f.UserId == userId && f.StoryId == storyId);
+
+        if (existing is not null)
+        {
+            _db.StoryFollows.Remove(existing);
+            await _db.SaveChangesAsync();
+            return false;
+        }
+
+        _db.StoryFollows.Add(new StoryFollow
+        {
+            UserId = userId,
+            StoryId = storyId,
+            FollowedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> IsFollowingAsync(Guid userId, Guid storyId)
+    {
+        return await _db.StoryFollows
+            .AnyAsync(f => f.UserId == userId && f.StoryId == storyId);
+    }
 }
