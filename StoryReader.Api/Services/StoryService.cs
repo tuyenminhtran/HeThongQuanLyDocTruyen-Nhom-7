@@ -31,7 +31,7 @@ public class StoryService : IStoryService
             .OrderByDescending(s => s.UpdatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(s => new StoryListItemDto(s.Id, s.Title, s.CoverImageUrl, s.Author, s.Status, s.AccessPolicy, s.ViewCount))
+            .Select(s => new StoryListItemDto(s.Id, s.Title, s.CoverImageUrl, s.Author, s.Status, s.AccessPolicy, s.ViewCount, s.Type))
             .ToListAsync();
     }
 
@@ -53,7 +53,7 @@ public class StoryService : IStoryService
 
         return new StoryDetailDto(story.Id, story.Title, story.CoverImageUrl, story.Description,
             story.Author, story.Status, story.AccessPolicy, story.Price, story.FreeChapterCount,
-            story.StoryGenres.Select(sg => sg.Genre.Name), chapterDtos);
+            story.StoryGenres.Select(sg => sg.Genre.Name), chapterDtos, story.Type);
     }
 
     public async Task<Guid> CreateAsync(CreateStoryDto dto)
@@ -61,6 +61,7 @@ public class StoryService : IStoryService
         var story = new Story
         {
             Title = dto.Title,
+            Type = dto.Type,
             CoverImageUrl = dto.CoverImageUrl,
             Description = dto.Description,
             Author = dto.Author,
@@ -85,6 +86,7 @@ public class StoryService : IStoryService
             ?? throw new InvalidOperationException("Không tìm thấy truyện.");
 
         story.Title = dto.Title;
+        story.Type = dto.Type;
         story.CoverImageUrl = dto.CoverImageUrl;
         story.Description = dto.Description;
         story.Author = dto.Author;

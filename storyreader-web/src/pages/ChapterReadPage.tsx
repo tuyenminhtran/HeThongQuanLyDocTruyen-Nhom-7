@@ -204,56 +204,102 @@ export default function ChapterReadPage() {
               title="Nền tối"
             />
 
-            <div className={`w-px h-6 mx-1 ${theme === 'dark' ? 'bg-ink-border' : 'bg-gray-300'}`} />
-
-            {/* Font size toggles */}
-            <button
-              onClick={() => setFontSize(Math.max(14, fontSize - 2))}
-              className="w-10 h-10 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 transition-colors font-serif font-bold text-sm"
-              title="Thu nhỏ chữ"
-            >
-              A-
-            </button>
-            <span className="text-xs font-mono opacity-60 w-6 text-center">{fontSize}</span>
-            <button
-              onClick={() => setFontSize(Math.min(32, fontSize + 2))}
-              className="w-10 h-10 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 transition-colors font-serif font-bold text-lg"
-              title="Phóng to chữ"
-            >
-              A+
-            </button>
+            {/* Font size toggles (chỉ hiện khi là truyện chữ) */}
+            {!(chapter?.storyType === 1 || (chapter?.imageUrls && chapter.imageUrls.length > 0)) ? (
+              <>
+                <div className={`w-px h-6 mx-1 ${theme === 'dark' ? 'bg-ink-border' : 'bg-gray-300'}`} />
+                <button
+                  onClick={() => setFontSize(Math.max(14, fontSize - 2))}
+                  className="w-10 h-10 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 transition-colors font-serif font-bold text-sm"
+                  title="Thu nhỏ chữ"
+                >
+                  A-
+                </button>
+                <span className="text-xs font-mono opacity-60 w-6 text-center">{fontSize}</span>
+                <button
+                  onClick={() => setFontSize(Math.min(32, fontSize + 2))}
+                  className="w-10 h-10 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 transition-colors font-serif font-bold text-lg"
+                  title="Phóng to chữ"
+                >
+                  A+
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-gold/10 text-gold rounded-full text-xs font-medium border border-gold/20 ml-2">
+                <i className="fa-solid fa-image text-[11px]" />
+                <span>Truyện tranh ({chapter?.imageUrls?.length ?? 0} trang)</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Header */}
         <div className={`text-center mb-12 border-b ${borderClasses[theme]} pb-10`}>
-          <h3 className="text-gold font-medium tracking-widest uppercase text-sm mb-4">
-            Chương {chapter.chapterNumber}
-          </h3>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="text-gold font-medium tracking-widest uppercase text-sm">
+              Chương {chapter.chapterNumber}
+            </span>
+            {(chapter.storyType === 1 || (chapter.imageUrls && chapter.imageUrls.length > 0)) && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
+                Manga / Comic
+              </span>
+            )}
+          </div>
           <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl leading-tight text-balance">
             {chapter.title}
           </h1>
         </div>
 
         {/* Chapter Body */}
-        <div
-          className="font-serif mx-auto opacity-90"
-          style={{
-            fontSize: `${fontSize}px`,
-            lineHeight: 1.85,
-            maxWidth: "780px",
-          }}
-        >
-          {chapter.content.split("\n").map((paragraph, index) =>
-            paragraph.trim() ? (
-              <p key={index} className="mb-6 indent-8 text-justify">
-                {paragraph}
-              </p>
+        {chapter.storyType === 1 || (chapter.imageUrls && chapter.imageUrls.length > 0) ? (
+          /* Chế độ Webtoon Viewer cho Truyện tranh */
+          <div className="max-w-3xl mx-auto flex flex-col items-center select-none space-y-2 py-2">
+            {chapter.imageUrls && chapter.imageUrls.length > 0 ? (
+              chapter.imageUrls.map((url, idx) => (
+                <div key={idx} className="w-full relative group">
+                  <img
+                    src={url}
+                    alt={`Trang ${idx + 1}`}
+                    loading="lazy"
+                    className="w-full h-auto object-cover rounded-lg shadow-md mx-auto block"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=800&q=80";
+                    }}
+                  />
+                  <span className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white/90 text-xs px-2.5 py-1 rounded-full font-mono opacity-0 group-hover:opacity-100 transition-opacity">
+                    Trang {idx + 1} / {chapter.imageUrls!.length}
+                  </span>
+                </div>
+              ))
             ) : (
-              <br key={index} />
-            )
-          )}
-        </div>
+              <div className="text-center py-16 text-ink-muted">
+                <i className="fa-solid fa-image text-4xl mb-3 opacity-40 block" />
+                <p className="text-sm">Chương này chưa có hình ảnh nào được tải lên.</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Chế độ Text Reader cho Truyện chữ */
+          <div
+            className="font-serif mx-auto opacity-90"
+            style={{
+              fontSize: `${fontSize}px`,
+              lineHeight: 1.85,
+              maxWidth: "780px",
+            }}
+          >
+            {chapter.content.split("\n").map((paragraph, index) =>
+              paragraph.trim() ? (
+                <p key={index} className="mb-6 indent-8 text-justify">
+                  {paragraph}
+                </p>
+              ) : (
+                <br key={index} />
+              )
+            )}
+          </div>
+        )}
 
         {/* Bottom Chapter Navigation Bar */}
         <div className={`mt-16 pt-8 border-t ${borderClasses[theme]}`}>

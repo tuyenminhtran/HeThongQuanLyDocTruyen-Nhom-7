@@ -95,6 +95,55 @@ public static class DataSeeder
         }
         await db.SaveChangesAsync();
 
+        // Seed truyện tranh mẫu nếu chưa có truyện tranh nào
+        if (!await db.Stories.AnyAsync(s => s.Type == StoryType.Comic))
+        {
+            var genre = await db.Genres.FirstOrDefaultAsync(g => g.Name == "Huyền Huyễn") ?? await db.Genres.FirstOrDefaultAsync();
+            var comic = new Story
+            {
+                Title = "Võ Thần Tái Thế (Truyện Tranh)",
+                Type = StoryType.Comic,
+                Author = "Hàn Băng Thần",
+                CoverImageUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&q=80",
+                Description = "Sau ngàn năm phong ấn, Võ Thần thức tỉnh trong thân xác một thiếu niên phế vật. Hành trình chinh phục lại đỉnh cao thiên hạ dưới dạng truyện tranh màu đặc sắc.",
+                Status = ReleaseStatus.Ongoing,
+                AccessPolicy = AccessPolicy.Free,
+                FreeChapterCount = 2,
+                ViewCount = 12500
+            };
+
+            if (genre != null)
+                comic.StoryGenres.Add(new StoryGenre { GenreId = genre.Id });
+
+            comic.Chapters.Add(new Chapter
+            {
+                ChapterNumber = 1,
+                Title = "Chương 1: Thức tỉnh trong hoang tàn",
+                Content = string.Join("\n", new[]
+                {
+                    "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1000&q=80",
+                    "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1000&q=80",
+                    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1000&q=80"
+                }),
+                ViewCount = 6500
+            });
+
+            comic.Chapters.Add(new Chapter
+            {
+                ChapterNumber = 2,
+                Title = "Chương 2: Quyết đấu lôi đài",
+                Content = string.Join("\n", new[]
+                {
+                    "https://images.unsplash.com/photo-1563089145-599997674d42?w=1000&q=80",
+                    "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1000&q=80"
+                }),
+                ViewCount = 6000
+            });
+
+            db.Stories.Add(comic);
+            await db.SaveChangesAsync();
+        }
+
         // Seed StoryFollows nếu chưa có
         if (!await db.StoryFollows.AnyAsync() && stories.Any() && reader != null)
         {

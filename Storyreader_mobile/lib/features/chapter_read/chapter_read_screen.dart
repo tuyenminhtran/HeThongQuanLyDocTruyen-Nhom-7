@@ -109,24 +109,61 @@ class ChapterReadScreen extends ConsumerWidget {
                       const SizedBox(height: 32),
 
                       // Chapter body
-                      ...paragraphs.map((p) {
-                        final trimmed = p.trim();
-                        if (trimmed.isEmpty) {
-                          return const SizedBox(height: 16);
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          child: Text(
-                            '        $trimmed', // 32pt indent imitation
-                            style: GoogleFonts.notoSerif(
-                              color: textColor.withValues(alpha: 0.9),
-                              fontSize: fontSize,
-                              height: 1.8,
+                      if (chapter.isComic)
+                        Column(
+                          children: chapter.imageUrls.map((url) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  url,
+                                  fit: BoxFit.fitWidth,
+                                  width: double.infinity,
+                                  loadingBuilder: (context, child, progress) {
+                                    if (progress == null) return child;
+                                    return Container(
+                                      height: 350,
+                                      color: Colors.black12,
+                                      alignment: Alignment.center,
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.gold,
+                                        value: progress.expectedTotalBytes != null
+                                            ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                                            : null,
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    height: 200,
+                                    color: Colors.black12,
+                                    alignment: Alignment.center,
+                                    child: const Icon(Icons.broken_image, color: Colors.grey, size: 40),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        )
+                      else
+                        ...paragraphs.map((p) {
+                          final trimmed = p.trim();
+                          if (trimmed.isEmpty) {
+                            return const SizedBox(height: 16);
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 24),
+                            child: Text(
+                              '        $trimmed', // 32pt indent imitation
+                              style: GoogleFonts.notoSerif(
+                                color: textColor.withValues(alpha: 0.9),
+                                fontSize: fontSize,
+                                height: 1.8,
+                              ),
+                              textAlign: TextAlign.justify,
                             ),
-                            textAlign: TextAlign.justify,
-                          ),
-                        );
-                      }),
+                          );
+                        }),
 
                       const SizedBox(height: 48),
 
