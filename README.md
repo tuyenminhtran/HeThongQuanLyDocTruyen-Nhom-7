@@ -1,4 +1,4 @@
-# 📚 Hệ Thống Quản Lý & Đọc Truyện Trực Tuyến - StoryReader
+#  Hệ Thống Quản Lý & Đọc Truyện Trực Tuyến - StoryReader
 
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![React 18](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
