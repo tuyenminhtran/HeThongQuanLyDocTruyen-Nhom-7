@@ -11,10 +11,10 @@ public record StoryDetailDto(Guid Id, string Title, string CoverImageUrl, string
     int FreeChapterCount, IEnumerable<string> Genres, IEnumerable<ChapterListItemDto> Chapters,
     StoryType Type = StoryType.Novel);
 
-public record ChapterListItemDto(Guid Id, int ChapterNumber, string Title, bool RequiresAccess);
+public record ChapterListItemDto(Guid Id, int ChapterNumber, string Title, bool RequiresAccess, string? PartName = null);
 
 public record ChapterContentDto(Guid Id, int ChapterNumber, string Title, string Content,
-    StoryType StoryType = StoryType.Novel, List<string>? ImageUrls = null);
+    StoryType StoryType = StoryType.Novel, List<string>? ImageUrls = null, string? PartName = null);
 
 public record CreateStoryDto(string Title, string CoverImageUrl, string Description, string Author,
     AccessPolicy AccessPolicy, decimal? Price, int FreeChapterCount, List<Guid> GenreIds,
@@ -24,6 +24,6 @@ public record UpdateStoryDto(string Title, string CoverImageUrl, string Descript
     ReleaseStatus Status, AccessPolicy AccessPolicy, decimal? Price, int FreeChapterCount, List<Guid> GenreIds,
     StoryType Type = StoryType.Novel);
 
-public record CreateChapterDto(int ChapterNumber, string Title, string Content, DateTime? PublishAt, bool RenderAsImages = false);
+public record CreateChapterDto(int ChapterNumber, string Title, string Content, DateTime? PublishAt, bool RenderAsImages = false, string? PartName = null);
 
-public record UpdateChapterDto(int ChapterNumber, string Title, string Content, DateTime? PublishAt, bool RenderAsImages = false);
+public record UpdateChapterDto(int ChapterNumber, string Title, string Content, DateTime? PublishAt, bool RenderAsImages = false, string? PartName = null);

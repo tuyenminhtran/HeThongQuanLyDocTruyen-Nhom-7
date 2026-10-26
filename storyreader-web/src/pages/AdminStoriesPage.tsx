@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -22,6 +22,7 @@ import { getChapterContent } from "../api/chapters";
 import { useIsAdmin } from "../store/authStore";
 import { getGenres } from "../api/genres";
 import { resolveImageUrl } from "../utils/imageUrl";
+import { groupChaptersByPart, type ChapterGroup } from "../utils/chapterGrouping";
 
 /* ────────────────────────── Access labels ────────────────────────── */
 const accessPolicyLabel: Record<number, string> = {
@@ -743,6 +744,7 @@ function EditChapterModal({
       title: chapter.title,
       content: chapterDetail?.content || "",
       publishAt: null,
+      partName: chapter.partName || "",
     },
   });
 
@@ -752,6 +754,7 @@ function EditChapterModal({
         ...data,
         chapterNumber: Number(data.chapterNumber),
         publishAt: null,
+        partName: data.partName?.trim() || null,
       }),
     onSuccess: () => {
       onUpdated();
@@ -821,6 +824,19 @@ function EditChapterModal({
                   <p className="text-red-400 text-xs mt-1">{errors.title.message}</p>
                 )}
               </div>
+            </div>
+
+            {/* Folder cha (Phần / Tập) */}
+            <div>
+              <label className={labelClass}>Phần / Tập (Folder cha - tùy chọn)</label>
+              <input
+                {...register("partName")}
+                placeholder="Ví dụ: Phần 1: Hành Trình Tìm Ngọc Rồng"
+                className={inputClass}
+              />
+              <p className="text-[11px] text-ink-muted mt-1">
+                Gom nhóm chương này vào một thư mục cha (Phần 1, Phần 2...). Để trống nếu là chương thông thường.
+              </p>
             </div>
 
             <div>
@@ -933,6 +949,7 @@ function AddChapterModal({
         ...data,
         chapterNumber: Number(data.chapterNumber),
         publishAt: null,
+        partName: data.partName?.trim() || null,
       }),
     onSuccess: () => {
       reset();
@@ -1133,6 +1150,27 @@ function StoryDetailPanel({
     queryKey: ["storyDetail", storyId],
     queryFn: () => getStoryDetail(storyId),
   });
+
+  const chapterGroups = useMemo<ChapterGroup[]>(() => {
+    return story?.chapters ? groupChaptersByPart(story.chapters) : [];
+  }, [story?.chapters]);
+
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (chapterGroups.length > 0) {
+      setExpandedFolders(new Set(chapterGroups.map((g: ChapterGroup) => g.partName)));
+    }
+  }, [storyId, chapterGroups.length]);
+
+  const toggleFolder = (partName: string) => {
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(partName)) next.delete(partName);
+      else next.add(partName);
+      return next;
+    });
+  };
 
   const deleteStoryMutation = useMutation({
     mutationFn: () => deleteStory(storyId),
@@ -1379,46 +1417,113 @@ function StoryDetailPanel({
                       <p className="text-sm">Chưa có chương nào</p>
                     </div>
                   ) : (
-                    <div className="border border-ink-border rounded-xl overflow-hidden divide-y divide-ink-border">
-                      {story.chapters
-                        .sort((a, b) => a.chapterNumber - b.chapterNumber)
-                        .map((c) => (
-                          <div
-                            key={c.id}
-                            className="flex items-center justify-between px-4 py-3 hover:bg-ink-bg/50 transition-colors"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <span className="text-xs font-mono text-ink-muted bg-ink-bg border border-ink-border rounded-md px-2 py-0.5 shrink-0">
-                                #{c.chapterNumber}
-                              </span>
-                              <span className="text-sm text-ink-text truncate">
-                                {c.title}
-                              </span>
+                    <div className="space-y-3">
+                      {chapterGroups.map((group: ChapterGroup) => {
+                        if (!group.isFolder) {
+                          return (
+                            <div key={group.partName} className="border border-ink-border rounded-xl overflow-hidden divide-y divide-ink-border">
+                              {group.chapters.map((c: ChapterListItem) => (
+                                <div
+                                  key={c.id}
+                                  className="flex items-center justify-between px-4 py-3 hover:bg-ink-bg/50 transition-colors"
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <span className="text-xs font-mono text-ink-muted bg-ink-bg border border-ink-border rounded-md px-2 py-0.5 shrink-0">
+                                      #{c.chapterNumber}
+                                    </span>
+                                    <span className="text-sm text-ink-text truncate">
+                                      {c.title}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                                    {c.requiresAccess && (
+                                      <span className="text-xs text-gold bg-gold/10 border border-gold/20 rounded-full px-2 py-0.5">
+                                        Trả phí
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={() => setEditingChapter(c)}
+                                      className="p-1.5 rounded-lg text-ink-muted hover:text-gold hover:bg-ink-bg transition-colors"
+                                      title="Chỉnh sửa chương"
+                                    >
+                                      <i className="fa-solid fa-pen-to-square text-xs" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteChapter(c)}
+                                      disabled={deleteChapterMutation.isPending}
+                                      className="p-1.5 rounded-lg text-ink-muted hover:text-red-400 hover:bg-ink-bg transition-colors"
+                                      title="Xóa chương"
+                                    >
+                                      <i className="fa-solid fa-trash-can text-xs" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                            <div className="flex items-center gap-2 shrink-0 ml-2">
-                              {c.requiresAccess && (
-                                <span className="text-xs text-gold bg-gold/10 border border-gold/20 rounded-full px-2 py-0.5">
-                                  Trả phí
+                          );
+                        }
+
+                        const isExpanded = expandedFolders.has(group.partName);
+                        return (
+                          <div key={group.partName} className="border border-ink-border rounded-xl overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => toggleFolder(group.partName)}
+                              className="w-full flex items-center justify-between px-4 py-3 bg-ink-bg/60 hover:bg-ink-bg transition-colors text-left cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <i className={`fa-solid ${isExpanded ? "fa-folder-open text-gold" : "fa-folder text-gold/70"} text-sm shrink-0`} />
+                                <span className="text-sm font-semibold text-ink-text truncate">{group.partName}</span>
+                                <span className="text-xs text-ink-muted bg-ink-border/50 px-2 py-0.5 rounded-full font-mono">
+                                  {group.chapters.length} chương
                                 </span>
-                              )}
-                              <button
-                                onClick={() => setEditingChapter(c)}
-                                className="p-1.5 rounded-lg text-ink-muted hover:text-gold hover:bg-ink-bg transition-colors"
-                                title="Chỉnh sửa chương"
-                              >
-                                <i className="fa-solid fa-pen-to-square text-xs" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteChapter(c)}
-                                disabled={deleteChapterMutation.isPending}
-                                className="p-1.5 rounded-lg text-ink-muted hover:text-red-400 hover:bg-ink-bg transition-colors"
-                                title="Xóa chương"
-                              >
-                                <i className="fa-solid fa-trash-can text-xs" />
-                              </button>
-                            </div>
+                              </div>
+                              <i className={`fa-solid fa-chevron-down text-xs text-ink-muted transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                            </button>
+                            {isExpanded && (
+                              <div className="border-t border-ink-border divide-y divide-ink-border bg-ink-bg/20">
+                                {group.chapters.map((c: ChapterListItem) => (
+                                  <div
+                                    key={c.id}
+                                    className="flex items-center justify-between px-4 py-3 hover:bg-ink-bg/50 transition-colors"
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <span className="text-xs font-mono text-ink-muted bg-ink-bg border border-ink-border rounded-md px-2 py-0.5 shrink-0">
+                                        #{c.chapterNumber}
+                                      </span>
+                                      <span className="text-sm text-ink-text truncate">
+                                        {c.title}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                                      {c.requiresAccess && (
+                                        <span className="text-xs text-gold bg-gold/10 border border-gold/20 rounded-full px-2 py-0.5">
+                                          Trả phí
+                                        </span>
+                                      )}
+                                      <button
+                                        onClick={() => setEditingChapter(c)}
+                                        className="p-1.5 rounded-lg text-ink-muted hover:text-gold hover:bg-ink-bg transition-colors"
+                                        title="Chỉnh sửa chương"
+                                      >
+                                        <i className="fa-solid fa-pen-to-square text-xs" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteChapter(c)}
+                                        disabled={deleteChapterMutation.isPending}
+                                        className="p-1.5 rounded-lg text-ink-muted hover:text-red-400 hover:bg-ink-bg transition-colors"
+                                        title="Xóa chương"
+                                      >
+                                        <i className="fa-solid fa-trash-can text-xs" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

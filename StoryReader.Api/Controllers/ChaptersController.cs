@@ -82,6 +82,6 @@ public class ChaptersController : ControllerBase
                 .ToList()
             : new List<string>();
 
-        return Ok(new ChapterContentDto(chapter.Id, chapter.ChapterNumber, chapter.Title, chapter.Content, chapter.Story?.Type ?? StoryType.Novel, imageUrls));
+        return Ok(new ChapterContentDto(chapter.Id, chapter.ChapterNumber, chapter.Title, chapter.Content, chapter.Story?.Type ?? StoryType.Novel, imageUrls, chapter.PartName));
     }
 }

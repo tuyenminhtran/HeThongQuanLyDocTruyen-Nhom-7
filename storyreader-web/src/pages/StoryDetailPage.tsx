@@ -5,7 +5,9 @@ import { buyStory, simulatePaymentCallback } from "../api/payments";
 import { postChapterDiscussion } from "../api/discussions";
 import { useAuthStore, useIsAdmin } from "../store/authStore";
 import { resolveImageUrl } from "../utils/imageUrl";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { groupChaptersByPart } from "../utils/chapterGrouping";
+import type { ChapterListItem } from "../api/stories";
 import { getFallbackStoryDetail } from "../data/mockDetails";
 import { fireConfetti } from "../utils/confetti";
 
@@ -22,6 +24,30 @@ const accessPolicyLabel: Record<number, string> = {
   1: "Trả phí",
   2: "Hỗn hợp",
 };
+
+function ChapterCard({ chapter, storyId }: { chapter: ChapterListItem; storyId: string }) {
+  return (
+    <Link
+      to={`/chapters/${chapter.id}`}
+      state={{ storyId }}
+      className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-white hover:border-orange-400 hover:bg-orange-50/40 shadow-2xs transition-all group"
+    >
+      <div className="min-w-0 pr-3">
+        <p className="text-xs text-orange-600 mb-0.5 font-mono font-bold">
+          Chương {chapter.chapterNumber}
+        </p>
+        <p className="text-slate-800 text-sm font-semibold truncate group-hover:text-orange-600 transition-colors">
+          {chapter.title}
+        </p>
+      </div>
+      {chapter.requiresAccess && (
+        <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 border border-amber-300 text-amber-600" title="Chương VIP / Cần mở khóa">
+          <i className="fa-solid fa-lock text-xs" />
+        </div>
+      )}
+    </Link>
+  );
+}
 
 export default function StoryDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -244,12 +270,36 @@ export default function StoryDetailPage() {
     );
   }
 
-  const filteredChapters = (story.chapters || [])
-    .filter((c) =>
-      c.title.toLowerCase().includes(chapterSearch.toLowerCase()) ||
-      c.chapterNumber.toString().includes(chapterSearch)
-    )
-    .sort((a, b) => (sortAsc ? a.chapterNumber - b.chapterNumber : b.chapterNumber - a.chapterNumber));
+  const filteredChapters = useMemo(() => {
+    return (story?.chapters || [])
+      .filter((c) =>
+        c.title.toLowerCase().includes(chapterSearch.toLowerCase()) ||
+        c.chapterNumber.toString().includes(chapterSearch) ||
+        (c.partName && c.partName.toLowerCase().includes(chapterSearch.toLowerCase()))
+      )
+      .sort((a, b) => (sortAsc ? a.chapterNumber - b.chapterNumber : b.chapterNumber - a.chapterNumber));
+  }, [story?.chapters, chapterSearch, sortAsc]);
+
+  const chapterGroups = useMemo(() => groupChaptersByPart(filteredChapters), [filteredChapters]);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (chapterGroups.length > 0) {
+      setExpandedFolders(new Set(chapterGroups.map((g) => g.partName)));
+    }
+  }, [story?.id, chapterSearch]);
+
+  const toggleFolder = (partName: string) => {
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(partName)) next.delete(partName);
+      else next.add(partName);
+      return next;
+    });
+  };
+
+  const hasMultipleFolders = chapterGroups.some((g) => g.isFolder);
+  const allExpanded = chapterGroups.length > 0 && chapterGroups.every((g) => expandedFolders.has(g.partName));
 
   return (
     <div className="relative min-h-screen">
@@ -433,7 +483,25 @@ export default function StoryDetailPage() {
               </span>
             </h2>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Toggle all folders button */}
+              {hasMultipleFolders && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (allExpanded) {
+                      setExpandedFolders(new Set());
+                    } else {
+                      setExpandedFolders(new Set(chapterGroups.map((g) => g.partName)));
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:text-orange-600 hover:border-orange-400 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
+                >
+                  <i className={`fa-solid ${allExpanded ? "fa-folder-minus" : "fa-folder-tree"} text-xs`} />
+                  <span>{allExpanded ? "Thu gọn" : "Mở tất cả"}</span>
+                </button>
+              )}
+
               {/* Chapter filter/search */}
               <div className="relative">
                 <input
@@ -462,29 +530,67 @@ export default function StoryDetailPage() {
               <p className="text-slate-500">Chưa tìm thấy chương phù hợp.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {filteredChapters.map((c) => (
-                <Link
-                  key={c.id}
-                  to={`/chapters/${c.id}`}
-                  state={{ storyId: story.id }}
-                  className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-white hover:border-orange-400 hover:bg-orange-50/30 shadow-2xs transition-all group"
-                >
-                  <div className="min-w-0 pr-3">
-                    <p className="text-xs text-orange-600 mb-0.5 font-mono font-bold">
-                      Chương {c.chapterNumber}
-                    </p>
-                    <p className="text-slate-800 text-sm font-semibold truncate group-hover:text-orange-600 transition-colors">
-                      {c.title}
-                    </p>
-                  </div>
-                  {c.requiresAccess && (
-                    <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 border border-amber-300 text-amber-600" title="Chương VIP / Cần mở khóa">
-                      <i className="fa-solid fa-lock text-xs" />
+            <div className="space-y-4">
+              {chapterGroups.map((group) => {
+                if (!group.isFolder) {
+                  return (
+                    <div key={group.partName} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {group.chapters.map((c) => (
+                        <ChapterCard key={c.id} chapter={c} storyId={story.id} />
+                      ))}
                     </div>
-                  )}
-                </Link>
-              ))}
+                  );
+                }
+
+                const isExpanded = expandedFolders.has(group.partName);
+                return (
+                  <div
+                    key={group.partName}
+                    className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xs transition-all"
+                  >
+                    {/* Folder Cha Header */}
+                    <button
+                      type="button"
+                      onClick={() => toggleFolder(group.partName)}
+                      className="w-full flex items-center justify-between px-5 py-3.5 bg-slate-50 hover:bg-orange-50/50 transition-colors cursor-pointer text-left group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
+                          <i className={`fa-solid ${isExpanded ? "fa-folder-open text-orange-600" : "fa-folder text-orange-500"} text-sm`} />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-serif font-bold text-slate-900 group-hover:text-orange-600 transition-colors text-base block truncate">
+                            {group.partName}
+                          </span>
+                          <span className="text-xs text-slate-500 font-sans">
+                            {group.chapters.length} chương
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs font-semibold text-orange-600 hidden sm:inline">
+                          {isExpanded ? "Thu gọn" : "Xem chương"}
+                        </span>
+                        <div className={`w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>
+                          <i className="fa-solid fa-chevron-down text-xs text-slate-600" />
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Danh sách chương con */}
+                    {isExpanded && (
+                      <div className="p-4 border-t border-slate-100 bg-slate-50/30">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {group.chapters.map((c) => (
+                            <ChapterCard key={c.id} chapter={c} storyId={story.id} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

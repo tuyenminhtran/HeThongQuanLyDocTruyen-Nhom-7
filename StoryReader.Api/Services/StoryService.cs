@@ -50,7 +50,7 @@ public class StoryService : IStoryService
         foreach (var c in story.Chapters.Where(c => c.IsPublished).OrderBy(c => c.ChapterNumber))
         {
             var canRead = await _access.CanReadChapterAsync(currentUserId, c.Id);
-            chapterDtos.Add(new ChapterListItemDto(c.Id, c.ChapterNumber, c.Title, RequiresAccess: !canRead));
+            chapterDtos.Add(new ChapterListItemDto(c.Id, c.ChapterNumber, c.Title, RequiresAccess: !canRead, c.PartName));
         }
 
         return new StoryDetailDto(story.Id, story.Title, story.CoverImageUrl, story.Description,
@@ -171,6 +171,7 @@ public class StoryService : IStoryService
             ChapterNumber = dto.ChapterNumber,
             Title = dto.Title,
             Content = content,
+            PartName = dto.PartName,
             PublishAt = dto.PublishAt
         };
         _db.Chapters.Add(chapter);
@@ -213,6 +214,7 @@ public class StoryService : IStoryService
             }
         }
 
+        chapter.PartName = dto.PartName;
         chapter.ChapterNumber = dto.ChapterNumber;
         chapter.Title = dto.Title;
         chapter.Content = content;

@@ -56,6 +56,7 @@ public class Chapter
     public Guid StoryId { get; set; }
     public Story Story { get; set; } = null!;
 
+    public string? PartName { get; set; }
     public int ChapterNumber { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
