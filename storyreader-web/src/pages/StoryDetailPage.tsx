@@ -237,6 +237,37 @@ export default function StoryDetailPage() {
     }
   };
 
+  const filteredChapters = useMemo(() => {
+    return (story?.chapters || [])
+      .filter((c) =>
+        c.title.toLowerCase().includes(chapterSearch.toLowerCase()) ||
+        c.chapterNumber.toString().includes(chapterSearch) ||
+        (c.partName && c.partName.toLowerCase().includes(chapterSearch.toLowerCase()))
+      )
+      .sort((a, b) => (sortAsc ? a.chapterNumber - b.chapterNumber : b.chapterNumber - a.chapterNumber));
+  }, [story?.chapters, chapterSearch, sortAsc]);
+
+  const chapterGroups = useMemo(() => groupChaptersByPart(filteredChapters), [filteredChapters]);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (chapterGroups.length > 0) {
+      setExpandedFolders(new Set(chapterGroups.map((g) => g.partName)));
+    }
+  }, [story?.id, chapterSearch]);
+
+  const toggleFolder = (partName: string) => {
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(partName)) next.delete(partName);
+      else next.add(partName);
+      return next;
+    });
+  };
+
+  const hasMultipleFolders = chapterGroups.some((g) => g.isFolder);
+  const allExpanded = chapterGroups.length > 0 && chapterGroups.every((g) => expandedFolders.has(g.partName));
+
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16 animate-pulse">
@@ -269,37 +300,6 @@ export default function StoryDetailPage() {
       </div>
     );
   }
-
-  const filteredChapters = useMemo(() => {
-    return (story?.chapters || [])
-      .filter((c) =>
-        c.title.toLowerCase().includes(chapterSearch.toLowerCase()) ||
-        c.chapterNumber.toString().includes(chapterSearch) ||
-        (c.partName && c.partName.toLowerCase().includes(chapterSearch.toLowerCase()))
-      )
-      .sort((a, b) => (sortAsc ? a.chapterNumber - b.chapterNumber : b.chapterNumber - a.chapterNumber));
-  }, [story?.chapters, chapterSearch, sortAsc]);
-
-  const chapterGroups = useMemo(() => groupChaptersByPart(filteredChapters), [filteredChapters]);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (chapterGroups.length > 0) {
-      setExpandedFolders(new Set(chapterGroups.map((g) => g.partName)));
-    }
-  }, [story?.id, chapterSearch]);
-
-  const toggleFolder = (partName: string) => {
-    setExpandedFolders((prev) => {
-      const next = new Set(prev);
-      if (next.has(partName)) next.delete(partName);
-      else next.add(partName);
-      return next;
-    });
-  };
-
-  const hasMultipleFolders = chapterGroups.some((g) => g.isFolder);
-  const allExpanded = chapterGroups.length > 0 && chapterGroups.every((g) => expandedFolders.has(g.partName));
 
   return (
     <div className="relative min-h-screen">
