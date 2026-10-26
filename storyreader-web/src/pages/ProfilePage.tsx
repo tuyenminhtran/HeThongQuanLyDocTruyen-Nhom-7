@@ -312,9 +312,8 @@ export default function ProfilePage() {
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 font-serif flex items-center gap-2">
-              <i className="fa-solid fa-bag-shopping text-emerald-600 text-base" />
-              <span>Truyện Bạn Đã Mở Khóa / Mua Bản Quyền</span>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 font-serif">
+              Truyện Bạn Đã Mở Khóa / Mua Bản Quyền
             </h2>
             <p className="text-xs text-slate-500 mt-1">
               Các tác phẩm trả phí bạn đã mua lẻ hoặc được tặng quyền đọc vĩnh viễn
