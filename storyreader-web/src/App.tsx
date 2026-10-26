@@ -8,6 +8,8 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 
 import ProfilePage from "./pages/ProfilePage";
+import FollowingPage from "./pages/FollowingPage";
+import HistoryPage from "./pages/HistoryPage";
 import PricingPage from "./pages/PricingPage";
 
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -26,6 +28,9 @@ export default function App() {
           {/* Public / User Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/following" element={<FollowingPage />} />
+          <Route path="/bookmarks" element={<FollowingPage />} />
+          <Route path="/history" element={<HistoryPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/stories/:id" element={<StoryDetailPage />} />
           <Route path="/chapters/:id" element={<ChapterReadPage />} />
