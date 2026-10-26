@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getStoryDetail, getIsFollowing, toggleFollowStory } from "../api/stories";
 import { buyStory, simulatePaymentCallback } from "../api/payments";
 import { postChapterDiscussion } from "../api/discussions";
-import { useAuthStore } from "../store/authStore";
+import { useAuthStore, useIsAdmin } from "../store/authStore";
+import { resolveImageUrl } from "../utils/imageUrl";
 import { useState } from "react";
 import { getFallbackStoryDetail } from "../data/mockDetails";
 import { fireConfetti } from "../utils/confetti";
@@ -25,6 +26,7 @@ const accessPolicyLabel: Record<number, string> = {
 export default function StoryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isAdmin = useIsAdmin();
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
   const displayName = useAuthStore((s) => s.displayName);
   const queryClient = useQueryClient();
@@ -254,7 +256,7 @@ export default function StoryDetailPage() {
       {/* Ambient background blur */}
       <div className="absolute top-0 inset-x-0 h-96 overflow-hidden pointer-events-none opacity-20 blur-3xl z-0">
         <img
-          src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
+          src={resolveImageUrl(story.coverImageUrl)}
           alt=""
           className="w-full h-full object-cover scale-150"
         />
@@ -266,7 +268,7 @@ export default function StoryDetailPage() {
           {/* Cover */}
           <div className="w-56 md:w-72 aspect-[2/3] shrink-0 rounded-2xl overflow-hidden border border-ink-border bg-ink-card shadow-book mx-auto md:mx-0 relative group book-spine">
             <img
-              src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
+              src={resolveImageUrl(story.coverImageUrl)}
               alt={story.title}
               onError={(e) => {
                 e.currentTarget.onerror = null;
@@ -298,7 +300,18 @@ export default function StoryDetailPage() {
                   {accessPolicyLabel[story.accessPolicy] ?? "Không xác định"}
                 </span>
 
-                <span className="text-xs text-ink-muted flex items-center gap-1.5 ml-auto">
+                {isAdmin && (
+                  <Link
+                    to={`/admin/stories?storyId=${story.id}&edit=true`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-gold/15 text-gold border border-gold/30 hover:bg-gold/25 transition-all shadow-xs cursor-pointer ml-auto"
+                    title="Chỉnh sửa tên truyện, mô tả, ảnh bìa trong trang Admin"
+                  >
+                    <i className="fa-solid fa-pen-to-square text-xs" />
+                    Sửa truyện (Admin)
+                  </Link>
+                )}
+
+                <span className={`text-xs text-ink-muted flex items-center gap-1.5 ${isAdmin ? "ml-3" : "ml-auto"}`}>
                   <i className="fa-solid fa-eye text-xs" />
                   <span>{(story.viewCount ?? 0).toLocaleString()} lượt đọc</span>
                 </span>

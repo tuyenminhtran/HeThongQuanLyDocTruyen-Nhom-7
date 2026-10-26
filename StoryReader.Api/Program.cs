@@ -106,6 +106,9 @@ using (var scope = app.Services.CreateScope())
     await StoryReader.Api.Data.DataSeeder.SeedAsync(scope.ServiceProvider);
 }
 
+var webRoot = app.Environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+Directory.CreateDirectory(Path.Combine(webRoot, "uploads", "covers"));
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseCors();
