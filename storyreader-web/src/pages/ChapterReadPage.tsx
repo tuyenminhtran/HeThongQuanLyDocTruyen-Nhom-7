@@ -1,4 +1,4 @@
-import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
+﻿import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChapterContent } from "../api/chapters";
 import { getStoryDetail } from "../api/stories";
@@ -177,19 +177,46 @@ export default function ChapterReadPage() {
           <p className="opacity-70 mb-8 max-w-md mx-auto">
             Bạn cần phải mua truyện hoặc đăng ký gói thành viên để tiếp tục đọc chương này.
           </p>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <button
-              onClick={() => navigate(-1)}
-              className={`px-6 py-2.5 rounded-xl font-medium border ${borderClasses[theme]} hover:bg-black/5 transition-all`}
+              onClick={() => {
+                if (activeStoryId) {
+                  navigate(`/stories/${activeStoryId}`);
+                } else {
+                  navigate(-1);
+                }
+              }}
+              className={`px-5 py-2.5 rounded-xl font-medium border ${borderClasses[theme]} hover:bg-black/5 transition-all text-sm`}
             >
               Quay lại
             </button>
-            <Link
-              to="/login"
-              className="px-6 py-2.5 rounded-xl font-medium bg-gold text-white hover:bg-gold-dim transition-all shadow-lg shadow-gold/20"
-            >
-              Đăng nhập
-            </Link>
+            {isLoggedIn ? (
+              <>
+                {activeStoryId && (
+                  <Link
+                    to={`/stories/${activeStoryId}`}
+                    className="px-5 py-2.5 rounded-xl font-semibold bg-gold text-ink-bg hover:bg-gold-dim transition-all shadow-md shadow-gold/20 text-sm flex items-center gap-1.5"
+                  >
+                    <i className="fa-solid fa-cart-shopping text-xs" />
+                    <span>Mua truyện</span>
+                  </Link>
+                )}
+                <Link
+                  to="/pricing"
+                  className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:brightness-110 transition-all shadow-md text-sm flex items-center gap-1.5"
+                >
+                  <i className="fa-solid fa-crown text-xs" />
+                  <span>Gói VIP</span>
+                </Link>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="px-6 py-2.5 rounded-xl font-semibold bg-gold text-ink-bg hover:bg-gold-dim transition-all shadow-md shadow-gold/20 text-sm"
+              >
+                Đăng nhập
+              </Link>
+            )}
           </div>
         </div>
       );

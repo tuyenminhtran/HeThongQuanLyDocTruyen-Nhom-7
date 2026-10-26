@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { searchStories, type StoryListItem } from "../api/stories";
 import { getGenres } from "../api/genres";
 import StoryCard from "../components/StoryCard";
+import Meteors from "../components/ui/Meteors";
 
 function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }) {
   const formattedRank = rank < 10 ? `0${rank}` : `${rank}`;
@@ -349,7 +350,8 @@ export default function HomePage() {
           </div>
 
           {/* Banner Premium */}
-          <div className="bg-gradient-to-br from-gold/20 to-gold/5 border border-gold/20 rounded-2xl p-6 text-center relative overflow-hidden group">
+          <div className="bg-gradient-to-br from-gold/20 to-gold/5 border border-gold/20 rounded-2xl p-6 text-center relative overflow-hidden group shadow-lg shadow-gold/5">
+            <Meteors number={12} />
             <div className="relative z-10">
               <h3 className="font-serif text-gold font-medium mb-2">Đăng ký Premium</h3>
               <p className="text-sm text-ink-text/80 mb-4">

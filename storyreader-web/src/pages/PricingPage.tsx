@@ -9,6 +9,8 @@ import {
   type SubscriptionPlan,
 } from "../api/payments";
 import { getUserProfile } from "../api/users";
+import { fireConfetti } from "../utils/confetti";
+import Meteors from "../components/ui/Meteors";
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
@@ -89,6 +91,8 @@ export default function PricingPage() {
       setIsSimulating(true);
       await simulatePaymentCallback(paymentInfo.ref, true);
       setPaymentSuccess(true);
+      // Bắn pháo hoa rực rỡ chúc mừng hội viên VIP
+      fireConfetti();
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       queryClient.invalidateQueries({ queryKey: ["adminDashboardOverview"] });
     } catch {
@@ -119,10 +123,10 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-16 relative overflow-hidden">
       {/* Header */}
-      <div className="text-center max-w-3xl mx-auto mb-16">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-semibold uppercase tracking-wider mb-4">
+      <div className="text-center max-w-3xl mx-auto mb-16 relative z-10">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-semibold uppercase tracking-wider mb-4 shadow-sm">
           <i className="fa-solid fa-crown text-xs" />
           Hội Viên VIP StoryReader
         </div>
@@ -153,35 +157,38 @@ export default function PricingPage() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch relative z-10">
           {plans.map((plan, index) => {
             const { isRecommended, isBestValue, savings, features } = getPlanDetails(plan, index);
 
             return (
               <div
                 key={plan.id}
-                className={`relative flex flex-col rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1.5 ${
+                className={`relative flex flex-col rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1.5 overflow-hidden ${
                   isRecommended
-                    ? "bg-gradient-to-b from-ink-card to-ink-elevated border-2 border-gold shadow-2xl shadow-gold/15 scale-105 z-10"
+                    ? "bg-gradient-to-b from-ink-card to-ink-elevated border-2 border-gold shadow-2xl shadow-gold/20 scale-105 z-10"
                     : "bg-ink-card border border-ink-border hover:border-ink-border-light shadow-xl shadow-black/20"
                 }`}
               >
+                {/* Sao băng bay mờ ảo trên thẻ VIP khuyên dùng */}
+                {isRecommended && <Meteors number={12} />}
+
                 {/* Badge Khuyên dùng / Tiết kiệm */}
                 {isRecommended && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-bold uppercase tracking-wider rounded-full shadow-lg shadow-gold/25 flex items-center gap-1.5">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-bold uppercase tracking-wider rounded-full shadow-lg shadow-gold/25 flex items-center gap-1.5 z-20">
                     <i className="fa-solid fa-star text-xs text-ink-bg" />
                     Phổ biến nhất
                   </div>
                 )}
 
                 {isBestValue && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-lg shadow-blue-500/25 flex items-center gap-1.5">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-lg shadow-blue-500/25 flex items-center gap-1.5 z-20">
                     <i className="fa-solid fa-gem text-xs text-white" />
                     Tiết kiệm nhất
                   </div>
                 )}
 
-                <div className="mb-6">
+                <div className="mb-6 relative z-10">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-serif text-2xl text-white font-bold">{plan.name}</h3>
                     {savings && (
@@ -195,7 +202,7 @@ export default function PricingPage() {
                   </p>
                 </div>
 
-                <div className="mb-8 pb-6 border-b border-ink-border/60">
+                <div className="mb-8 pb-6 border-b border-ink-border/60 relative z-10">
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
                       {formatCurrency(plan.price)}
@@ -204,7 +211,7 @@ export default function PricingPage() {
                   </div>
                 </div>
 
-                <ul className="flex-1 space-y-3.5 mb-8">
+                <ul className="flex-1 space-y-3.5 mb-8 relative z-10">
                   {features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3">
                       <div className="w-5 h-5 rounded-full bg-gold/15 flex items-center justify-center shrink-0 mt-0.5">
@@ -218,9 +225,9 @@ export default function PricingPage() {
                 <button
                   onClick={() => handleSelectPlan(plan)}
                   disabled={buyMutation.isPending}
-                  className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
+                  className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 relative z-10 ${
                     isRecommended
-                      ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:from-amber-400 hover:to-amber-500 hover:shadow-lg hover:shadow-gold/25"
+                      ? "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 hover:brightness-110 hover:shadow-lg hover:shadow-gold/25"
                       : "bg-ink-bg border border-ink-border text-slate-200 hover:border-gold/60 hover:text-gold"
                   }`}
                 >
@@ -245,20 +252,20 @@ export default function PricingPage() {
       {/* MODAL THANH TOÁN (DEMO & VNPay GATEWAY) */}
       {paymentInfo && selectedPlan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-ink-card border border-ink-border rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative">
+          <div className="bg-ink-card border border-ink-border rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative overflow-hidden">
             <button
               onClick={() => {
                 setPaymentInfo(null);
                 setSelectedPlan(null);
               }}
-              className="absolute top-5 right-5 text-ink-muted hover:text-white p-2 rounded-xl transition-colors"
+              className="absolute top-5 right-5 text-ink-muted hover:text-white p-2 rounded-xl transition-colors z-20"
             >
               <i className="fa-solid fa-xmark text-lg" />
             </button>
 
             {paymentSuccess ? (
               <div className="text-center py-6 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto text-2xl">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto text-2xl shadow-lg shadow-emerald-500/20 animate-bounce">
                   <i className="fa-solid fa-circle-check" />
                 </div>
                 <h3 className="font-serif text-2xl text-white font-bold">Thanh Toán Thành Công!</h3>
@@ -272,7 +279,7 @@ export default function PricingPage() {
                       setSelectedPlan(null);
                       navigate("/profile");
                     }}
-                    className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-gold text-ink-bg hover:bg-gold-dim transition-all"
+                    className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-gold text-ink-bg hover:bg-gold-dim transition-all shadow-md shadow-gold/20"
                   >
                     Xem hồ sơ VIP
                   </button>
@@ -361,7 +368,7 @@ export default function PricingPage() {
       )}
 
       {/* Trust badges */}
-      <div className="mt-24 border-t border-ink-border pt-16 max-w-3xl mx-auto text-center">
+      <div className="mt-24 border-t border-ink-border pt-16 max-w-3xl mx-auto text-center relative z-10">
         <h2 className="font-serif text-2xl text-ink-text mb-8">Thanh toán an toàn & tiện lợi</h2>
         <div className="flex flex-wrap justify-center gap-8 items-center opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
           <div className="text-xl font-bold font-sans tracking-tight">MOMO</div>
