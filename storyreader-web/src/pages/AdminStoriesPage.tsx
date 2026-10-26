@@ -284,7 +284,7 @@ function CreateStoryModal({
             <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
               <i className="fa-solid fa-circle-exclamation text-red-400 text-lg shrink-0" />
               <p className="text-red-400 text-sm">
-                Không tạo được truyện. Kiểm tra lại dữ liệu.
+                {(mutation.error as any)?.response?.data?.message || (mutation.error as any)?.message || "Không tạo được truyện. Kiểm tra lại dữ liệu."}
               </p>
             </div>
           )}
@@ -552,7 +552,7 @@ function EditStoryModal({
             <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
               <i className="fa-solid fa-circle-exclamation text-red-400 text-lg shrink-0" />
               <p className="text-red-400 text-sm">
-                Không thể cập nhật truyện. Vui lòng kiểm tra lại.
+                {(mutation.error as any)?.response?.data?.message || (mutation.error as any)?.message || "Không thể cập nhật truyện. Vui lòng kiểm tra lại."}
               </p>
             </div>
           )}

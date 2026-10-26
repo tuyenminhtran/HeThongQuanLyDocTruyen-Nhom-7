@@ -48,7 +48,7 @@ public static class DataSeeder
             await userManager.UpdateAsync(reader);
         }
 
-        // Tự động sửa tên thể loại nếu bị lỗi font ?
+        // Tự động sửa hoặc bổ sung thể loại
         var genreFixes = new Dictionary<Guid, string>
         {
             [Guid.Parse("a1000000-0000-0000-0000-000000000001")] = "Tiên Hiệp",
@@ -65,9 +65,20 @@ public static class DataSeeder
         foreach (var (gId, gName) in genreFixes)
         {
             var g = await db.Genres.FindAsync(gId);
-            if (g != null && (g.Name.Contains('?') || g.Name != gName))
+            if (g != null)
             {
-                g.Name = gName;
+                if (g.Name.Contains('?') || g.Name != gName)
+                {
+                    g.Name = gName;
+                }
+            }
+            else
+            {
+                var existingByName = await db.Genres.FirstOrDefaultAsync(x => x.Name.ToLower() == gName.ToLower());
+                if (existingByName == null)
+                {
+                    db.Genres.Add(new Genre { Id = gId, Name = gName });
+                }
             }
         }
         await db.SaveChangesAsync();
