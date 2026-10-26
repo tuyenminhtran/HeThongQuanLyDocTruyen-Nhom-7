@@ -1,11 +1,12 @@
 import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChapterContent } from "../api/chapters";
-import { getStoryDetail } from "../api/stories";
+import { groupChaptersByPart, type ChapterGroup } from "../utils/chapterGrouping";
+import { getStoryDetail, type ChapterListItem } from "../api/stories";
 import { getChapterDiscussions, postChapterDiscussion, hideDiscussion } from "../api/discussions";
 import { useAuthStore, useIsAdmin } from "../store/authStore";
 import { AxiosError } from "axios";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 type Theme = "dark" | "light" | "sepia";
 type FontFamily = "serif" | "sans";
@@ -151,6 +152,30 @@ export default function ChapterReadPage() {
   const sortedChapters = story?.chapters
     ? [...story.chapters].sort((a, b) => a.chapterNumber - b.chapterNumber)
     : [];
+
+  const readChapterGroups = useMemo<ChapterGroup[]>(() => groupChaptersByPart(sortedChapters), [sortedChapters]);
+  const [readExpandedFolders, setReadExpandedFolders] = useState<Set<string>>(new Set());
+
+  // Auto-expand folder that contains current chapter, or expand all
+  useEffect(() => {
+    if (readChapterGroups.length > 0) {
+      const activeGroup = readChapterGroups.find((g: ChapterGroup) => g.chapters.some((c) => c.id === id));
+      if (activeGroup) {
+        setReadExpandedFolders(new Set([activeGroup.partName]));
+      } else {
+        setReadExpandedFolders(new Set(readChapterGroups.map((g: ChapterGroup) => g.partName)));
+      }
+    }
+  }, [readChapterGroups, id, showChapterList]);
+
+  const toggleReadFolder = (partName: string) => {
+    setReadExpandedFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(partName)) next.delete(partName);
+      else next.add(partName);
+      return next;
+    });
+  };
 
   const currentIndex = sortedChapters.findIndex((c) => c.id === id);
   const prevChapter = currentIndex > 0 ? sortedChapters[currentIndex - 1] : null;
@@ -769,29 +794,84 @@ export default function ChapterReadPage() {
               </button>
             </div>
 
-            <div className={`p-3 overflow-y-auto divide-y ${borderClasses[theme]} divide-opacity-40 space-y-1`}>
-              {sortedChapters.map((c) => {
-                const isCurrent = c.id === id;
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => goToChapter(c.id)}
-                    className={`w-full text-left p-3 rounded-xl transition-all flex items-center justify-between gap-3 ${
-                      isCurrent
-                        ? "bg-gold/15 text-gold border border-gold/30 font-medium"
-                        : "hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100"
-                    }`}
-                  >
-                    <div className="min-w-0">
-                      <span className="text-xs opacity-60 font-mono block">Chương {c.chapterNumber}</span>
-                      <span className="text-sm truncate block">{c.title}</span>
+            <div className="p-3 overflow-y-auto space-y-2">
+              {readChapterGroups.map((group: ChapterGroup) => {
+                if (!group.isFolder) {
+                  return (
+                    <div key={group.partName} className="space-y-1">
+                      {group.chapters.map((c: ChapterListItem) => {
+                        const isCurrent = c.id === id;
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => goToChapter(c.id)}
+                            className={`w-full text-left p-3 rounded-xl transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                              isCurrent
+                                ? "bg-gold/15 text-gold border border-gold/30 font-medium"
+                                : "hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100"
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <span className="text-xs opacity-60 font-mono block">Chương {c.chapterNumber}</span>
+                              <span className="text-sm truncate block">{c.title}</span>
+                            </div>
+                            {c.requiresAccess && (
+                              <span className="text-xs text-gold bg-gold/10 px-2 py-0.5 rounded-full shrink-0 border border-gold/20">
+                                VIP
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
-                    {c.requiresAccess && (
-                      <span className="text-xs text-gold bg-gold/10 px-2 py-0.5 rounded-full shrink-0 border border-gold/20">
-                        VIP
-                      </span>
+                  );
+                }
+
+                const isExpanded = readExpandedFolders.has(group.partName);
+                return (
+                  <div key={group.partName} className={`rounded-xl border ${borderClasses[theme]} overflow-hidden`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleReadFolder(group.partName)}
+                      className="w-full flex items-center justify-between px-3.5 py-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <i className={`fa-solid ${isExpanded ? "fa-folder-open text-gold" : "fa-folder text-gold/70"} text-sm shrink-0`} />
+                        <span className="text-xs font-bold truncate">{group.partName}</span>
+                        <span className="text-[10px] opacity-60 font-mono">({group.chapters.length})</span>
+                      </div>
+                      <i className={`fa-solid fa-chevron-down text-xs opacity-50 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {isExpanded && (
+                      <div className={`p-1.5 space-y-1 border-t ${borderClasses[theme]} bg-black/5 dark:bg-white/5`}>
+                        {group.chapters.map((c: ChapterListItem) => {
+                          const isCurrent = c.id === id;
+                          return (
+                            <button
+                              key={c.id}
+                              onClick={() => goToChapter(c.id)}
+                              className={`w-full text-left p-2.5 rounded-lg transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                                isCurrent
+                                  ? "bg-gold/20 text-gold border border-gold/40 font-semibold"
+                                  : "hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100"
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <span className="text-[11px] opacity-60 font-mono block">Chương {c.chapterNumber}</span>
+                                <span className="text-xs truncate block">{c.title}</span>
+                              </div>
+                              {c.requiresAccess && (
+                                <span className="text-[10px] text-gold bg-gold/10 px-1.5 py-0.5 rounded-full shrink-0 border border-gold/20">
+                                  VIP
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>

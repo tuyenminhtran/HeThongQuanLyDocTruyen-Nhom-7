@@ -18,6 +18,7 @@ export interface ChapterListItem {
   chapterNumber: number;
   title: string;
   requiresAccess: boolean;
+  partName?: string | null;
 }
 
 export interface StoryDetail {
@@ -54,6 +55,7 @@ export interface CreateChapterInput {
   content: string;
   publishAt: string | null;
   renderAsImages?: boolean;
+  partName?: string | null;
 }
 
 export async function searchStories(keyword?: string, genreId?: string) {

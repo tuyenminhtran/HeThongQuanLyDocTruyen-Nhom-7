@@ -86,9 +86,14 @@ $lines = [System.IO.File]::ReadAllLines($FilePath, [System.Text.Encoding]::UTF8)
 $stories = @()
 $currentStory = $null
 $currentChapter = $null
+$currentPart = $null
 
 for ($i = 0; $i -lt $lines.Length; $i++) {
     $line = $lines[$i]
+
+    if ($line -match "^(?:BỘ \d+:|PHẦN \d+:|Phần \d+:|Tập \d+:)") {
+        $currentPart = $line.Trim()
+    }
 
     if ($line -match "^BỘ \d+:") {
         $currentStory = [PSCustomObject]@{
@@ -104,6 +109,7 @@ for ($i = 0; $i -lt $lines.Length; $i++) {
         }
         $stories += $currentStory
         $currentChapter = $null
+        $currentPart = $line.Trim()
         continue
     }
 
@@ -129,6 +135,7 @@ for ($i = 0; $i -lt $lines.Length; $i++) {
         $currentChapter = [PSCustomObject]@{
             Number = $num
             Title = $title
+            PartName = $currentPart
             ContentLines = [System.Collections.Generic.List[string]]::new()
         }
         if ($currentStory) {
@@ -233,6 +240,7 @@ foreach ($s in $stories) {
         $chapPayload = @{
             chapterNumber = $c.Number
             title = $c.Title
+            partName = $c.PartName
             content = $content
             publishAt = $null
             renderAsImages = $false
