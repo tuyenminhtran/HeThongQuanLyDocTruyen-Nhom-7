@@ -1,27 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { searchStories, type StoryListItem } from "../api/stories";
 import { getGenres } from "../api/genres";
 import StoryCard from "../components/StoryCard";
-import Meteors from "../components/ui/Meteors";
 
 function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }) {
   const formattedRank = rank < 10 ? `0${rank}` : `${rank}`;
   return (
     <Link
       to={`/stories/${story.id}`}
-      className="flex items-center gap-3 p-2 rounded-xl hover:bg-ink-bg/60 transition-colors group"
+      className="flex items-center gap-3 p-2 rounded-xl hover:bg-ink-elevated/70 transition-colors group"
     >
       <span
-        className={`w-7 text-center font-bold text-base font-serif shrink-0 ${rank === 1
+        className={`w-7 text-center font-bold text-base font-serif shrink-0 ${
+          rank === 1
             ? "text-gold text-lg"
             : rank === 2
-              ? "text-slate-300"
-              : rank === 3
-                ? "text-amber-600"
-                : "text-ink-muted"
-          }`}
+            ? "text-slate-300"
+            : rank === 3
+            ? "text-amber-600"
+            : "text-ink-muted"
+        }`}
       >
         {formattedRank}
       </span>
@@ -51,18 +51,14 @@ function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }
 }
 
 export default function HomePage() {
-  const [keyword, setKeyword] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const keyword = searchParams.get("q") || "";
+
   const [genreFilter, setGenreFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<number | "all">("all");
   const [accessFilter, setAccessFilter] = useState<number | "all">("all");
   const [typeFilter, setTypeFilter] = useState<number | "all">("all");
   const [visibleCount, setVisibleCount] = useState(12);
-  const [prevFilterKey, setPrevFilterKey] = useState(`${keyword}-${genreFilter}-${statusFilter}-${accessFilter}-${typeFilter}`);
-  const currentFilterKey = `${keyword}-${genreFilter}-${statusFilter}-${accessFilter}-${typeFilter}`;
-  if (prevFilterKey !== currentFilterKey) {
-    setPrevFilterKey(currentFilterKey);
-    setVisibleCount(12);
-  }
 
   // Lấy danh sách thể loại từ backend
   const { data: genres } = useQuery({
@@ -76,7 +72,7 @@ export default function HomePage() {
   });
 
   const filteredStories = stories
-    ? stories.filter(story => {
+    ? stories.filter((story) => {
         if (statusFilter !== "all" && story.status !== statusFilter) return false;
         if (accessFilter !== "all" && story.accessPolicy !== accessFilter) return false;
         if (typeFilter !== "all" && (story.type ?? 0) !== typeFilter) return false;
@@ -89,23 +85,50 @@ export default function HomePage() {
     ? [...stories].sort((a, b) => b.viewCount - a.viewCount).slice(0, 5)
     : [];
 
-  // Derived data for sidebars
+  // Derived data for sidebar leaderboard
   const topViewedStories = stories
     ? [...stories].sort((a, b) => b.viewCount - a.viewCount).slice(0, 10)
     : [];
 
+  const handleClearSearch = () => {
+    searchParams.delete("q");
+    setSearchParams(searchParams);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 space-y-8">
+      
       {/* ========================================================= */}
-      {/* PHẦN TRUYỆN ĐỀ CỬ (GIỐNG GIAO DIỆN NETTRUYEN)           */}
+      {/* THÔNG BÁO TÌM KIẾM (NẾU CÓ TỪ KHÓA TỪ HEADER)            */}
+      {/* ========================================================= */}
+      {keyword && (
+        <div className="flex items-center justify-between bg-ink-card border border-ink-border rounded-2xl px-5 py-3 shadow-sm">
+          <div className="flex items-center gap-2.5 text-sm">
+            <i className="fa-solid fa-magnifying-glass text-gold" />
+            <span className="text-ink-muted">Kết quả tìm kiếm cho từ khóa:</span>
+            <strong className="text-white font-medium bg-ink-elevated px-2.5 py-0.5 rounded-lg border border-ink-border">
+              "{keyword}"
+            </strong>
+          </div>
+          <button
+            onClick={handleClearSearch}
+            className="text-xs font-medium text-ink-muted hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-ink-elevated transition-colors"
+          >
+            <i className="fa-solid fa-xmark" />
+            <span>Xóa tìm kiếm</span>
+          </button>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* PHẦN TRUYỆN ĐỀ CỬ (ĐẶT LÊN ĐẦU TRANG, KHÔNG BỊ CHIA CẮT) */}
       {/* ========================================================= */}
       {!keyword && genreFilter === "all" && (
         <section className="space-y-3">
-          {/* Tiêu đề mục Truyện Đề Cử */}
           <div className="flex items-center justify-between border-b border-ink-border/80 pb-2">
-            <h2 className="font-serif text-xl md:text-2xl font-bold text-gold flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
-              <span>Truyện đề cử</span>
-              <i className="fa-solid fa-angle-right text-lg text-gold" />
+            <h2 className="font-serif text-xl font-bold text-white flex items-center gap-2">
+              <span className="text-gold">Truyện đề cử</span>
+              <i className="fa-solid fa-fire text-amber-500 text-sm" />
             </h2>
           </div>
 
@@ -115,7 +138,7 @@ export default function HomePage() {
               <Link
                 key={story.id}
                 to={`/stories/${story.id}`}
-                className="group relative overflow-hidden rounded-xl border border-ink-border bg-ink-card shadow-md hover:shadow-xl hover:border-gold/70 transition-all duration-300"
+                className="group relative overflow-hidden rounded-xl border border-ink-border bg-ink-card shadow-sm hover:shadow-xl hover:border-gold/70 transition-all duration-300"
                 style={{ aspectRatio: "3/4" }}
               >
                 {/* Ảnh bìa */}
@@ -129,7 +152,7 @@ export default function HomePage() {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
 
-                {/* Badge HOT góc trên trái */}
+                {/* Badge HOT / TOP */}
                 <div className="absolute top-2 left-2 z-10">
                   {idx < 3 ? (
                     <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-600 text-white shadow-md">
@@ -142,7 +165,7 @@ export default function HomePage() {
                   )}
                 </div>
 
-                {/* Badge VIP / Trả phí góc trên phải */}
+                {/* Badge VIP / Trả phí */}
                 {story.accessPolicy > 0 && (
                   <div className="absolute top-2 right-2 z-10">
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-yellow-500 text-black shadow-md">
@@ -151,13 +174,13 @@ export default function HomePage() {
                   </div>
                 )}
 
-                {/* Lớp phủ tối mờ (Gradient Overlay) phía dưới ảnh */}
+                {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent flex flex-col justify-end p-2.5">
                   <h3 className="text-[13px] font-bold text-white group-hover:text-gold transition-colors line-clamp-2 leading-snug drop-shadow-sm">
                     {story.title}
                   </h3>
                   <div className="mt-1.5 flex items-center justify-between text-[11px] text-gray-300 font-medium">
-                    <span className="bg-black/60 px-1.5 py-0.5 rounded text-gold border border-gold/30">
+                    <span className="bg-black/60 px-1.5 py-0.5 rounded text-gold border border-gold/30 text-[10px]">
                       {story.type === 1 ? "Truyện tranh" : "Truyện chữ"}
                     </span>
                     <span className="text-[10px] text-gray-400 italic">
@@ -172,112 +195,110 @@ export default function HomePage() {
       )}
 
       {/* ========================================================= */}
-      {/* THANH TÌM KIẾM VÀ BỘ LỌC ĐA NĂNG                          */}
+      {/* THANH BỘ LỌC TINH GỌN (PILLS & DROPDOWNS HIỆN ĐẠI)       */}
       {/* ========================================================= */}
-      <div className="bg-ink-card border border-ink-border rounded-2xl p-5 shadow-lg">
-        <div className="relative max-w-2xl mx-auto mb-4">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gold/80">
-            <i className="fa-solid fa-magnifying-glass text-sm" />
-          </span>
-          <input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="Tìm truyện theo tên hoặc tác giả..."
-            className="w-full bg-ink-bg border border-ink-border rounded-xl pl-12 pr-10 py-3 text-ink-text placeholder:text-ink-muted focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-all text-sm font-medium"
-          />
-          {keyword && (
-            <button
-              onClick={() => setKeyword("")}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-muted hover:text-white transition-colors"
-            >
-              <i className="fa-solid fa-xmark text-base" />
-            </button>
-          )}
+      <div className="bg-ink-card border border-ink-border rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Pills chọn Hình thức */}
+        <div className="inline-flex items-center bg-ink-bg border border-ink-border rounded-xl p-1 shrink-0">
+          <button
+            onClick={() => setTypeFilter("all")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              typeFilter === "all"
+                ? "bg-gold text-slate-950 font-bold shadow-sm"
+                : "text-ink-muted hover:text-white"
+            }`}
+          >
+            Tất cả
+          </button>
+          <button
+            onClick={() => setTypeFilter(0)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              typeFilter === 0
+                ? "bg-gold text-slate-950 font-bold shadow-sm"
+                : "text-ink-muted hover:text-white"
+            }`}
+          >
+            Truyện chữ
+          </button>
+          <button
+            onClick={() => setTypeFilter(1)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              typeFilter === 1
+                ? "bg-gold text-slate-950 font-bold shadow-sm"
+                : "text-ink-muted hover:text-white"
+            }`}
+          >
+            Truyện tranh
+          </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 max-w-4xl mx-auto">
+        {/* Các Dropdowns lọc */}
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Thể loại */}
-          <div className="flex items-center gap-2">
-            <span className="text-ink-muted text-xs sm:text-sm">Thể loại:</span>
-            <select
-              value={genreFilter}
-              onChange={(e) => setGenreFilter(e.target.value)}
-              className="bg-ink-bg border border-ink-border rounded-lg px-2.5 py-1.5 text-ink-text focus:outline-none focus:border-gold text-xs sm:text-sm"
-            >
-              <option value="all">Tất cả thể loại</option>
-              {genres?.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Hình thức */}
-          <div className="flex items-center gap-2">
-            <span className="text-ink-muted text-xs sm:text-sm">Hình thức:</span>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="bg-ink-bg border border-ink-border rounded-lg px-2.5 py-1.5 text-ink-text focus:outline-none focus:border-gold text-xs sm:text-sm"
-            >
-              <option value="all">Tất cả hình thức</option>
-              <option value={0}>Truyện chữ</option>
-              <option value={1}>Truyện tranh</option>
-            </select>
-          </div>
+          <select
+            value={genreFilter}
+            onChange={(e) => setGenreFilter(e.target.value)}
+            className="bg-ink-bg border border-ink-border hover:border-ink-border-hover rounded-xl px-3 py-1.5 text-xs text-ink-text focus:outline-none focus:border-gold cursor-pointer"
+          >
+            <option value="all">Tất cả thể loại</option>
+            {genres?.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
 
           {/* Trạng thái */}
-          <div className="flex items-center gap-2">
-            <span className="text-ink-muted text-xs sm:text-sm">Trạng thái:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="bg-ink-bg border border-ink-border rounded-lg px-2.5 py-1.5 text-ink-text focus:outline-none focus:border-gold text-xs sm:text-sm"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value={0}>Đang phát hành</option>
-              <option value={1}>Hoàn thành</option>
-              <option value={2}>Tạm ngưng</option>
-            </select>
-          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
+            className="bg-ink-bg border border-ink-border hover:border-ink-border-hover rounded-xl px-3 py-1.5 text-xs text-ink-text focus:outline-none focus:border-gold cursor-pointer"
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value={0}>Đang phát hành</option>
+            <option value={1}>Hoàn thành</option>
+            <option value={2}>Tạm ngưng</option>
+          </select>
 
-          {/* Phân loại phí */}
-          <div className="flex items-center gap-2">
-            <span className="text-ink-muted text-xs sm:text-sm">Phân loại:</span>
-            <select
-              value={accessFilter}
-              onChange={(e) => setAccessFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="bg-ink-bg border border-ink-border rounded-lg px-2.5 py-1.5 text-ink-text focus:outline-none focus:border-gold text-xs sm:text-sm"
-            >
-              <option value="all">Tất cả phí</option>
-              <option value={0}>Miễn phí</option>
-              <option value={1}>Trả phí</option>
-              <option value={2}>Hỗn hợp</option>
-            </select>
-          </div>
+          {/* Phí */}
+          <select
+            value={accessFilter}
+            onChange={(e) => setAccessFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
+            className="bg-ink-bg border border-ink-border hover:border-ink-border-hover rounded-xl px-3 py-1.5 text-xs text-ink-text focus:outline-none focus:border-gold cursor-pointer"
+          >
+            <option value="all">Tất cả mức phí</option>
+            <option value={0}>Miễn phí</option>
+            <option value={1}>Trả phí</option>
+            <option value={2}>Hỗn hợp</option>
+          </select>
         </div>
       </div>
 
-      {/* Main Layout: Grid + Sidebar */}
-      <div className="flex flex-col lg:flex-row gap-10">
+      {/* ========================================================= */}
+      {/* MAIN CONTENT: LƯỚI TRUYỆN + BẢNG XẾP HẠNG SIDEBAR        */}
+      {/* ========================================================= */}
+      <div className="flex flex-col lg:flex-row gap-8">
 
-        {/* Left Area: Stories Grid */}
+        {/* Lưới truyện bên trái */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-6 pb-2 border-b border-ink-border">
-            <h2 className="font-serif text-xl font-bold text-gold flex items-center gap-2">
-              <span>{keyword ? "Kết quả tìm kiếm" : genreFilter !== "all" ? `Thể loại: ${genres?.find(g => g.id === genreFilter)?.name || ""}` : "StoryNest - Truyện gì cũng có!"}</span>
-              <i className="fa-solid fa-angle-right text-base text-gold" />
+          <div className="flex items-center justify-between mb-5 pb-2 border-b border-ink-border">
+            <h2 className="font-serif text-xl font-bold text-white flex items-center gap-2">
+              <span>
+                {keyword
+                  ? "Danh sách kết quả tìm kiếm"
+                  : genreFilter !== "all"
+                  ? `Thể loại: ${genres?.find((g) => g.id === genreFilter)?.name || ""}`
+                  : "Danh sách truyện"}
+              </span>
             </h2>
             <span className="text-xs text-ink-muted bg-ink-card border border-ink-border rounded-full px-3 py-1">
-              {filteredStories.length} kết quả
+              {filteredStories.length} tác phẩm
             </span>
           </div>
 
-          {/* Loading skeleton */}
+          {/* Loading Skeleton */}
           {isLoading && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-5 gap-y-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-6">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="aspect-[2/3] bg-ink-card rounded-xl border border-ink-border" />
@@ -288,33 +309,33 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Khi không tìm thấy kết quả */}
+          {/* Không tìm thấy kết quả */}
           {!isLoading && filteredStories.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 bg-ink-card/30 border border-ink-border rounded-2xl text-center">
-              <div className="w-20 h-20 rounded-full bg-ink-card border border-ink-border flex items-center justify-center mb-5">
-                <i className="fa-solid fa-book-open text-3xl text-ink-muted/50" />
+            <div className="flex flex-col items-center justify-center py-16 bg-ink-card/50 border border-ink-border rounded-2xl text-center">
+              <div className="w-16 h-16 rounded-full bg-ink-bg border border-ink-border flex items-center justify-center mb-4 text-ink-muted">
+                <i className="fa-solid fa-book-open text-2xl opacity-50" />
               </div>
-              <p className="text-white text-lg font-serif font-semibold">Không tìm thấy truyện nào</p>
-              <p className="text-ink-muted text-sm mt-1">Hãy thử đổi từ khóa tìm kiếm hoặc chọn bộ lọc khác</p>
+              <p className="text-white text-base font-serif font-semibold">Không tìm thấy truyện phù hợp</p>
+              <p className="text-ink-muted text-xs mt-1">Hãy thử chọn bộ lọc khác hoặc tìm kiếm với từ khóa khác</p>
             </div>
           )}
 
-          {/* Story grid */}
+          {/* Lưới truyện hiển thị */}
           {!isLoading && filteredStories && filteredStories.length > 0 && (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-5 gap-y-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-6">
                 {filteredStories.slice(0, visibleCount).map((story) => (
                   <StoryCard key={story.id} story={story} />
                 ))}
               </div>
 
               {visibleCount < filteredStories.length && (
-                <div className="mt-12 text-center">
+                <div className="mt-10 text-center">
                   <button
                     onClick={() => setVisibleCount((prev) => prev + 12)}
-                    className="px-8 py-3 rounded-xl font-medium border border-ink-border text-ink-text hover:border-gold hover:text-gold hover:bg-ink-card transition-all shadow-sm text-sm"
+                    className="px-8 py-2.5 rounded-xl font-medium border border-ink-border text-ink-text hover:border-gold hover:text-gold hover:bg-ink-card transition-all text-xs sm:text-sm shadow-sm"
                   >
-                    Tải thêm truyện ({filteredStories.length - visibleCount} còn lại)
+                    Xem thêm truyện ({filteredStories.length - visibleCount} còn lại)
                   </button>
                 </div>
               )}
@@ -324,9 +345,9 @@ export default function HomePage() {
 
         {/* Cột phải: Bảng xếp hạng (Sidebar) */}
         <div className="w-full lg:w-[300px] shrink-0 space-y-6">
-          <div className="bg-ink-card border border-ink-border rounded-2xl p-5 shadow-lg">
+          <div className="bg-ink-card border border-ink-border rounded-2xl p-4 shadow-sm">
             {/* Header Bảng Xếp Hạng */}
-            <div className="flex border-b border-ink-border pb-3 mb-4 text-sm font-bold text-ink-text gap-4">
+            <div className="flex border-b border-ink-border pb-3 mb-3 text-xs font-bold text-ink-text gap-4">
               <span className="text-gold border-b-2 border-gold pb-3 -mb-3.5">Top Tháng</span>
               <span className="text-ink-muted hover:text-ink-text cursor-pointer">Top Tuần</span>
               <span className="text-ink-muted hover:text-ink-text cursor-pointer">Top Ngày</span>
@@ -345,23 +366,25 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-ink-muted text-center py-4">Chưa có dữ liệu</p>
+              <p className="text-xs text-ink-muted text-center py-4">Chưa có dữ liệu</p>
             )}
           </div>
 
-          {/* Banner Premium */}
-          <div className="bg-gradient-to-br from-gold/20 to-gold/5 border border-gold/20 rounded-2xl p-6 text-center relative overflow-hidden group shadow-lg shadow-gold/5">
-            <Meteors number={12} />
+          {/* Banner Đăng ký VIP Sidebar */}
+          <div className="bg-gradient-to-br from-amber-500/15 to-amber-500/5 border border-amber-500/30 rounded-2xl p-5 text-center relative overflow-hidden group shadow-sm">
             <div className="relative z-10">
-              <h3 className="font-serif text-gold font-medium mb-2">Đăng ký Premium</h3>
-              <p className="text-sm text-ink-text/80 mb-4">
-                Đọc toàn bộ truyện trả phí không giới hạn chỉ với 49.000đ/tháng
+              <span className="inline-block p-2 rounded-full bg-amber-500/20 text-amber-400 text-sm mb-2">
+                <i className="fa-solid fa-crown" />
+              </span>
+              <h3 className="font-serif text-white font-bold text-base mb-1.5">Gói Hội Viên VIP</h3>
+              <p className="text-xs text-ink-muted mb-4 leading-relaxed">
+                Đọc toàn bộ truyện trả phí không giới hạn chỉ từ 49.000đ/tháng
               </p>
               <Link
                 to="/pricing"
-                className="inline-block w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-ink-bg font-bold text-sm hover:brightness-110 transition-all shadow-md shadow-amber-500/25"
+                className="inline-block w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs hover:brightness-110 transition-all shadow-md shadow-amber-500/20"
               >
-                Khám phá ngay
+                Nâng cấp VIP ngay
               </Link>
             </div>
           </div>
