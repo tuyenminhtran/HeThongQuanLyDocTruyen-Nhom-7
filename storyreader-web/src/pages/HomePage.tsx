@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { searchStories, type StoryListItem } from "../api/stories";
 import { getGenres } from "../api/genres";
@@ -60,6 +60,20 @@ export default function HomePage() {
   const [accessFilter, setAccessFilter] = useState<number | "all">("all");
   const [typeFilter, setTypeFilter] = useState<number | "all">("all");
   const [visibleCount, setVisibleCount] = useState(12);
+
+  useEffect(() => {
+    setGenreFilter(genreParam);
+  }, [genreParam]);
+
+  const handleGenreChange = (newGenre: string) => {
+    setGenreFilter(newGenre);
+    if (newGenre === "all") {
+      searchParams.delete("genre");
+    } else {
+      searchParams.set("genre", newGenre);
+    }
+    setSearchParams(searchParams);
+  };
 
   // Lấy danh sách thể loại từ backend
   const { data: genres } = useQuery({
@@ -127,23 +141,25 @@ export default function HomePage() {
       </div>
 
       {/* ========================================================= */}
-      {/* 2. THÔNG BÁO TÌM KIẾM (NẾU CÓ TỪ KHÓA TỪ HEADER)          */}
+      {/* 2. THÔNG BÁO TÌM KIẾM HOẶC LỌC THỂ LOẠI                    */}
       {/* ========================================================= */}
-      {keyword && (
+      {(keyword || genreFilter !== "all") && (
         <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-5 py-3 shadow-xs">
           <div className="flex items-center gap-2.5 text-sm">
-            <i className="fa-solid fa-magnifying-glass text-orange-500" />
-            <span className="text-slate-600">Kết quả tìm kiếm cho từ khóa:</span>
+            <i className={`fa-solid ${keyword ? "fa-magnifying-glass" : "fa-filter"} text-orange-500`} />
+            <span className="text-slate-600">
+              {keyword ? "Kết quả tìm kiếm cho:" : "Đang lọc theo thể loại:"}
+            </span>
             <strong className="text-slate-900 font-bold bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200">
-              "{keyword}"
+              {keyword ? `"${keyword}"` : genres?.find((g) => g.id === genreFilter)?.name || genreFilter}
             </strong>
           </div>
           <button
             onClick={handleClearSearch}
-            className="text-xs font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            className="text-xs font-medium text-slate-500 hover:text-rose-600 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <i className="fa-solid fa-xmark" />
-            <span>Xóa tìm kiếm</span>
+            <span>Xóa bộ lọc</span>
           </button>
         </div>
       )}
@@ -266,7 +282,7 @@ export default function HomePage() {
           {/* Thể loại */}
           <select
             value={genreFilter}
-            onChange={(e) => setGenreFilter(e.target.value)}
+            onChange={(e) => handleGenreChange(e.target.value)}
             className="bg-white border border-slate-300 hover:border-slate-400 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-orange-500 cursor-pointer shadow-2xs"
           >
             <option value="all">Tất cả thể loại</option>
@@ -311,15 +327,12 @@ export default function HomePage() {
         {/* Cột trái: Lưới truyện */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200">
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-              <i className="fa-solid fa-book text-orange-500 text-base" />
-              <span>
-                {keyword
-                  ? "Kết quả tìm kiếm"
-                  : genreFilter !== "all"
-                  ? `Thể loại: ${genres?.find((g) => g.id === genreFilter)?.name || ""}`
-                  : "Truyện Mới Cập Nhật"}
-              </span>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+              {keyword
+                ? "Kết quả tìm kiếm"
+                : genreFilter !== "all"
+                ? `Thể loại: ${genres?.find((g) => g.id === genreFilter)?.name || ""}`
+                : "Truyện Mới Cập Nhật"}
             </h2>
             <span className="text-xs text-slate-600 bg-white border border-slate-200 rounded-full px-3 py-1 shadow-2xs">
               {filteredStories.length} tác phẩm

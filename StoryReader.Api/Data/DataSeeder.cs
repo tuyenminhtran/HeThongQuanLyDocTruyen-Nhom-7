@@ -72,6 +72,41 @@ public static class DataSeeder
         }
         await db.SaveChangesAsync();
 
+        // Bổ sung các thể loại phổ biến được yêu cầu
+        var additionalGenres = new Dictionary<Guid, string>
+        {
+            [Guid.Parse("a1000000-0000-0000-0000-000000000011")] = "Hành Động",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000012")] = "Phiêu Lưu",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000013")] = "Hài Hước",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000014")] = "Trọng Sinh",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000015")] = "Cổ Đại",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000016")] = "Hệ Thống",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000017")] = "Linh Dị",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000018")] = "Đam Mỹ",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000019")] = "Bách Hợp",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000020")] = "Học Đường",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000021")] = "Đời Thường",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000022")] = "Manhwa",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000023")] = "Manhua",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000024")] = "Manga",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000025")] = "Siêu Nhiên",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000026")] = "Võ Thuật",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000027")] = "Kinh Dị",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000028")] = "Mạt Thế",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000029")] = "Quân Sự",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000030")] = "Lịch Sử",
+        };
+
+        foreach (var (gId, gName) in additionalGenres)
+        {
+            var exists = await db.Genres.AnyAsync(g => g.Id == gId || g.Name.ToLower() == gName.ToLower());
+            if (!exists)
+            {
+                db.Genres.Add(new Genre { Id = gId, Name = gName });
+            }
+        }
+        await db.SaveChangesAsync();
+
         // Cập nhật lượt xem thực tế cho các chapter & story nếu đang bằng 0
         var chaptersWithZeroViews = await db.Chapters.Where(c => c.ViewCount == 0).ToListAsync();
         if (chaptersWithZeroViews.Any())

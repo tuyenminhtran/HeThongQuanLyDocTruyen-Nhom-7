@@ -198,10 +198,9 @@ export default function Header() {
             <div className="flex items-center gap-1 sm:gap-2">
               <Link
                 to="/"
-                className="px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors"
               >
-                <i className="fa-solid fa-house text-xs" />
-                <span>Trang Chủ</span>
+                Trang Chủ
               </Link>
 
               {/* Thể loại Dropdown */}
@@ -216,15 +215,16 @@ export default function Header() {
                 </button>
 
                 {showGenreMenu && (
-                  <div className="absolute left-0 mt-2 w-72 sm:w-96 bg-white border border-slate-200 rounded-xl shadow-xl p-4 z-50 text-slate-800 text-xs animate-fadeIn">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 pb-1 border-b border-slate-100">
-                      Tất cả thể loại
+                  <div className="absolute left-0 mt-2 w-80 sm:w-[500px] max-h-[420px] overflow-y-auto scrollbar-thin bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 z-50 text-slate-800 text-xs animate-fadeIn">
+                    <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-3 pb-2 border-b border-slate-100">
+                      <span>Tất cả thể loại ({genres?.length || 0})</span>
+                      <span className="text-orange-500 font-normal lowercase">chọn để lọc</span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                       <Link
                         to="/"
                         onClick={() => setShowGenreMenu(false)}
-                        className="p-1.5 rounded hover:bg-orange-50 hover:text-orange-600 font-medium transition-colors"
+                        className="p-2 rounded-lg hover:bg-orange-50 hover:text-orange-600 font-semibold transition-colors text-slate-700"
                       >
                         Tất cả
                       </Link>
@@ -233,7 +233,8 @@ export default function Header() {
                           key={g.id}
                           to={`/?genre=${g.id}`}
                           onClick={() => setShowGenreMenu(false)}
-                          className="p-1.5 rounded hover:bg-orange-50 hover:text-orange-600 font-medium transition-colors truncate"
+                          className="p-2 rounded-lg hover:bg-orange-50 hover:text-orange-600 font-medium transition-colors truncate text-slate-600"
+                          title={g.name}
                         >
                           {g.name}
                         </Link>
@@ -250,14 +251,6 @@ export default function Header() {
               >
                 <span>Xếp Hạng</span>
                 <i className="fa-solid fa-arrow-trend-up text-xs" />
-              </Link>
-
-              {/* Tìm truyện */}
-              <Link
-                to="/?filter=advance"
-                className="px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors flex items-center gap-1"
-              >
-                <span>Tìm Truyện</span>
               </Link>
 
               {/* Lịch sử / Tủ sách */}
@@ -277,13 +270,13 @@ export default function Header() {
               </Link>
             </div>
 
-            {/* Bên phải thanh cam: Gói VIP nổi bật */}
+            {/* Bên phải thanh cam: Gói VIP nổi bật (Chữ màu trắng) */}
             <div className="flex items-center gap-2">
               <Link
                 to="/pricing"
-                className="px-3 py-1 rounded-md bg-amber-400 text-slate-950 font-bold hover:bg-amber-300 transition-colors flex items-center gap-1.5 shadow-xs text-xs"
+                className="px-3 py-1.5 rounded-md bg-white/20 hover:bg-white/30 border border-white/40 text-white font-bold transition-colors flex items-center gap-1.5 shadow-xs text-xs"
               >
-                <i className="fa-solid fa-crown text-xs" />
+                <i className="fa-solid fa-crown text-xs text-amber-300" />
                 <span>Nâng cấp VIP</span>
               </Link>
             </div>

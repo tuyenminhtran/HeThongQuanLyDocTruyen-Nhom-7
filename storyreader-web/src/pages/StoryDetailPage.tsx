@@ -2,10 +2,19 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getStoryDetail, getIsFollowing, toggleFollowStory } from "../api/stories";
 import { buyStory, simulatePaymentCallback } from "../api/payments";
+import { postChapterDiscussion } from "../api/discussions";
 import { useAuthStore } from "../store/authStore";
 import { useState } from "react";
 import { getFallbackStoryDetail } from "../data/mockDetails";
 import { fireConfetti } from "../utils/confetti";
+
+interface StoryReview {
+  id: string;
+  userName: string;
+  rating: number;
+  content: string;
+  createdAt: string;
+}
 
 const accessPolicyLabel: Record<number, string> = {
   0: "Miễn phí",
@@ -17,6 +26,7 @@ export default function StoryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
+  const displayName = useAuthStore((s) => s.displayName);
   const queryClient = useQueryClient();
   const [buyError, setBuyError] = useState<string | null>(null);
   const [chapterSearch, setChapterSearch] = useState("");
@@ -26,6 +36,22 @@ export default function StoryDetailPage() {
   const [paymentModal, setPaymentModal] = useState<{ transactionId: string; paymentUrl: string; ref: string } | null>(null);
   const [isSimulatingPayment, setIsSimulatingPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  // State cho Đánh giá & Bình luận thật
+  const [commentText, setCommentText] = useState("");
+  const [selectedRating, setSelectedRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [commentNotice, setCommentNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isPostingComment, setIsPostingComment] = useState(false);
+
+  const [reviews, setReviews] = useState<StoryReview[]>(() => {
+    try {
+      const saved = localStorage.getItem(`story_reviews_${id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const { data: apiStory, isLoading } = useQuery({
     queryKey: ["story", id],
@@ -102,6 +128,84 @@ export default function StoryDetailPage() {
       alert("Không thể hoàn tất thanh toán. Vui lòng thử lại.");
     } finally {
       setIsSimulatingPayment(false);
+    }
+  };
+
+  const handlePostReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCommentNotice(null);
+
+    if (!isLoggedIn) {
+      navigate("/login", { state: { from: `/stories/${id}` } });
+      return;
+    }
+
+    const text = commentText.trim();
+    if (!text) {
+      setCommentNotice({ type: "error", text: "Vui lòng nhập nội dung đánh giá của bạn." });
+      return;
+    }
+
+    setIsPostingComment(true);
+    try {
+      const newRev: StoryReview = {
+        id: Date.now().toString(),
+        userName: displayName || "Bạn đọc",
+        rating: selectedRating,
+        content: text,
+        createdAt: new Date().toISOString(),
+      };
+
+      const updated = [newRev, ...reviews];
+      setReviews(updated);
+      try {
+        localStorage.setItem(`story_reviews_${id}`, JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+
+      // Nếu truyện có chapter, gửi lên backend Discussions API luôn
+      if (story?.chapters && story.chapters.length > 0) {
+        try {
+          await postChapterDiscussion(story.chapters[0].id, `[Đánh giá ${selectedRating} sao] ${text}`);
+        } catch {
+          // ignore
+        }
+      }
+
+      setCommentText("");
+      setSelectedRating(5);
+      setCommentNotice({ type: "success", text: "Cảm ơn bạn! Đánh giá đã được đăng thành công." });
+      setTimeout(() => setCommentNotice(null), 4000);
+    } catch {
+      setCommentNotice({ type: "error", text: "Có lỗi xảy ra khi gửi bình luận. Vui lòng thử lại." });
+    } finally {
+      setIsPostingComment(false);
+    }
+  };
+
+  const handleDeleteReview = (reviewId: string) => {
+    const updated = reviews.filter((r) => r.id !== reviewId);
+    setReviews(updated);
+    try {
+      localStorage.setItem(`story_reviews_${id}`, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
+
+  const formatCommentTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
+      if (diffSec < 60) return "Vừa xong";
+      if (diffSec < 3600) return `${Math.floor(diffSec / 60)} phút trước`;
+      if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} giờ trước`;
+      if (diffSec < 604800) return `${Math.floor(diffSec / 86400)} ngày trước`;
+      return date.toLocaleDateString("vi-VN");
+    } catch {
+      return "Vừa xong";
     }
   };
 
@@ -373,80 +477,135 @@ export default function StoryDetailPage() {
         </div>
 
         {/* Reviews Section */}
-        <div className="border-t border-ink-border pt-10">
-          <h2 className="font-serif text-2xl text-ink-text mb-6">Đánh giá & Bình luận</h2>
+        <div className="border-t border-slate-200 pt-10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-serif text-2xl text-slate-900 font-bold">
+              Đánh giá &amp; Bình luận ({reviews.length})
+            </h2>
+          </div>
 
-          {/* Comment input */}
-          <div className="bg-ink-card border border-ink-border rounded-2xl p-5 mb-8">
+          {/* Alert thông báo khi gửi bình luận */}
+          {commentNotice && (
+            <div
+              className={`p-4 mb-6 rounded-2xl text-sm font-medium flex items-center gap-3 transition-all ${
+                commentNotice.type === "success"
+                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                  : "bg-rose-50 text-rose-800 border border-rose-200"
+              }`}
+            >
+              <i
+                className={`fa-solid ${
+                  commentNotice.type === "success" ? "fa-circle-check text-emerald-600" : "fa-circle-exclamation text-rose-600"
+                } text-base shrink-0`}
+              />
+              <span>{commentNotice.text}</span>
+            </div>
+          )}
+
+          {/* Comment input form */}
+          <form onSubmit={handlePostReview} className="bg-white border border-slate-200 rounded-2xl p-5 mb-8 shadow-xs">
             <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold/20 to-gold/5 border border-gold/20 flex items-center justify-center shrink-0">
-                <span className="text-sm font-semibold text-gold uppercase">
-                  U
+              <div className="w-10 h-10 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center shrink-0">
+                <span className="text-sm font-bold text-orange-600 uppercase">
+                  {displayName ? displayName.charAt(0) : "U"}
                 </span>
               </div>
               <div className="flex-1">
                 <textarea
-                  placeholder="Viết đánh giá của bạn về truyện này..."
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder={
+                    isLoggedIn
+                      ? "Chia sẻ cảm nghĩ, đánh giá của bạn về tác phẩm này..."
+                      : "Đăng nhập để viết đánh giá và bình luận về truyện này..."
+                  }
                   rows={3}
-                  className="w-full bg-ink-bg border border-ink-border rounded-xl px-4 py-3 text-sm text-ink-text placeholder:text-ink-muted/50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 resize-none transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 resize-none transition-all"
                 />
-                <div className="flex justify-between items-center mt-3">
-                  <div className="flex gap-1 text-gold">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <i key={star} className="fa-solid fa-star text-sm cursor-pointer hover:scale-110 transition-transform" />
-                    ))}
+                <div className="flex flex-wrap justify-between items-center gap-3 mt-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-slate-500">Đánh giá:</span>
+                    <div className="flex gap-1 text-amber-400">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onMouseEnter={() => setHoverRating(star)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          onClick={() => setSelectedRating(star)}
+                          className="cursor-pointer hover:scale-110 transition-transform p-0.5"
+                          title={`${star} sao`}
+                        >
+                          <i
+                            className={`${
+                              star <= (hoverRating || selectedRating) ? "fa-solid fa-star" : "fa-regular fa-star text-slate-300"
+                            } text-base`}
+                          />
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <button className="px-5 py-2 rounded-xl bg-gold text-ink-bg font-medium text-sm hover:bg-gold-dim transition-colors">
-                    Gửi đánh giá
+                  <button
+                    type="submit"
+                    disabled={isPostingComment}
+                    className="px-5 py-2 rounded-xl bg-orange-600 text-white font-semibold text-sm hover:bg-orange-700 disabled:opacity-60 transition-colors shadow-xs cursor-pointer flex items-center gap-2"
+                  >
+                    {isPostingComment && <i className="fa-solid fa-spinner fa-spin text-xs" />}
+                    <span>Gửi đánh giá</span>
                   </button>
                 </div>
               </div>
             </div>
-          </div>
+          </form>
 
-          {/* Comment List */}
-          <div className="space-y-6">
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-ink-bg border border-ink-border flex items-center justify-center shrink-0">
-                <span className="text-sm font-semibold text-ink-muted">A</span>
+          {/* Comment List (bỏ toàn bộ 2 mockup cũ) */}
+          {reviews.length === 0 ? (
+            <div className="text-center py-12 px-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
+              <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-3">
+                <i className="fa-regular fa-comments text-xl" />
               </div>
-              <div className="flex-1">
-                <div className="bg-ink-card border border-ink-border rounded-2xl rounded-tl-none p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-ink-text text-sm">Anh Tuấn</span>
-                    <span className="text-xs text-ink-muted">2 giờ trước</span>
-                  </div>
-                  <div className="flex gap-1 text-gold mb-2">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <i key={star} className="fa-solid fa-star text-xs" />
-                    ))}
-                  </div>
-                  <p className="text-sm text-ink-text/80">Truyện rất hay, mong tác giả ra nhanh chương mới. Cốt truyện hấp dẫn và sâu sắc!</p>
-                </div>
-              </div>
+              <p className="text-slate-700 font-semibold text-sm">Chưa có bình luận nào cho truyện này.</p>
+              <p className="text-slate-400 text-xs mt-1">Hãy là người đầu tiên chia sẻ cảm nghĩ của bạn!</p>
             </div>
-
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-ink-bg border border-ink-border flex items-center justify-center shrink-0">
-                <span className="text-sm font-semibold text-ink-muted">M</span>
-              </div>
-              <div className="flex-1">
-                <div className="bg-ink-card border border-ink-border rounded-2xl rounded-tl-none p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-ink-text text-sm">Minh Phượng</span>
-                    <span className="text-xs text-ink-muted">1 ngày trước</span>
+          ) : (
+            <div className="space-y-4">
+              {reviews.map((rev) => (
+                <div key={rev.id} className="flex gap-3 sm:gap-4 p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                  <div className="w-10 h-10 rounded-full bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600 font-bold shrink-0 uppercase text-sm">
+                    {rev.userName.charAt(0)}
                   </div>
-                  <div className="flex gap-1 text-gold mb-2">
-                    {[1, 2, 3, 4].map(star => (
-                      <i key={star} className="fa-solid fa-star text-xs" />
-                    ))}
-                    <i className="fa-regular fa-star text-xs text-ink-border" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-slate-900 text-sm">{rev.userName}</span>
+                        <span className="text-xs text-slate-400">• {formatCommentTime(rev.createdAt)}</span>
+                      </div>
+                      {displayName === rev.userName && (
+                        <button
+                          onClick={() => handleDeleteReview(rev.id)}
+                          className="text-xs text-slate-400 hover:text-rose-600 transition-colors cursor-pointer p-1"
+                          title="Xóa bình luận này"
+                        >
+                          <i className="fa-regular fa-trash-can" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex gap-0.5 text-amber-400 text-xs mb-2">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <i
+                          key={s}
+                          className={s <= rev.rating ? "fa-solid fa-star" : "fa-regular fa-star text-slate-200"}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line break-words">
+                      {rev.content}
+                    </p>
                   </div>
-                  <p className="text-sm text-ink-text/80">Bản dịch rất mượt, giao diện đọc truyện đẹp và không bị mỏi mắt khi đọc lâu.</p>
                 </div>
-              </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
       </div>
 
