@@ -10,11 +10,8 @@ export default function Footer() {
         <div className="py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <Link to="/" className="flex items-center gap-2.5 group mb-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-xs text-white">
-                <i className="fa-solid fa-book-open text-xs" />
-              </div>
-              <span className="font-serif text-lg font-bold tracking-tight text-slate-900 group-hover:text-orange-600 transition-colors">
+            <Link to="/" className="inline-block group mb-3">
+              <span className="font-serif text-xl font-black tracking-tight text-slate-900 group-hover:text-orange-600 transition-colors">
                 Story<span className="text-orange-500">Reader</span>
               </span>
             </Link>

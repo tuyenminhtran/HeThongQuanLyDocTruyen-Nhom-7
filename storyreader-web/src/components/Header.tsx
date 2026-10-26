@@ -54,29 +54,16 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
         <div className="flex justify-between items-center h-16 gap-4">
           
-          {/* Logo & Lightbulb */}
-          <div className="flex items-center gap-3 shrink-0">
-            <Link to="/" className="flex items-center gap-2.5 group focus:outline-none">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 flex items-center justify-center shadow-md shadow-orange-500/20 text-white font-bold group-hover:scale-105 transition-transform">
-                <i className="fa-solid fa-book-open text-base" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-serif text-xl font-bold tracking-tight text-slate-900 group-hover:text-orange-600 transition-colors">
-                  Story<span className="text-orange-500">Reader</span>
-                </span>
-                <span className="text-[10px] text-slate-600 -mt-1 font-sans tracking-widest uppercase font-semibold">
-                  Đọc Truyện Online
-                </span>
-              </div>
+          {/* Logo */}
+          <div className="flex items-center shrink-0">
+            <Link to="/" className="flex flex-col group focus:outline-none">
+              <span className="font-serif text-2xl font-black tracking-tight text-slate-900 group-hover:text-orange-600 transition-colors">
+                Story<span className="text-orange-500">Reader</span>
+              </span>
+              <span className="text-[10px] text-slate-500 -mt-1 font-sans tracking-widest uppercase font-semibold">
+                Đọc Truyện Online
+              </span>
             </Link>
-
-            {/* Lightbulb Decorative Pill (TruyenQQ icon) */}
-            <div
-              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 text-amber-500 bg-amber-50 shadow-xs cursor-pointer hover:bg-amber-100 transition-colors"
-              title="Chế độ giao diện sáng rõ nét"
-            >
-              <i className="fa-solid fa-lightbulb text-sm" />
-            </div>
           </div>
 
           {/* Thanh tìm kiếm hình Pill bo tròn chuẩn TruyenQQ (Desktop) */}

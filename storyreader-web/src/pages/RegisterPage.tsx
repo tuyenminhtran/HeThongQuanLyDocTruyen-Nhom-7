@@ -108,11 +108,6 @@ export default function RegisterPage() {
         <div className="bg-white border border-slate-200 rounded-2xl shadow-md p-6 sm:p-8">
           {/* Brand Header */}
           <div className="text-center mb-6">
-            <Link to="/" className="inline-block group mb-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white font-serif text-2xl font-black shadow-md shadow-orange-500/20 mx-auto group-hover:scale-105 transition-transform">
-                S
-              </div>
-            </Link>
             <h1 className="font-serif text-2xl font-bold text-slate-900 tracking-tight">
               Tạo tài khoản mới
             </h1>

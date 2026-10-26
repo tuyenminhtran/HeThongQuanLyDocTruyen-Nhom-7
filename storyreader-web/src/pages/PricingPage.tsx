@@ -47,7 +47,8 @@ export default function PricingPage() {
     queryFn: getSubscriptionPlans,
   });
 
-  const plans = (apiPlans && apiPlans.length > 0) ? apiPlans : fallbackPlans;
+  const rawPlans = (apiPlans && apiPlans.length > 0) ? apiPlans : fallbackPlans;
+  const plans = [...rawPlans].sort((a, b) => a.durationDays - b.durationDays);
 
   // Mutation khởi tạo thanh toán
   const buyMutation = useMutation({
@@ -102,9 +103,9 @@ export default function PricingPage() {
     }
   };
 
-  const getPlanDetails = (plan: SubscriptionPlan, index: number) => {
-    const isRecommended = plan.durationDays === 90 || index === 1;
-    const isBestValue = plan.durationDays >= 365 || index === 2;
+  const getPlanDetails = (plan: SubscriptionPlan) => {
+    const isRecommended = plan.durationDays === 90;
+    const isBestValue = plan.durationDays >= 365;
 
     let savings = "";
     if (plan.durationDays === 90) savings = "Tiết kiệm 18.000đ";
@@ -151,40 +152,44 @@ export default function PricingPage() {
 
       {/* Pricing Cards Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto pt-6">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-96 bg-ink-card border border-ink-border rounded-3xl animate-pulse" />
+            <div key={i} className="h-96 bg-white border border-slate-200 rounded-3xl animate-pulse shadow-sm" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch relative z-10">
-          {plans.map((plan, index) => {
-            const { isRecommended, isBestValue, savings, features } = getPlanDetails(plan, index);
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch pt-6 relative z-10">
+          {plans.map((plan) => {
+            const { isRecommended, isBestValue, savings, features } = getPlanDetails(plan);
 
             return (
               <div
                 key={plan.id}
-                className={`relative flex flex-col rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1.5 overflow-hidden ${
+                className={`relative flex flex-col rounded-3xl p-8 pt-10 transition-all duration-300 hover:-translate-y-1.5 ${
                   isRecommended
-                    ? "bg-gradient-to-b from-ink-card to-ink-elevated border-2 border-gold shadow-2xl shadow-gold/20 scale-105 z-10"
-                    : "bg-ink-card border border-ink-border hover:border-ink-border-light shadow-xl shadow-black/20"
+                    ? "bg-white border-2 border-orange-500 shadow-xl shadow-orange-500/15 md:scale-105 z-20"
+                    : isBestValue
+                    ? "bg-white border-2 border-sky-400 shadow-xl shadow-sky-500/10 z-10"
+                    : "bg-white border border-slate-200 shadow-md hover:border-slate-300"
                 }`}
               >
-                {/* Sao băng bay mờ ảo trên thẻ VIP khuyên dùng */}
-                {isRecommended && <Meteors number={12} />}
+                {/* Lớp chứa sao băng riêng biệt có bo góc để không cắt badge nổi */}
+                <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+                  {isRecommended && <Meteors number={12} />}
+                </div>
 
-                {/* Badge Khuyên dùng / Tiết kiệm */}
+                {/* Badge Khuyên dùng / Tiết kiệm - Nổi trên đầu card không bị cắt */}
                 {isRecommended && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-bold uppercase tracking-wider rounded-full shadow-lg shadow-gold/25 flex items-center gap-1.5 z-20">
-                    <i className="fa-solid fa-star text-xs text-ink-bg" />
-                    Phổ biến nhất
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-md shadow-orange-500/30 flex items-center gap-1.5 z-30 whitespace-nowrap">
+                    <i className="fa-solid fa-star text-xs text-white" />
+                    <span>Phổ biến nhất</span>
                   </div>
                 )}
 
                 {isBestValue && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-lg shadow-blue-500/25 flex items-center gap-1.5 z-20">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-md shadow-blue-500/30 flex items-center gap-1.5 z-30 whitespace-nowrap">
                     <i className="fa-solid fa-gem text-xs text-white" />
-                    Tiết kiệm nhất
+                    <span>Tiết kiệm nhất</span>
                   </div>
                 )}
 
@@ -227,7 +232,9 @@ export default function PricingPage() {
                   disabled={buyMutation.isPending}
                   className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 relative z-10 cursor-pointer ${
                     isRecommended
-                      ? "bg-orange-600 hover:bg-orange-700 text-white shadow-md"
+                      ? "bg-orange-600 hover:bg-orange-700 text-white shadow-md shadow-orange-500/20"
+                      : isBestValue
+                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20"
                       : "bg-slate-100 border border-slate-300 text-slate-800 hover:border-orange-500 hover:text-orange-600 hover:bg-orange-50"
                   }`}
                 >
