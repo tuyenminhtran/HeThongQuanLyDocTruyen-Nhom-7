@@ -297,7 +297,4 @@ Hệ thống đã chuẩn bị sẵn các tài khoản mẫu phục vụ kiểm 
   2. **Trần Mỹ Duyên**
   3. **Trần Minh Tuyên**
   4. **Hồ Minh Tuyền**
-
----
-
-*StoryReader - Nền tảng đọc truyện công nghệ cao, nâng tầm trải nghiệm thưởng thức tác phẩm trực tuyến!*
+```
