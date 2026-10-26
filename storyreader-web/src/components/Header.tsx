@@ -12,6 +12,7 @@ export default function Header() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileGenreOpen, setMobileGenreOpen] = useState(false);
   const [keyword, setKeyword] = useState(searchParams.get("q") || "");
   const [showGenreMenu, setShowGenreMenu] = useState(false);
   const genreMenuRef = useRef<HTMLDivElement>(null);
@@ -194,9 +195,9 @@ export default function Header() {
       {/* ============================================================ */}
       {/* 2. THANH ĐIỀU HƯỚNG MÀU CAM RỰC RỠ (TRUYENQQ SIGNATURE BAR)  */}
       {/* ============================================================ */}
-      <nav className="bg-[#f37021] text-white shadow-md relative">
+      <nav className="bg-[#f37021] text-white shadow-md relative z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
-          <div className="flex items-center justify-between overflow-x-auto scrollbar-none py-2 gap-1 sm:gap-2 text-xs sm:text-sm font-semibold whitespace-nowrap">
+          <div className="flex items-center justify-between py-2 gap-1 sm:gap-2 text-xs sm:text-sm font-semibold whitespace-nowrap">
             
             <div className="flex items-center gap-1 sm:gap-2">
               <Link
@@ -218,7 +219,7 @@ export default function Header() {
                 </button>
 
                 {showGenreMenu && (
-                  <div className="absolute left-0 mt-2 w-80 sm:w-[500px] max-h-[420px] overflow-y-auto scrollbar-thin bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 z-50 text-slate-800 text-xs animate-fadeIn">
+                  <div className="absolute left-0 top-full mt-2 w-[88vw] sm:w-[520px] max-h-[420px] overflow-y-auto scrollbar-thin bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 z-50 text-slate-800 text-xs animate-fadeIn">
                     <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-3 pb-2 border-b border-slate-100">
                       <span>Tất cả thể loại ({genres?.length || 0})</span>
                       <span className="text-orange-500 font-normal lowercase">chọn để lọc</span>
@@ -259,7 +260,7 @@ export default function Header() {
               {/* Lịch sử / Tủ sách */}
               <Link
                 to={accessToken ? "/profile" : "/login"}
-                className="px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors flex items-center gap-1"
+                className="hidden sm:flex px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors items-center gap-1"
               >
                 <span>Lịch Sử</span>
               </Link>
@@ -267,7 +268,7 @@ export default function Header() {
               {/* Theo dõi */}
               <Link
                 to={accessToken ? "/profile?tab=bookmarks" : "/login"}
-                className="px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors flex items-center gap-1"
+                className="hidden sm:flex px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors items-center gap-1"
               >
                 <span>Theo Dõi</span>
               </Link>
@@ -315,6 +316,49 @@ export default function Header() {
               >
                 Trang chủ
               </Link>
+
+              {/* Mobile Thể Loại Accordion */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setMobileGenreOpen(!mobileGenreOpen)}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  <span>Thể loại ({genres?.length || 0})</span>
+                  <i
+                    className={`fa-solid fa-chevron-down text-xs transition-transform ${
+                      mobileGenreOpen ? "rotate-180 text-orange-500" : "text-slate-400"
+                    }`}
+                  />
+                </button>
+                {mobileGenreOpen && (
+                  <div className="grid grid-cols-2 gap-1.5 p-2 bg-slate-50 rounded-xl my-1 border border-slate-200 max-h-60 overflow-y-auto">
+                    <Link
+                      to="/"
+                      onClick={() => {
+                        setMobileGenreOpen(false);
+                        setMobileOpen(false);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-800 hover:bg-white hover:text-orange-600 transition-colors"
+                    >
+                      Tất cả
+                    </Link>
+                    {genres?.map((g) => (
+                      <Link
+                        key={g.id}
+                        to={`/?genre=${g.id}`}
+                        onClick={() => {
+                          setMobileGenreOpen(false);
+                          setMobileOpen(false);
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-white hover:text-orange-600 transition-colors truncate"
+                      >
+                        {g.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Link
                 to="/pricing"
                 onClick={() => setMobileOpen(false)}
