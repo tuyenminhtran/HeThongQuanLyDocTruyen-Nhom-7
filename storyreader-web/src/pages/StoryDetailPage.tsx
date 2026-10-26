@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getStoryDetail, getIsFollowing, toggleFollowStory } from "../api/stories";
-import { buyStory } from "../api/payments";
+import { buyStory, simulatePaymentCallback } from "../api/payments";
 import { useAuthStore } from "../store/authStore";
 import { useState } from "react";
 import { getFallbackStoryDetail } from "../data/mockDetails";
@@ -20,6 +20,11 @@ export default function StoryDetailPage() {
   const [buyError, setBuyError] = useState<string | null>(null);
   const [chapterSearch, setChapterSearch] = useState("");
   const [sortAsc, setSortAsc] = useState(true);
+
+  // State cho Modal thanh toán mua truyện
+  const [paymentModal, setPaymentModal] = useState<{ transactionId: string; paymentUrl: string; ref: string } | null>(null);
+  const [isSimulatingPayment, setIsSimulatingPayment] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const { data: apiStory, isLoading } = useQuery({
     queryKey: ["story", id],
@@ -61,13 +66,42 @@ export default function StoryDetailPage() {
     mutationFn: () => buyStory(id!),
     onSuccess: (result) => {
       setBuyError(null);
-      alert(
-        `Đã tạo giao dịch. Trong thực tế bạn sẽ được chuyển tới:\n${result.paymentUrl}`
-      );
-      queryClient.invalidateQueries({ queryKey: ["story", id] });
+      let ref = "";
+      try {
+        const urlObj = new URL(result.paymentUrl);
+        ref = urlObj.searchParams.get("ref") || "";
+      } catch {
+        ref = result.transactionId;
+      }
+
+      setPaymentModal({
+        transactionId: result.transactionId,
+        paymentUrl: result.paymentUrl,
+        ref: ref,
+      });
+      setPaymentSuccess(false);
     },
-    onError: () => setBuyError("Không thể khởi tạo giao dịch. Vui lòng thử lại."),
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || "Không thể khởi tạo giao dịch. Vui lòng thử lại.";
+      setBuyError(msg);
+    },
   });
+
+  const handleConfirmSimulation = async () => {
+    if (!paymentModal?.ref) return;
+    try {
+      setIsSimulatingPayment(true);
+      await simulatePaymentCallback(paymentModal.ref, true);
+      setPaymentSuccess(true);
+      queryClient.invalidateQueries({ queryKey: ["story", id] });
+      queryClient.invalidateQueries({ queryKey: ["user-library"] });
+      queryClient.invalidateQueries({ queryKey: ["adminDashboardOverview"] });
+    } catch {
+      alert("Không thể hoàn tất thanh toán. Vui lòng thử lại.");
+    } finally {
+      setIsSimulatingPayment(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -138,64 +172,65 @@ export default function StoryDetailPage() {
           </div>
 
           {/* Info */}
-          <div className="flex-1 min-w-0 flex flex-col pt-2">
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
-                {story.status === 0 ? "Đang ra" : story.status === 1 ? "Hoàn thành" : "Tạm ngưng"}
-              </span>
-              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400">
-                {accessPolicyLabel[story.accessPolicy] || "Miễn phí"}
-              </span>
-              {story.type === 1 ? (
-                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-400 flex items-center gap-1.5">
-                  <i className="fa-solid fa-image text-[10px]" />
-                  Truyện tranh
+          <div className="flex-1 flex flex-col justify-between">
+            <div>
+              {/* Type & Policy Badges */}
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30">
+                  {story.type === 1 ? "Truyện tranh (Comic)" : "Truyện chữ (Novel)"}
                 </span>
-              ) : (
-                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center gap-1.5">
-                  <i className="fa-solid fa-book-open text-[10px]" />
-                  Truyện chữ
-                </span>
-              )}
-              {(story.viewCount != null) && (
-                <span className="text-xs text-ink-muted flex items-center gap-1.5 font-medium ml-auto">
-                  <i className="fa-solid fa-eye text-xs text-ink-muted" />
-                  {story.viewCount >= 1000 ? `${(story.viewCount / 1000).toFixed(0)}k` : story.viewCount} lượt xem
-                </span>
-              )}
-            </div>
 
-            <h1 className="font-serif text-2xl sm:text-4xl text-white font-bold leading-tight mb-2 tracking-tight">
-              {story.title}
-            </h1>
-            <p className="text-ink-muted text-base mb-5 flex items-center gap-2">
-              <i className="fa-solid fa-user-pen text-gold/80 text-sm" />
-              Tác giả: <span className="text-slate-200 font-semibold">{story.author}</span>
-            </p>
+                <span
+                  className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
+                    story.accessPolicy === 0
+                      ? "text-green-400 bg-green-400/10 border-green-400/20"
+                      : story.accessPolicy === 1
+                      ? "text-gold bg-gold/10 border-gold/20"
+                      : "text-blue-400 bg-blue-400/10 border-blue-400/20"
+                  }`}
+                >
+                  {accessPolicyLabel[story.accessPolicy] ?? "Không xác định"}
+                </span>
 
-            {/* Genres */}
-            {story.genres && story.genres.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-6">
-                {story.genres.map((genre) => (
-                  <span
-                    key={genre}
-                    className="text-xs font-medium px-3 py-1 rounded-lg bg-ink-card border border-ink-border text-ink-text hover:border-gold/50 transition-colors"
-                  >
-                    {genre}
-                  </span>
-                ))}
+                <span className="text-xs text-ink-muted flex items-center gap-1.5 ml-auto">
+                  <i className="fa-solid fa-eye text-xs" />
+                  <span>{(story.viewCount ?? 0).toLocaleString()} lượt đọc</span>
+                </span>
               </div>
-            )}
 
-            {/* Description */}
-            <div className="bg-ink-card/60 backdrop-blur-sm border border-ink-border rounded-2xl p-5 mb-6">
-              <h3 className="font-serif text-base font-bold text-white mb-2 flex items-center gap-2">
-                <i className="fa-solid fa-circle-info text-gold text-sm" />
-                Giới thiệu
-              </h3>
-              <p className="text-sm text-ink-text/80 leading-relaxed whitespace-pre-line">
-                {story.description}
+              {/* Title & Author */}
+              <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 leading-tight">
+                {story.title}
+              </h1>
+              <p className="text-ink-muted text-sm sm:text-base mb-4 flex items-center gap-2">
+                <i className="fa-solid fa-pen-nib text-xs text-gold" />
+                <span>Tác giả: <strong>{story.author || "Đang cập nhật"}</strong></span>
               </p>
+
+              {/* Genres */}
+              {story.genres && story.genres.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {story.genres.map((genre) => (
+                    <span
+                      key={genre}
+                      className="text-xs font-medium px-3 py-1 rounded-lg bg-ink-card border border-ink-border text-ink-text hover:border-gold/50 transition-colors"
+                    >
+                      {genre}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Description */}
+              <div className="bg-ink-card/60 backdrop-blur-sm border border-ink-border rounded-2xl p-5 mb-6">
+                <h3 className="font-serif text-base font-bold text-white mb-2 flex items-center gap-2">
+                  <i className="fa-solid fa-circle-info text-gold text-sm" />
+                  Giới thiệu
+                </h3>
+                <p className="text-sm text-ink-text/80 leading-relaxed whitespace-pre-line">
+                  {story.description}
+                </p>
+              </div>
             </div>
 
             {/* Pricing & CTA */}
@@ -203,28 +238,28 @@ export default function StoryDetailPage() {
               {story.accessPolicy !== 0 && (
                 <div className="mb-5 bg-ink-card border border-ink-border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <p className="text-ink-text font-medium text-lg">
+                    <p className="text-gold font-bold text-xl">
                       {story.price?.toLocaleString()}đ
                     </p>
-                    <p className="text-sm text-ink-muted mt-0.5">
-                      {story.freeChapterCount} chương đầu đọc miễn phí
+                    <p className="text-xs text-ink-muted mt-0.5">
+                      {story.freeChapterCount > 0 ? `${story.freeChapterCount} chương đầu đọc miễn phí` : "Mua một lần mở khóa vĩnh viễn"}
                     </p>
                   </div>
                   {isLoggedIn ? (
                     <button
                       onClick={() => buyMutation.mutate()}
                       disabled={buyMutation.isPending}
-                      className="px-6 py-2.5 rounded-xl font-medium bg-gradient-to-r from-gold to-gold/90 text-ink-bg hover:shadow-lg hover:shadow-gold/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                      className="px-6 py-2.5 rounded-xl font-medium bg-gradient-to-r from-gold to-gold/90 text-ink-bg hover:shadow-lg hover:shadow-gold/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-sm"
                     >
                       {buyMutation.isPending && (
                         <i className="fa-solid fa-spinner fa-spin text-sm" />
                       )}
-                      {buyMutation.isPending ? "Đang xử lý..." : "Mua ngay"}
+                      {buyMutation.isPending ? "Đang xử lý..." : "Mua truyện ngay"}
                     </button>
                   ) : (
                     <Link
                       to="/login"
-                      className="px-6 py-2.5 rounded-xl font-medium border border-gold text-gold hover:bg-gold/10 transition-all text-center"
+                      className="px-6 py-2.5 rounded-xl font-medium border border-gold text-gold hover:bg-gold/10 transition-all text-center text-sm"
                     >
                       Đăng nhập để mua
                     </Link>
@@ -355,7 +390,6 @@ export default function StoryDetailPage() {
                 />
                 <div className="flex justify-between items-center mt-3">
                   <div className="flex gap-1 text-gold">
-                    {/* Mock stars */}
                     {[1, 2, 3, 4, 5].map(star => (
                       <i key={star} className="fa-solid fa-star text-sm cursor-pointer hover:scale-110 transition-transform" />
                     ))}
@@ -370,7 +404,6 @@ export default function StoryDetailPage() {
 
           {/* Comment List */}
           <div className="space-y-6">
-            {/* Mock Comment 1 */}
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-full bg-ink-bg border border-ink-border flex items-center justify-center shrink-0">
                 <span className="text-sm font-semibold text-ink-muted">A</span>
@@ -386,12 +419,11 @@ export default function StoryDetailPage() {
                       <i key={star} className="fa-solid fa-star text-xs" />
                     ))}
                   </div>
-                  <p className="text-sm text-ink-text/80">Truyện rất hay, mong tác giả ra nhanh chương mới. Plot twist đoạn cuối quá bất ngờ!</p>
+                  <p className="text-sm text-ink-text/80">Truyện rất hay, mong tác giả ra nhanh chương mới. Cốt truyện hấp dẫn và sâu sắc!</p>
                 </div>
               </div>
             </div>
 
-            {/* Mock Comment 2 */}
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-full bg-ink-bg border border-ink-border flex items-center justify-center shrink-0">
                 <span className="text-sm font-semibold text-ink-muted">M</span>
@@ -408,12 +440,127 @@ export default function StoryDetailPage() {
                     ))}
                     <i className="fa-regular fa-star text-xs text-ink-border" />
                   </div>
+                  <p className="text-sm text-ink-text/80">Bản dịch rất mượt, giao diện đọc truyện đẹp và không bị mỏi mắt khi đọc lâu.</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* MODAL THANH TOÁN MUA TRUYỆN */}
+      {paymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-ink-card border border-ink-border rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative">
+            <button
+              onClick={() => setPaymentModal(null)}
+              className="absolute top-5 right-5 text-ink-muted hover:text-white p-2 rounded-xl transition-colors"
+            >
+              <i className="fa-solid fa-xmark text-lg" />
+            </button>
+
+            {paymentSuccess ? (
+              <div className="text-center py-6 space-y-4">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto text-2xl">
+                  <i className="fa-solid fa-circle-check" />
+                </div>
+                <h3 className="font-serif text-2xl text-white font-bold">Mua Truyện Thành Công!</h3>
+                <p className="text-sm text-ink-muted">
+                  Bạn đã mở khóa toàn bộ quyền đọc tác phẩm <strong>{story.title}</strong>. Chúc bạn có những giây phút thưởng thức truyện vui vẻ!
+                </p>
+                <div className="pt-4 flex justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      setPaymentModal(null);
+                      if (story.chapters.length > 0) {
+                        navigate(`/chapters/${story.chapters[0].id}`, { state: { storyId: story.id } });
+                      }
+                    }}
+                    className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-gold text-ink-bg hover:bg-gold-dim transition-all"
+                  >
+                    Bắt đầu đọc ngay
+                  </button>
+                  <button
+                    onClick={() => setPaymentModal(null)}
+                    className="px-5 py-2.5 rounded-xl text-sm font-medium border border-ink-border text-ink-text hover:bg-ink-bg transition-all"
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <span className="text-gold text-xs font-semibold uppercase tracking-wider block mb-1">
+                    Thanh toán mua truyện
+                  </span>
+                  <h3 className="font-serif text-xl sm:text-2xl text-white font-bold truncate">
+                    {story.title}
+                  </h3>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-ink-bg border border-ink-border space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-ink-muted">Tác phẩm:</span>
+                    <span className="font-semibold text-white truncate max-w-[200px]">{story.title}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-ink-muted">Quyền lợi:</span>
+                    <span className="text-emerald-400 font-medium">Mở khóa vĩnh viễn</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-ink-muted">Giá bán:</span>
+                    <span className="text-gold font-bold text-base">{story.price?.toLocaleString()}đ</span>
+                  </div>
+                </div>
+
+                {/* Mã QR thanh toán VNPay */}
+                <div className="text-center p-4 bg-white rounded-2xl shadow-inner max-w-[200px] mx-auto">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(paymentModal.paymentUrl)}`}
+                    alt="Mã QR thanh toán VNPay"
+                    className="w-full h-auto mx-auto block"
+                  />
+                  <span className="text-[11px] text-slate-800 font-medium mt-2 block font-sans">
+                    Quét mã VNPay / Ngân hàng
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-3 pt-2">
+                  <button
+                    onClick={handleConfirmSimulation}
+                    disabled={isSimulatingPayment}
+                    className="w-full py-3.5 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-emerald-600 text-slate-950 hover:from-emerald-400 hover:to-emerald-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+                  >
+                    {isSimulatingPayment ? (
+                      <>
+                        <i className="fa-solid fa-spinner fa-spin" />
+                        <span>Đang xử lý mở khóa...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-check-double" />
+                        <span>Xác nhận đã thanh toán (Mô phỏng tức thì)</span>
+                      </>
+                    )}
+                  </button>
+
+                  <a
+                    href={paymentModal.paymentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-2.5 rounded-xl font-medium text-xs border border-ink-border text-ink-muted hover:text-white hover:bg-ink-bg transition-all flex items-center justify-center gap-2"
+                  >
+                    <i className="fa-solid fa-arrow-up-right-from-square" />
+                    <span>Mở cổng VNPay Sandbox</span>
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
