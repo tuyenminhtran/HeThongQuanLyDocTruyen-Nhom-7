@@ -259,7 +259,7 @@ export default function Header() {
 
               {/* Lịch sử / Tủ sách */}
               <Link
-                to={accessToken ? "/profile" : "/login"}
+                to={accessToken ? "/history" : "/login"}
                 className="hidden sm:flex px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors items-center gap-1"
               >
                 <span>Lịch Sử</span>
@@ -267,7 +267,7 @@ export default function Header() {
 
               {/* Theo dõi */}
               <Link
-                to={accessToken ? "/profile?tab=bookmarks" : "/login"}
+                to={accessToken ? "/following" : "/login"}
                 className="hidden sm:flex px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors items-center gap-1"
               >
                 <span>Theo Dõi</span>
@@ -380,11 +380,25 @@ export default function Header() {
                     </Link>
                   )}
                   <Link
+                    to="/following"
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    Truyện đang theo dõi
+                  </Link>
+                  <Link
+                    to="/history"
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    Lịch sử đọc
+                  </Link>
+                  <Link
                     to="/profile"
                     onClick={() => setMobileOpen(false)}
                     className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    Tủ sách & Hồ sơ ({displayName})
+                    Hồ sơ & Tài khoản ({displayName})
                   </Link>
                   <button
                     onClick={() => {
