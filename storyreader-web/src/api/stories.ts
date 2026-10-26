@@ -78,6 +78,17 @@ export async function updateStory(id: string, input: CreateStoryInput & { status
   await apiClient.put(`/stories/${id}`, input);
 }
 
+export async function uploadStoryCover(file: File): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await apiClient.post<{ url: string }>("/stories/upload-cover", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+}
+
 export async function deleteStory(id: string) {
   await apiClient.delete(`/stories/${id}`);
 }

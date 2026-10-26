@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { searchStories, type StoryListItem } from "../api/stories";
 import { getGenres } from "../api/genres";
 import StoryCard from "../components/StoryCard";
+import { resolveImageUrl } from "../utils/imageUrl";
 
 function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }) {
   const formattedRank = rank < 10 ? `0${rank}` : `${rank}`;
@@ -26,7 +27,7 @@ function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }
         {formattedRank}
       </span>
       <img
-        src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
+        src={resolveImageUrl(story.coverImageUrl)}
         alt={story.title}
         onError={(e) => {
           e.currentTarget.onerror = null;
@@ -187,7 +188,7 @@ export default function HomePage() {
                 {/* Ảnh bìa */}
                 <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-100 border border-slate-200 group-hover:border-orange-400 shadow-xs group-hover:shadow-md transition-all duration-300">
                   <img
-                    src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
+                    src={resolveImageUrl(story.coverImageUrl)}
                     alt={story.title}
                     onError={(e) => {
                       e.currentTarget.onerror = null;

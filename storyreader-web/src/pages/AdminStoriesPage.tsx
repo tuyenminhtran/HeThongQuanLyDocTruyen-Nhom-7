@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   searchStories,
   getStoryDetail,
@@ -11,6 +11,7 @@ import {
   addChapter,
   updateChapter,
   deleteChapter,
+  uploadStoryCover,
   type StoryListItem,
   type ChapterListItem,
   type CreateStoryInput,
@@ -20,6 +21,7 @@ import {
 import { getChapterContent } from "../api/chapters";
 import { useIsAdmin } from "../store/authStore";
 import { getGenres } from "../api/genres";
+import { resolveImageUrl } from "../utils/imageUrl";
 
 /* ────────────────────────── Access labels ────────────────────────── */
 const accessPolicyLabel: Record<number, string> = {
@@ -48,6 +50,127 @@ const inputClass =
   "w-full bg-ink-bg border border-ink-border rounded-xl px-4 py-2.5 text-ink-text placeholder:text-ink-muted/50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-all duration-200 text-sm";
 const labelClass = "block text-sm text-ink-muted mb-1.5";
 
+/* ────────────────────────── Cover Image Upload Component ────────────────────────── */
+function CoverImageUploadField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Vui lòng chọn file hình ảnh hợp lệ (.jpg, .png, .webp, .gif)");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("Dung lượng file tối đa là 10MB");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setUploadError(null);
+      const res = await uploadStoryCover(file);
+      onChange(res.url);
+    } catch (err: any) {
+      setUploadError(
+        err.response?.data?.message || err.message || "Tải ảnh lên thất bại."
+      );
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className={labelClass + " !mb-0 font-medium"}>
+          Hình ảnh bìa truyện
+        </label>
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="text-[11px] text-red-400 hover:underline cursor-pointer"
+          >
+            Xóa ảnh
+          </button>
+        )}
+      </div>
+
+      <div className="flex gap-4 items-start bg-ink-bg/60 p-3.5 rounded-xl border border-ink-border">
+        {/* Preview Thumbnail */}
+        <div className="relative group/preview w-20 aspect-[2/3] shrink-0 rounded-lg overflow-hidden border border-ink-border bg-ink-card shadow-inner">
+          <img
+            src={resolveImageUrl(value)}
+            alt="Ảnh bìa xem trước"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src =
+                "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80";
+            }}
+            className="w-full h-full object-cover"
+          />
+          {uploading && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+              <i className="fa-solid fa-spinner fa-spin text-gold text-lg" />
+            </div>
+          )}
+        </div>
+
+        {/* Upload Button + URL text input */}
+        <div className="flex-1 min-w-0 space-y-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gold/15 text-gold border border-gold/30 hover:bg-gold/25 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <i className="fa-solid fa-cloud-arrow-up text-xs" />
+              {uploading ? "Đang tải lên..." : "Tải ảnh từ máy tính"}
+            </button>
+            <span className="text-[11px] text-ink-muted">JPG, PNG, WEBP (tối đa 10MB)</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </div>
+
+          <div>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Hoặc dán URL ảnh (https://...)"
+              className={inputClass + " text-xs"}
+            />
+          </div>
+
+          {uploadError && (
+            <p className="text-red-400 text-xs flex items-center gap-1">
+              <i className="fa-solid fa-circle-exclamation text-xs" />
+              {uploadError}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════════════════════════════════
    CREATE STORY MODAL
    ══════════════════════════════════════════════════════════════════════ */
@@ -65,6 +188,7 @@ function CreateStoryModal({
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors },
   } = useForm<CreateStoryInput>({
     defaultValues: {
@@ -77,6 +201,8 @@ function CreateStoryModal({
   });
 
   const accessPolicy = useWatch({ control, name: "accessPolicy" });
+  const coverImageUrl = useWatch({ control, name: "coverImageUrl" }) || "";
+  const descriptionText = useWatch({ control, name: "description" }) || "";
   const { data: genres } = useQuery({ queryKey: ["genres"], queryFn: getGenres });
 
   const mutation = useMutation({
@@ -98,7 +224,7 @@ function CreateStoryModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -184,24 +310,25 @@ function CreateStoryModal({
             </div>
           </div>
 
-          {/* Cover URL */}
-          <div>
-            <label className={labelClass}>URL ảnh bìa</label>
-            <input
-              {...register("coverImageUrl")}
-              placeholder="https://example.com/cover.jpg"
-              className={inputClass}
-            />
-          </div>
+          {/* Cover Image Upload & Preview */}
+          <CoverImageUploadField
+            value={coverImageUrl}
+            onChange={(url) => setValue("coverImageUrl", url, { shouldDirty: true })}
+          />
 
           {/* Description */}
           <div>
-            <label className={labelClass}>Mô tả</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className={labelClass + " !mb-0 font-medium"}>Mô tả tóm tắt nội dung</label>
+              <span className="text-[11px] text-ink-muted">
+                {descriptionText.length} ký tự
+              </span>
+            </div>
             <textarea
               {...register("description")}
-              placeholder="Nhập mô tả nội dung truyện..."
-              rows={3}
-              className={inputClass + " resize-none"}
+              placeholder="Nhập mô tả tóm tắt nội dung cốt truyện, bối cảnh..."
+              rows={4}
+              className={inputClass + " resize-y min-h-[90px] leading-relaxed"}
             />
           </div>
 
@@ -338,6 +465,7 @@ function EditStoryModal({
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm<CreateStoryInput & { status: number }>({
     values: {
@@ -355,6 +483,8 @@ function EditStoryModal({
   });
 
   const accessPolicy = useWatch({ control, name: "accessPolicy" });
+  const coverImageUrl = useWatch({ control, name: "coverImageUrl" }) || "";
+  const descriptionText = useWatch({ control, name: "description" }) || "";
 
   const mutation = useMutation({
     mutationFn: (data: CreateStoryInput & { status: number }) =>
@@ -375,7 +505,7 @@ function EditStoryModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
@@ -467,23 +597,25 @@ function EditStoryModal({
             </select>
           </div>
 
-          {/* Cover URL */}
-          <div>
-            <label className={labelClass}>URL ảnh bìa</label>
-            <input
-              {...register("coverImageUrl")}
-              placeholder="https://example.com/cover.jpg"
-              className={inputClass}
-            />
-          </div>
+          {/* Cover Image Upload & Preview */}
+          <CoverImageUploadField
+            value={coverImageUrl}
+            onChange={(url) => setValue("coverImageUrl", url, { shouldDirty: true })}
+          />
 
           {/* Description */}
           <div>
-            <label className={labelClass}>Mô tả</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className={labelClass + " !mb-0 font-medium"}>Mô tả tóm tắt nội dung</label>
+              <span className="text-[11px] text-ink-muted">
+                {descriptionText.length} ký tự
+              </span>
+            </div>
             <textarea
               {...register("description")}
-              rows={3}
-              className={inputClass + " resize-none"}
+              rows={5}
+              placeholder="Nhập mô tả tóm tắt nội dung câu chuyện, bối cảnh, nhân vật..."
+              className={inputClass + " resize-y min-h-[110px] leading-relaxed"}
             />
           </div>
 
@@ -628,7 +760,7 @@ function EditChapterModal({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
@@ -810,7 +942,7 @@ function AddChapterModal({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
@@ -982,14 +1114,20 @@ function AddChapterModal({
 function StoryDetailPanel({
   storyId,
   onClose,
+  initialEdit = false,
 }: {
   storyId: string;
   onClose: () => void;
+  initialEdit?: boolean;
 }) {
   const queryClient = useQueryClient();
   const [showAddChapter, setShowAddChapter] = useState(false);
-  const [showEditStory, setShowEditStory] = useState(false);
+  const [showEditStory, setShowEditStory] = useState(initialEdit);
   const [editingChapter, setEditingChapter] = useState<ChapterListItem | null>(null);
+
+  useEffect(() => {
+    if (initialEdit) setShowEditStory(true);
+  }, [initialEdit]);
 
   const { data: story, isLoading } = useQuery({
     queryKey: ["storyDetail", storyId],
@@ -1041,9 +1179,9 @@ function StoryDetailPanel({
 
   return (
     <>
-      <div className="fixed inset-0 z-40 flex justify-end">
+      <div className="fixed inset-0 z-[60] flex justify-end">
         <div
-          className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/50 backdrop-blur-xs"
           onClick={onClose}
         />
         <div className="relative w-full max-w-xl bg-ink-card border-l border-ink-border shadow-2xl shadow-black/50 overflow-y-auto">
@@ -1056,23 +1194,28 @@ function StoryDetailPanel({
           ) : (
             <>
               {/* Header */}
-              <div className="sticky top-0 z-10 bg-ink-card/95 backdrop-blur-sm border-b border-ink-border px-6 py-4 flex items-center justify-between gap-3">
-                <h2 className="font-serif text-lg text-ink-text truncate flex-1 min-w-0">
-                  {story.title}
-                </h2>
+              <div className="sticky top-0 z-10 bg-ink-card/95 backdrop-blur-sm border-b border-ink-border px-6 py-4 flex items-center justify-between gap-3 shadow-xs">
+                <div className="flex-1 min-w-0">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-gold block">
+                    Chi tiết tác phẩm
+                  </span>
+                  <h2 className="font-serif text-lg text-ink-text font-bold truncate">
+                    {story.title}
+                  </h2>
+                </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => setShowEditStory(true)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gold/15 text-gold border border-gold/30 hover:bg-gold/25 transition-all flex items-center gap-1.5"
-                    title="Chỉnh sửa thông tin truyện"
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gold text-ink-bg hover:bg-gold-dim transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    title="Chỉnh sửa tên truyện, mô tả, ảnh bìa..."
                   >
                     <i className="fa-solid fa-pen-to-square text-xs" />
-                    Sửa
+                    Sửa truyện
                   </button>
                   <button
                     onClick={handleDeleteStory}
                     disabled={deleteStoryMutation.isPending}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
                     title="Xóa truyện"
                   >
                     <i className="fa-solid fa-trash-can text-xs" />
@@ -1080,7 +1223,7 @@ function StoryDetailPanel({
                   </button>
                   <button
                     onClick={onClose}
-                    className="p-1.5 rounded-lg text-ink-muted hover:text-ink-text hover:bg-ink-bg transition-all"
+                    className="p-1.5 rounded-lg text-ink-muted hover:text-ink-text hover:bg-ink-bg transition-all cursor-pointer"
                   >
                     <i className="fa-solid fa-xmark text-lg" />
                   </button>
@@ -1089,54 +1232,83 @@ function StoryDetailPanel({
 
               {/* Story info */}
               <div className="p-6">
-                <div className="flex gap-5 mb-6">
-                  <div className="w-28 aspect-[2/3] shrink-0 rounded-xl overflow-hidden border border-ink-border bg-ink-bg">
+                <div className="flex gap-5 mb-6 bg-ink-bg/50 border border-ink-border/60 rounded-2xl p-4">
+                  {/* Cover image with hover / click edit overlay */}
+                  <div className="relative group/cover w-28 aspect-[2/3] shrink-0 rounded-xl overflow-hidden border border-ink-border bg-ink-bg shadow-sm">
                     <img
-                      src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
+                      src={resolveImageUrl(story.coverImageUrl)}
                       alt={story.title}
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80";
+                        e.currentTarget.src =
+                          "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80";
                       }}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover/cover:scale-105"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditStory(true)}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover/cover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white text-xs font-medium cursor-pointer"
+                      title="Đổi ảnh bìa truyện"
+                    >
+                      <i className="fa-solid fa-camera text-base text-gold" />
+                      <span>Đổi ảnh bìa</span>
+                    </button>
                   </div>
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <p className="text-sm text-ink-muted">
-                      Tác giả:{" "}
-                      <span className="text-ink-text">{story.author}</span>
-                    </p>
-                    <div className="flex flex-wrap gap-2">
+
+                  <div className="flex-1 min-w-0 space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-serif text-lg font-bold text-ink-text leading-tight truncate">
+                          {story.title}
+                        </h3>
+                        <p className="text-xs text-ink-muted mt-0.5">
+                          Tác giả: <span className="text-ink-text font-medium">{story.author}</span>
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowEditStory(true)}
+                        className="p-1.5 rounded-lg text-ink-muted hover:text-gold hover:bg-ink-bg border border-transparent hover:border-ink-border transition-all shrink-0 cursor-pointer"
+                        title="Chỉnh sửa tên truyện, mô tả, ảnh bìa..."
+                      >
+                        <i className="fa-solid fa-pen-to-square text-sm" />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
                       <span
-                        className={`text-xs px-2.5 py-1 rounded-full border ${statusColor[story.status] ?? statusColor[0]}`}
+                        className={`text-xs px-2.5 py-0.5 rounded-full border ${statusColor[story.status] ?? statusColor[0]}`}
                       >
                         {statusLabel[story.status] ?? "N/A"}
                       </span>
                       <span
-                        className={`text-xs px-2.5 py-1 rounded-full border ${accessPolicyColor[story.accessPolicy] ?? accessPolicyColor[0]}`}
+                        className={`text-xs px-2.5 py-0.5 rounded-full border ${accessPolicyColor[story.accessPolicy] ?? accessPolicyColor[0]}`}
                       >
                         {accessPolicyLabel[story.accessPolicy] ?? "N/A"}
                       </span>
                       {story.type === 1 ? (
-                        <span className="text-xs px-2.5 py-1 rounded-full border text-sky-400 bg-sky-400/10 border-sky-400/20 font-medium">
+                        <span className="text-xs px-2.5 py-0.5 rounded-full border text-sky-400 bg-sky-400/10 border-sky-400/20 font-medium">
                           Truyện tranh (Manga)
                         </span>
                       ) : (
-                        <span className="text-xs px-2.5 py-1 rounded-full border text-amber-400 bg-amber-400/10 border-amber-400/20 font-medium">
+                        <span className="text-xs px-2.5 py-0.5 rounded-full border text-amber-400 bg-amber-400/10 border-amber-400/20 font-medium">
                           Truyện chữ
                         </span>
                       )}
                     </div>
+
                     {story.price != null && story.price > 0 && (
-                      <p className="text-sm text-ink-muted">
-                        Giá:{" "}
-                        <span className="text-gold font-medium">
+                      <p className="text-xs text-ink-muted">
+                        Giá bán:{" "}
+                        <span className="text-gold font-bold">
                           {story.price.toLocaleString()}đ
                         </span>
                       </p>
                     )}
+
                     {story.genres.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
                         {story.genres.map((g) => (
                           <span
                             key={g}
@@ -1150,16 +1322,38 @@ function StoryDetailPanel({
                   </div>
                 </div>
 
-                {story.description && (
-                  <div className="mb-6">
-                    <h3 className="text-sm font-medium text-ink-text mb-2">
-                      Mô tả
+                {/* Description card with direct edit button */}
+                <div className="mb-6 bg-ink-bg/50 border border-ink-border/60 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-ink-text flex items-center gap-2">
+                      <i className="fa-solid fa-align-left text-xs text-gold" />
+                      Mô tả truyện
                     </h3>
+                    <button
+                      onClick={() => setShowEditStory(true)}
+                      className="text-xs text-gold hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                      title="Chỉnh sửa mô tả truyện"
+                    >
+                      <i className="fa-solid fa-pen text-[10px]" />
+                      Sửa mô tả
+                    </button>
+                  </div>
+                  {story.description ? (
                     <p className="text-sm text-ink-muted leading-relaxed whitespace-pre-line">
                       {story.description}
                     </p>
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-xs text-ink-muted/70 italic py-2 flex items-center justify-between">
+                      <span>Chưa có mô tả cho truyện này.</span>
+                      <button
+                        onClick={() => setShowEditStory(true)}
+                        className="text-xs text-gold hover:underline font-medium not-italic cursor-pointer"
+                      >
+                        + Thêm mô tả
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 {/* Chapters */}
                 <div>
@@ -1243,6 +1437,7 @@ function StoryDetailPanel({
           onUpdated={() => {
             queryClient.invalidateQueries({ queryKey: ["storyDetail", storyId] });
             queryClient.invalidateQueries({ queryKey: ["stories"] });
+            queryClient.invalidateQueries({ queryKey: ["story", storyId] });
           }}
         />
       )}
@@ -1277,9 +1472,11 @@ function StoryDetailPanel({
 function StoryRow({
   story,
   onSelect,
+  onEdit,
 }: {
   story: StoryListItem;
   onSelect: () => void;
+  onEdit: () => void;
 }) {
   return (
     <tr
@@ -1291,7 +1488,7 @@ function StoryRow({
         <div className="flex items-center gap-3">
           <div className="w-10 h-14 rounded-lg overflow-hidden border border-ink-border bg-ink-bg shrink-0">
             <img
-              src={story.coverImageUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80"}
+              src={resolveImageUrl(story.coverImageUrl)}
               alt=""
               onError={(e) => {
                 e.currentTarget.onerror = null;
@@ -1348,7 +1545,21 @@ function StoryRow({
 
       {/* Action */}
       <td className="py-3 px-4 text-right">
-        <i className="fa-solid fa-angle-right text-ink-muted group-hover:text-gold transition-colors inline-block text-sm" />
+        <div className="flex items-center justify-end gap-1.5">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold text-gold bg-gold/10 hover:bg-gold/20 border border-gold/25 transition-all flex items-center gap-1 cursor-pointer"
+            title="Chỉnh sửa thông tin truyện"
+          >
+            <i className="fa-solid fa-pen-to-square text-[11px]" />
+            <span>Sửa</span>
+          </button>
+          <i className="fa-solid fa-angle-right text-ink-muted group-hover:text-gold transition-colors inline-block text-sm ml-1" />
+        </div>
       </td>
     </tr>
   );
@@ -1360,11 +1571,17 @@ function StoryRow({
 export default function AdminStoriesPage() {
   const isAdmin = useIsAdmin();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
 
   const [searchKeyword, setSearchKeyword] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
+  const [selectedStoryId, setSelectedStoryId] = useState<string | null>(
+    searchParams.get("storyId") || searchParams.get("id") || null
+  );
+  const [openDirectEdit, setOpenDirectEdit] = useState<boolean>(
+    searchParams.get("edit") === "true"
+  );
 
   const { data: stories, isLoading } = useQuery({
     queryKey: ["stories", searchKeyword],
@@ -1518,7 +1735,14 @@ export default function AdminStoriesPage() {
                 <StoryRow
                   key={story.id}
                   story={story}
-                  onSelect={() => setSelectedStoryId(story.id)}
+                  onSelect={() => {
+                    setOpenDirectEdit(false);
+                    setSelectedStoryId(story.id);
+                  }}
+                  onEdit={() => {
+                    setOpenDirectEdit(true);
+                    setSelectedStoryId(story.id);
+                  }}
                 />
               ))}
             </tbody>
@@ -1540,7 +1764,14 @@ export default function AdminStoriesPage() {
       {selectedStoryId && (
         <StoryDetailPanel
           storyId={selectedStoryId}
-          onClose={() => setSelectedStoryId(null)}
+          initialEdit={openDirectEdit}
+          onClose={() => {
+            setSelectedStoryId(null);
+            setOpenDirectEdit(false);
+            if (searchParams.get("storyId") || searchParams.get("edit")) {
+              setSearchParams({});
+            }
+          }}
         />
       )}
     </>

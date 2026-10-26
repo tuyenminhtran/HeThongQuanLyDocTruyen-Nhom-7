@@ -45,6 +45,37 @@ public class StoriesController : ControllerBase
         return CreatedAtAction(nameof(GetDetail), new { id }, new { id });
     }
 
+    [HttpPost("upload-cover")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UploadCover(IFormFile? file, [FromServices] IWebHostEnvironment env)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { message = "Vui lòng chọn tệp hình ảnh để tải lên." });
+
+        if (file.Length > 10 * 1024 * 1024)
+            return BadRequest(new { message = "Dung lượng ảnh vượt quá giới hạn cho phép (tối đa 10MB)." });
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!allowedExtensions.Contains(ext))
+            return BadRequest(new { message = "Định dạng file không hỗ trợ. Vui lòng chọn .jpg, .jpeg, .png, .webp hoặc .gif." });
+
+        var webRoot = env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+        var folder = Path.Combine(webRoot, "uploads", "covers");
+        Directory.CreateDirectory(folder);
+
+        var fileName = $"{Guid.NewGuid():N}{ext}";
+        var filePath = Path.Combine(folder, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var url = $"/uploads/covers/{fileName}";
+        return Ok(new { url });
+    }
+
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStoryDto dto)
