@@ -147,7 +147,7 @@ public class ProfileController : ControllerBase
                 r.Story.Status,
                 r.Story.AccessPolicy,
                 r.Story.ViewCount,
-                r.Story.Type
+                r.Story.Type, r.Story.Chapters.Count, r.Story.Chapters.OrderByDescending(c => c.ChapterNumber).Select(c => (int?)c.ChapterNumber).FirstOrDefault()
             ))
             .ToListAsync();
 
@@ -170,7 +170,7 @@ public class ProfileController : ControllerBase
                 f.Story.Status,
                 f.Story.AccessPolicy,
                 f.Story.ViewCount,
-                f.Story.Type
+                f.Story.Type, f.Story.Chapters.Count, f.Story.Chapters.OrderByDescending(c => c.ChapterNumber).Select(c => (int?)c.ChapterNumber).FirstOrDefault()
             ))
             .ToListAsync();
 
@@ -193,7 +193,7 @@ public class ProfileController : ControllerBase
                 p.Story.Status,
                 p.Story.AccessPolicy,
                 p.Story.ViewCount,
-                p.Story.Type
+                p.Story.Type, p.Story.Chapters.Count, p.Story.Chapters.OrderByDescending(c => c.ChapterNumber).Select(c => (int?)c.ChapterNumber).FirstOrDefault()
             ))
             .ToListAsync();
 

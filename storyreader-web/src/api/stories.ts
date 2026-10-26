@@ -9,6 +9,8 @@ export interface StoryListItem {
   accessPolicy: number;
   viewCount: number;
   type?: number; // 0 = Novel (Truyện chữ), 1 = Comic (Truyện tranh)
+  totalChapters?: number;
+  latestChapterNumber?: number;
 }
 
 export interface ChapterListItem {

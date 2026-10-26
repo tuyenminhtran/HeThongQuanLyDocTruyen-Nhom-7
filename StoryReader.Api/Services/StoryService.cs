@@ -33,7 +33,7 @@ public class StoryService : IStoryService
             .OrderByDescending(s => s.UpdatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(s => new StoryListItemDto(s.Id, s.Title, s.CoverImageUrl, s.Author, s.Status, s.AccessPolicy, s.ViewCount, s.Type))
+            .Select(s => new StoryListItemDto(s.Id, s.Title, s.CoverImageUrl, s.Author, s.Status, s.AccessPolicy, s.ViewCount, s.Type, s.Chapters.Count, s.Chapters.OrderByDescending(c => c.ChapterNumber).Select(c => (int?)c.ChapterNumber).FirstOrDefault()))
             .ToListAsync();
     }
 
