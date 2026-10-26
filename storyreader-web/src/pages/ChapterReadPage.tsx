@@ -37,6 +37,11 @@ export default function ChapterReadPage() {
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
   const isAdmin = useIsAdmin();
 
+  // Tự động cuộn lên đầu trang mỗi khi vào trang hoặc chuyển chương
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [id]);
+
   const showCopyToast = useCallback((msg: string) => {
     setCopyWarning(msg);
     setTimeout(() => {
@@ -157,6 +162,7 @@ export default function ChapterReadPage() {
   const goToChapter = useCallback(
     (chapterId: string) => {
       setShowChapterList(false);
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
       navigate(`/chapters/${chapterId}`, {
         state: { storyId: activeStoryId },
       });
@@ -183,20 +189,20 @@ export default function ChapterReadPage() {
 
   // Theme styling
   const themeClasses: Record<Theme, string> = {
-    dark: "bg-ink-bg text-ink-text",
-    light: "bg-[#F8F9FA] text-[#1A1D20]",
+    dark: "bg-[#12161f] text-[#E2E8F0]",
+    light: "bg-white text-[#1A1D20]",
     sepia: "bg-[#F4ECD8] text-[#433422]",
   };
 
   const borderClasses: Record<Theme, string> = {
-    dark: "border-ink-border",
+    dark: "border-[#2a3242]",
     light: "border-gray-200",
     sepia: "border-[#D6C5A5]",
   };
 
   const cardClasses: Record<Theme, string> = {
-    dark: "bg-ink-card border-ink-border text-ink-text",
-    light: "bg-white border-gray-200 text-[#1A1D20] shadow-sm",
+    dark: "bg-[#181d28] border-[#2a3242] text-[#E2E8F0]",
+    light: "bg-white border-gray-200 text-[#1A1D20] shadow-xs",
     sepia: "bg-[#EFE5CD] border-[#D6C5A5] text-[#433422]",
   };
 
@@ -205,23 +211,19 @@ export default function ChapterReadPage() {
   const isProtectedNovel = !isComic && !!(chapter?.imageUrls && chapter.imageUrls.length > 0);
   const hasImages = isComic || isProtectedNovel;
 
-  // Bộ lọc CSS thích ứng theo màu nền cho ảnh chống sao chép SkiaSharp
+  // Bộ lọc triệt tiêu nền đen và viền, chuyển thành chữ đen hòa tan hoàn toàn vào trang đọc
   const getProtectedImageStyle = () => {
     if (!isProtectedNovel) return {};
-    if (theme === "light") {
+    if (theme === "light" || theme === "sepia") {
       return {
-        filter: "invert(1) hue-rotate(180deg) contrast(1.08) brightness(1.02)",
+        filter: "invert(1) grayscale(1) brightness(1.22) contrast(1.25)",
         mixBlendMode: "multiply" as const,
       };
     }
-    if (theme === "sepia") {
-      return {
-        filter: "invert(1) sepia(0.35) saturate(1.15) contrast(1.05)",
-        mixBlendMode: "multiply" as const,
-      };
-    }
+    // Nền tối: khớp hoàn hảo 100% với nền trang #12161f
     return {
-      filter: "none",
+      filter: "contrast(1.05)",
+      mixBlendMode: "normal" as const,
     };
   };
 
@@ -229,13 +231,13 @@ export default function ChapterReadPage() {
     return (
       <div className={`min-h-[calc(100vh-65px)] ${themeClasses[theme]} transition-colors duration-300`}>
         <div className="max-w-3xl mx-auto px-6 py-20 animate-pulse">
-          <div className={`h-10 rounded-lg w-3/4 mb-12 mx-auto ${theme === 'dark' ? 'bg-ink-card' : 'bg-black/10'}`} />
+          <div className={`h-10 rounded-lg w-3/4 mb-12 mx-auto ${theme === 'dark' ? 'bg-[#181d28]' : 'bg-black/10'}`} />
           <div className="space-y-6">
-            <div className={`h-4 rounded w-full ${theme === 'dark' ? 'bg-ink-card' : 'bg-black/10'}`} />
-            <div className={`h-4 rounded w-[95%] ${theme === 'dark' ? 'bg-ink-card' : 'bg-black/10'}`} />
-            <div className={`h-4 rounded w-[98%] ${theme === 'dark' ? 'bg-ink-card' : 'bg-black/10'}`} />
-            <div className={`h-4 rounded w-[90%] ${theme === 'dark' ? 'bg-ink-card' : 'bg-black/10'}`} />
-            <div className={`h-4 rounded w-full ${theme === 'dark' ? 'bg-ink-card' : 'bg-black/10'}`} />
+            <div className={`h-4 rounded w-full ${theme === 'dark' ? 'bg-[#181d28]' : 'bg-black/10'}`} />
+            <div className={`h-4 rounded w-[95%] ${theme === 'dark' ? 'bg-[#181d28]' : 'bg-black/10'}`} />
+            <div className={`h-4 rounded w-[98%] ${theme === 'dark' ? 'bg-[#181d28]' : 'bg-black/10'}`} />
+            <div className={`h-4 rounded w-[90%] ${theme === 'dark' ? 'bg-[#181d28]' : 'bg-black/10'}`} />
+            <div className={`h-4 rounded w-full ${theme === 'dark' ? 'bg-[#181d28]' : 'bg-black/10'}`} />
           </div>
         </div>
       </div>
@@ -338,29 +340,47 @@ export default function ChapterReadPage() {
             <span>Quay lại truyện</span>
           </button>
 
-          <div className={`backdrop-blur-md border ${borderClasses[theme]} rounded-full flex items-center p-1.5 shadow-xs ${theme === 'dark' ? 'bg-ink-card/80' : 'bg-white/80'}`}>
+          <div className={`backdrop-blur-md border ${borderClasses[theme]} rounded-full flex items-center p-1.5 shadow-xs ${
+            theme === 'dark'
+              ? 'bg-[#181d28]/90 text-white'
+              : theme === 'sepia'
+              ? 'bg-[#EFE5CD]/90 text-[#433422]'
+              : 'bg-white/90 text-gray-800'
+          }`}>
 
             {/* Theme toggles */}
             <button
               onClick={() => setTheme('light')}
-              className={`w-8 h-8 rounded-full flex items-center justify-center mx-1 border ${theme === 'light' ? 'border-gold ring-2 ring-gold/30' : 'border-transparent hover:border-gray-300'} bg-[#F8F9FA]`}
+              className={`w-7 h-7 rounded-full flex items-center justify-center mx-1 border transition-all ${
+                theme === 'light'
+                  ? 'border-gold ring-2 ring-gold/40 scale-105'
+                  : 'border-gray-300 hover:border-gray-400'
+              } bg-white shadow-xs`}
               title="Nền sáng"
             />
             <button
               onClick={() => setTheme('sepia')}
-              className={`w-8 h-8 rounded-full flex items-center justify-center mx-1 border ${theme === 'sepia' ? 'border-gold ring-2 ring-gold/30' : 'border-transparent hover:border-[#D6C5A5]'} bg-[#F4ECD8]`}
+              className={`w-7 h-7 rounded-full flex items-center justify-center mx-1 border transition-all ${
+                theme === 'sepia'
+                  ? 'border-gold ring-2 ring-gold/40 scale-105'
+                  : 'border-[#D6C5A5] hover:border-[#b8a480]'
+              } bg-[#F4ECD8] shadow-xs`}
               title="Nền vàng dịu"
             />
             <button
               onClick={() => setTheme('dark')}
-              className={`w-8 h-8 rounded-full flex items-center justify-center mx-1 border ${theme === 'dark' ? 'border-gold ring-2 ring-gold/30' : 'border-transparent hover:border-gray-600'} bg-ink-bg`}
+              className={`w-7 h-7 rounded-full flex items-center justify-center mx-1 border transition-all ${
+                theme === 'dark'
+                  ? 'border-gold ring-2 ring-gold/40 scale-105'
+                  : 'border-gray-600 hover:border-gray-400'
+              } bg-[#12161f] shadow-xs`}
               title="Nền tối"
             />
 
             {/* Chế độ Truyện chữ: Hỗ trợ đổi cỡ chữ và font */}
             {!hasImages && (
               <>
-                <div className={`w-px h-6 mx-1 ${theme === 'dark' ? 'bg-ink-border' : 'bg-gray-300'}`} />
+                <div className={`w-px h-5 mx-1 ${theme === 'dark' ? 'bg-[#2a3242]' : theme === 'sepia' ? 'bg-[#D6C5A5]' : 'bg-gray-200'}`} />
                 {/* Font Family switch */}
                 <button
                   onClick={() => {
@@ -369,7 +389,7 @@ export default function ChapterReadPage() {
                   }}
                   className={`px-2.5 py-1 mx-1 rounded-lg text-xs font-medium border transition-colors ${
                     theme === "dark"
-                      ? "border-ink-border text-ink-text hover:bg-white/10"
+                      ? "border-[#2a3242] text-white hover:bg-white/10"
                       : "border-gray-200 text-gray-700 hover:bg-black/5"
                   }`}
                   title="Chuyển đổi kiểu font chữ"
@@ -380,7 +400,7 @@ export default function ChapterReadPage() {
                 {/* Font size toggles */}
                 <button
                   onClick={() => setFontSize(Math.max(14, fontSize - 2))}
-                  className="w-8 h-8 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-serif font-bold text-sm"
+                  className="w-8 h-8 rounded-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-serif font-bold text-sm"
                   title="Thu nhỏ chữ"
                 >
                   A-
@@ -388,7 +408,7 @@ export default function ChapterReadPage() {
                 <span className="text-xs font-mono opacity-60 w-5 text-center">{fontSize}</span>
                 <button
                   onClick={() => setFontSize(Math.min(32, fontSize + 2))}
-                  className="w-8 h-8 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-serif font-bold text-base"
+                  className="w-8 h-8 rounded-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-serif font-bold text-base"
                   title="Phóng to chữ"
                 >
                   A+
@@ -404,9 +424,12 @@ export default function ChapterReadPage() {
 
             {/* Chế độ Ảnh bảo vệ bản quyền */}
             {isProtectedNovel && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium border border-amber-500/20 ml-2" title="Ảnh tự động đồng bộ theo màu nền bạn chọn">
+              <div
+                className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full text-xs font-medium border border-amber-500/20 ml-2"
+                title="Nội dung được bảo vệ chống sao chép"
+              >
                 <i className="fa-solid fa-shield-halved text-[11px]" />
-                <span>Ảnh chống copy ({chapter?.imageUrls?.length ?? 0} trang)</span>
+                <span>Bảo vệ bản quyền</span>
               </div>
             )}
 
@@ -421,26 +444,14 @@ export default function ChapterReadPage() {
         </div>
 
         {/* Header */}
-        <div className={`text-center mb-12 border-b ${borderClasses[theme]} pb-10`}>
-          <div className="flex items-center justify-center gap-2 mb-4">
+        <div className={`text-center mb-10 border-b ${borderClasses[theme]} pb-8`}>
+          <div className="flex items-center justify-center gap-2 mb-3">
             <span className="text-gold font-medium tracking-widest uppercase text-sm">
               Chương {chapter.chapterNumber}
             </span>
             {isComic && (
               <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 font-medium">
                 Manga / Comic
-              </span>
-            )}
-            {isProtectedNovel && (
-              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium flex items-center gap-1.5">
-                <i className="fa-solid fa-shield-halved text-[10px]" />
-                Bảo vệ bằng ảnh (Đồng bộ màu)
-              </span>
-            )}
-            {!hasImages && (
-              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-medium flex items-center gap-1.5">
-                <i className="fa-solid fa-shield-halved text-[10px]" />
-                Chống sao chép kích hoạt
               </span>
             )}
           </div>
@@ -451,8 +462,8 @@ export default function ChapterReadPage() {
 
         {/* Chapter Body */}
         {hasImages ? (
-          /* Chế độ Xem Trang Ảnh (Truyện tranh hoặc Ảnh chống copy đã render) */
-          <div className="max-w-3xl mx-auto flex flex-col items-center select-none space-y-4 py-2">
+          /* Chế độ Xem Trang Ảnh (Truyện tranh hoặc Ảnh chống copy) */
+          <div className="max-w-3xl mx-auto flex flex-col items-center select-none space-y-3 py-2">
             {chapter.imageUrls && chapter.imageUrls.length > 0 ? (
               chapter.imageUrls.map((url, idx) => (
                 <div key={idx} className="w-full relative group">
@@ -460,9 +471,9 @@ export default function ChapterReadPage() {
                     src={url}
                     alt={`Trang ${idx + 1}`}
                     loading="lazy"
-                    className={`w-full h-auto object-cover mx-auto block transition-all duration-300 ${
+                    className={`w-full h-auto object-cover mx-auto block transition-all duration-200 ${
                       isProtectedNovel
-                        ? "rounded-xl border border-current/10"
+                        ? "border-0 shadow-none"
                         : "rounded-lg shadow-md"
                     }`}
                     style={getProtectedImageStyle()}
@@ -471,13 +482,15 @@ export default function ChapterReadPage() {
                       e.currentTarget.src = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=800&q=80";
                     }}
                   />
-                  <span className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white/90 text-xs px-2.5 py-1 rounded-full font-mono opacity-0 group-hover:opacity-100 transition-opacity">
-                    Trang {idx + 1} / {chapter.imageUrls!.length}
-                  </span>
+                  {isComic && (
+                    <span className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white/90 text-xs px-2.5 py-1 rounded-full font-mono opacity-0 group-hover:opacity-100 transition-opacity">
+                      Trang {idx + 1} / {chapter.imageUrls!.length}
+                    </span>
+                  )}
                 </div>
               ))
             ) : (
-              <div className="text-center py-16 text-ink-muted">
+              <div className="text-center py-16 opacity-50">
                 <i className="fa-solid fa-image text-4xl mb-3 opacity-40 block" />
                 <p className="text-sm">Chương này chưa có hình ảnh nào được tải lên.</p>
               </div>
@@ -742,21 +755,21 @@ export default function ChapterReadPage() {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowChapterList(false)}
           />
-          <div className="relative w-full max-w-lg bg-ink-card border border-ink-border rounded-2xl shadow-2xl max-h-[80vh] flex flex-col overflow-hidden text-ink-text">
-            <div className="flex items-center justify-between p-4 border-b border-ink-border">
+          <div className={`relative w-full max-w-lg ${cardClasses[theme]} border ${borderClasses[theme]} rounded-2xl shadow-2xl max-h-[80vh] flex flex-col overflow-hidden`}>
+            <div className={`flex items-center justify-between p-4 border-b ${borderClasses[theme]}`}>
               <div>
                 <h3 className="font-serif font-bold text-lg">Danh sách chương</h3>
-                <p className="text-xs text-ink-muted">{story?.title || "Mục lục"}</p>
+                <p className="text-xs opacity-60">{story?.title || "Mục lục"}</p>
               </div>
               <button
                 onClick={() => setShowChapterList(false)}
-                className="p-1.5 rounded-lg text-ink-muted hover:text-ink-text hover:bg-ink-bg transition-colors"
+                className="p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
               >
                 <i className="fa-solid fa-xmark text-lg" />
               </button>
             </div>
 
-            <div className="p-3 overflow-y-auto divide-y divide-ink-border/40 space-y-1">
+            <div className={`p-3 overflow-y-auto divide-y ${borderClasses[theme]} divide-opacity-40 space-y-1`}>
               {sortedChapters.map((c) => {
                 const isCurrent = c.id === id;
                 return (
@@ -766,7 +779,7 @@ export default function ChapterReadPage() {
                     className={`w-full text-left p-3 rounded-xl transition-all flex items-center justify-between gap-3 ${
                       isCurrent
                         ? "bg-gold/15 text-gold border border-gold/30 font-medium"
-                        : "hover:bg-ink-bg/60 text-ink-text"
+                        : "hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100"
                     }`}
                   >
                     <div className="min-w-0">
