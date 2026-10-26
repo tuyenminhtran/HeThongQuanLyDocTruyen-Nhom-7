@@ -3,7 +3,8 @@ using StoryReader.Api.Models.Entities;
 namespace StoryReader.Api.Models.Dtos;
 
 public record StoryListItemDto(Guid Id, string Title, string CoverImageUrl, string Author,
-    ReleaseStatus Status, AccessPolicy AccessPolicy, int ViewCount, StoryType Type = StoryType.Novel);
+    ReleaseStatus Status, AccessPolicy AccessPolicy, int ViewCount, StoryType Type = StoryType.Novel,
+    int TotalChapters = 0, int? LatestChapterNumber = null);
 
 public record StoryDetailDto(Guid Id, string Title, string CoverImageUrl, string Description,
     string Author, ReleaseStatus Status, AccessPolicy AccessPolicy, decimal? Price,

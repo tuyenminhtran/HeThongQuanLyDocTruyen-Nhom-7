@@ -78,7 +78,7 @@ export default function StoryCard({ story }: { story: StoryListItem }) {
       {/* Subtitle: Author & Chapter info */}
       <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
         <span className="truncate max-w-[120px]">{story.author || "Đang cập nhật"}</span>
-        <span className="text-[11px] text-slate-400 font-medium shrink-0">Mới</span>
+        <span className="text-[11px] text-orange-600 font-semibold shrink-0">{story.latestChapterNumber && story.latestChapterNumber > 0 ? "Chương " + story.latestChapterNumber : story.totalChapters && story.totalChapters > 0 ? "Chương " + story.totalChapters : "Mới"}</span>
       </div>
     </Link>
   );

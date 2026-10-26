@@ -39,7 +39,7 @@ function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }
           {story.title}
         </h4>
         <p className="text-xs text-slate-500 mt-0.5 flex items-center justify-between">
-          <span>Chương Mới</span>
+          <span>{story.latestChapterNumber && story.latestChapterNumber > 0 ? "Chương " + story.latestChapterNumber : story.totalChapters && story.totalChapters > 0 ? "Chương " + story.totalChapters : "Chương Mới"}</span>
           <span className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
             <i className="fa-solid fa-eye text-orange-500 text-[10px]" />
             <span>{(story.viewCount ?? 0) >= 1000 ? `${((story.viewCount ?? 0) / 1000).toFixed(0)}K` : (story.viewCount ?? 0)}</span>
@@ -231,7 +231,7 @@ export default function HomePage() {
                   {story.title}
                 </h3>
                 <p className="text-[11px] text-slate-500 text-center mt-0.5">
-                  Chương {100 + idx * 25}
+                  {story.latestChapterNumber && story.latestChapterNumber > 0 ? "Chương " + story.latestChapterNumber : story.totalChapters && story.totalChapters > 0 ? "Chương " + story.totalChapters : "Mới cập nhật"}
                 </p>
               </Link>
             ))}
