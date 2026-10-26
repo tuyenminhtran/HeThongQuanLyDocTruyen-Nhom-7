@@ -5,6 +5,7 @@ import { buyStory, simulatePaymentCallback } from "../api/payments";
 import { useAuthStore } from "../store/authStore";
 import { useState } from "react";
 import { getFallbackStoryDetail } from "../data/mockDetails";
+import { fireConfetti } from "../utils/confetti";
 
 const accessPolicyLabel: Record<number, string> = {
   0: "Miễn phí",
@@ -93,6 +94,7 @@ export default function StoryDetailPage() {
       setIsSimulatingPayment(true);
       await simulatePaymentCallback(paymentModal.ref, true);
       setPaymentSuccess(true);
+      fireConfetti();
       queryClient.invalidateQueries({ queryKey: ["story", id] });
       queryClient.invalidateQueries({ queryKey: ["user-library"] });
       queryClient.invalidateQueries({ queryKey: ["adminDashboardOverview"] });
