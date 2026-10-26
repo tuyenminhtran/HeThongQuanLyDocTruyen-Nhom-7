@@ -60,6 +60,10 @@ export default function StoryDetailPage() {
   const [chapterSearch, setChapterSearch] = useState("");
   const [sortAsc, setSortAsc] = useState(true);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [id]);
+
   // State cho Modal thanh toán mua truyện
   const [paymentModal, setPaymentModal] = useState<{ transactionId: string; paymentUrl: string; ref: string } | null>(null);
   const [isSimulatingPayment, setIsSimulatingPayment] = useState(false);
