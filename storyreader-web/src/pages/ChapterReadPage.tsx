@@ -8,6 +8,7 @@ import { AxiosError } from "axios";
 import { useState, useEffect, useCallback } from "react";
 
 type Theme = "dark" | "light" | "sepia";
+type FontFamily = "serif" | "sans";
 
 export default function ChapterReadPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,12 +25,24 @@ export default function ChapterReadPage() {
     return (localStorage.getItem("storyreader-theme") as Theme) || "light";
   });
 
+  const [fontFamily, setFontFamily] = useState<FontFamily>(() => {
+    return (localStorage.getItem("storyreader-font-family") as FontFamily) || "serif";
+  });
+
+  const [copyWarning, setCopyWarning] = useState<string | null>(null);
   const [showChapterList, setShowChapterList] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [commentText, setCommentText] = useState("");
   const queryClient = useQueryClient();
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
   const isAdmin = useIsAdmin();
+
+  const showCopyToast = useCallback((msg: string) => {
+    setCopyWarning(msg);
+    setTimeout(() => {
+      setCopyWarning((prev) => (prev === msg ? null : prev));
+    }, 2500);
+  }, []);
 
   const { data: discussions, isLoading: isDiscussionsLoading } = useQuery({
     queryKey: ["discussions", id],
@@ -70,6 +83,10 @@ export default function ChapterReadPage() {
   }, [theme]);
 
   useEffect(() => {
+    localStorage.setItem("storyreader-font-family", fontFamily);
+  }, [fontFamily]);
+
+  useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 400);
     };
@@ -85,6 +102,39 @@ export default function ChapterReadPage() {
   });
 
   const activeStoryId = stateStoryId || chapter?.storyId;
+
+  // Cài đặt lớp bảo vệ chống sao chép thông minh trực tiếp
+  useEffect(() => {
+    const handleCopy = (e: ClipboardEvent) => {
+      e.preventDefault();
+      if (e.clipboardData) {
+        e.clipboardData.setData(
+          "text/plain",
+          `Nội dung chương "${chapter?.title || "truyện"}" thuộc bản quyền của tác giả trên hệ thống StoryNest. Vui lòng không sao chép trái phép!`
+        );
+      }
+      showCopyToast("Nội dung đã được bảo vệ bản quyền trên StoryNest. Đã khóa sao chép!");
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Chặn Ctrl+C / Cmd+C
+      if ((e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C")) {
+        e.preventDefault();
+        showCopyToast("Đã chặn phím tắt sao chép (Ctrl+C). Nội dung được bảo vệ!");
+      }
+      // Chặn Ctrl+U (Xem nguồn), Ctrl+S (Lưu trang), Ctrl+P (In ấn)
+      if ((e.ctrlKey || e.metaKey) && ["u", "s", "p"].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener("copy", handleCopy);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("copy", handleCopy);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [chapter?.title, showCopyToast]);
 
   // Fetch story details to know full chapter list & adjacent chapters
   const { data: story } = useQuery({
@@ -148,6 +198,31 @@ export default function ChapterReadPage() {
     dark: "bg-ink-card border-ink-border text-ink-text",
     light: "bg-white border-gray-200 text-[#1A1D20] shadow-sm",
     sepia: "bg-[#EFE5CD] border-[#D6C5A5] text-[#433422]",
+  };
+
+  // Phân loại hình thức nội dung
+  const isComic = chapter?.storyType === 1;
+  const isProtectedNovel = !isComic && !!(chapter?.imageUrls && chapter.imageUrls.length > 0);
+  const hasImages = isComic || isProtectedNovel;
+
+  // Bộ lọc CSS thích ứng theo màu nền cho ảnh chống sao chép SkiaSharp
+  const getProtectedImageStyle = () => {
+    if (!isProtectedNovel) return {};
+    if (theme === "light") {
+      return {
+        filter: "invert(1) hue-rotate(180deg) contrast(1.08) brightness(1.02)",
+        mixBlendMode: "multiply" as const,
+      };
+    }
+    if (theme === "sepia") {
+      return {
+        filter: "invert(1) sepia(0.35) saturate(1.15) contrast(1.05)",
+        mixBlendMode: "multiply" as const,
+      };
+    }
+    return {
+      filter: "none",
+    };
   };
 
   if (isLoading) {
@@ -265,8 +340,6 @@ export default function ChapterReadPage() {
 
           <div className={`backdrop-blur-md border ${borderClasses[theme]} rounded-full flex items-center p-1.5 shadow-xs ${theme === 'dark' ? 'bg-ink-card/80' : 'bg-white/80'}`}>
 
-            <div className={`w-px h-6 mx-1 ${theme === 'dark' ? 'bg-ink-border' : 'bg-gray-300'}`} />
-
             {/* Theme toggles */}
             <button
               onClick={() => setTheme('light')}
@@ -276,7 +349,7 @@ export default function ChapterReadPage() {
             <button
               onClick={() => setTheme('sepia')}
               className={`w-8 h-8 rounded-full flex items-center justify-center mx-1 border ${theme === 'sepia' ? 'border-gold ring-2 ring-gold/30' : 'border-transparent hover:border-[#D6C5A5]'} bg-[#F4ECD8]`}
-              title="Nền vàng"
+              title="Nền vàng dịu"
             />
             <button
               onClick={() => setTheme('dark')}
@@ -284,28 +357,62 @@ export default function ChapterReadPage() {
               title="Nền tối"
             />
 
-            {/* Font size toggles (chỉ hiện khi là truyện chữ) */}
-            {!(chapter?.storyType === 1 || (chapter?.imageUrls && chapter.imageUrls.length > 0)) ? (
+            {/* Chế độ Truyện chữ: Hỗ trợ đổi cỡ chữ và font */}
+            {!hasImages && (
               <>
                 <div className={`w-px h-6 mx-1 ${theme === 'dark' ? 'bg-ink-border' : 'bg-gray-300'}`} />
+                {/* Font Family switch */}
+                <button
+                  onClick={() => {
+                    const nextFont = fontFamily === "serif" ? "sans" : "serif";
+                    setFontFamily(nextFont);
+                  }}
+                  className={`px-2.5 py-1 mx-1 rounded-lg text-xs font-medium border transition-colors ${
+                    theme === "dark"
+                      ? "border-ink-border text-ink-text hover:bg-white/10"
+                      : "border-gray-200 text-gray-700 hover:bg-black/5"
+                  }`}
+                  title="Chuyển đổi kiểu font chữ"
+                >
+                  {fontFamily === "serif" ? "Có chân" : "Không chân"}
+                </button>
+
+                {/* Font size toggles */}
                 <button
                   onClick={() => setFontSize(Math.max(14, fontSize - 2))}
-                  className="w-10 h-10 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 transition-colors font-serif font-bold text-sm"
+                  className="w-8 h-8 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-serif font-bold text-sm"
                   title="Thu nhỏ chữ"
                 >
                   A-
                 </button>
-                <span className="text-xs font-mono opacity-60 w-6 text-center">{fontSize}</span>
+                <span className="text-xs font-mono opacity-60 w-5 text-center">{fontSize}</span>
                 <button
                   onClick={() => setFontSize(Math.min(32, fontSize + 2))}
-                  className="w-10 h-10 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 transition-colors font-serif font-bold text-lg"
+                  className="w-8 h-8 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-serif font-bold text-base"
                   title="Phóng to chữ"
                 >
                   A+
                 </button>
+
+                {/* Shield badge */}
+                <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-medium border border-emerald-500/20 ml-1">
+                  <i className="fa-solid fa-shield-halved text-[10px]" />
+                  <span>Đã bảo vệ</span>
+                </div>
               </>
-            ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-gold/10 text-gold rounded-full text-xs font-medium border border-gold/20 ml-2">
+            )}
+
+            {/* Chế độ Ảnh bảo vệ bản quyền */}
+            {isProtectedNovel && (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium border border-amber-500/20 ml-2" title="Ảnh tự động đồng bộ theo màu nền bạn chọn">
+                <i className="fa-solid fa-shield-halved text-[11px]" />
+                <span>Ảnh chống copy ({chapter?.imageUrls?.length ?? 0} trang)</span>
+              </div>
+            )}
+
+            {/* Chế độ Truyện tranh Manga / Comic */}
+            {isComic && (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-full text-xs font-medium border border-sky-500/20 ml-2">
                 <i className="fa-solid fa-image text-[11px]" />
                 <span>Truyện tranh ({chapter?.imageUrls?.length ?? 0} trang)</span>
               </div>
@@ -319,9 +426,21 @@ export default function ChapterReadPage() {
             <span className="text-gold font-medium tracking-widest uppercase text-sm">
               Chương {chapter.chapterNumber}
             </span>
-            {(chapter.storyType === 1 || (chapter.imageUrls && chapter.imageUrls.length > 0)) && (
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
+            {isComic && (
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 font-medium">
                 Manga / Comic
+              </span>
+            )}
+            {isProtectedNovel && (
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium flex items-center gap-1.5">
+                <i className="fa-solid fa-shield-halved text-[10px]" />
+                Bảo vệ bằng ảnh (Đồng bộ màu)
+              </span>
+            )}
+            {!hasImages && (
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-medium flex items-center gap-1.5">
+                <i className="fa-solid fa-shield-halved text-[10px]" />
+                Chống sao chép kích hoạt
               </span>
             )}
           </div>
@@ -331,9 +450,9 @@ export default function ChapterReadPage() {
         </div>
 
         {/* Chapter Body */}
-        {chapter.storyType === 1 || (chapter.imageUrls && chapter.imageUrls.length > 0) ? (
-          /* Chế độ Webtoon Viewer cho Truyện tranh */
-          <div className="max-w-3xl mx-auto flex flex-col items-center select-none space-y-2 py-2">
+        {hasImages ? (
+          /* Chế độ Xem Trang Ảnh (Truyện tranh hoặc Ảnh chống copy đã render) */
+          <div className="max-w-3xl mx-auto flex flex-col items-center select-none space-y-4 py-2">
             {chapter.imageUrls && chapter.imageUrls.length > 0 ? (
               chapter.imageUrls.map((url, idx) => (
                 <div key={idx} className="w-full relative group">
@@ -341,7 +460,12 @@ export default function ChapterReadPage() {
                     src={url}
                     alt={`Trang ${idx + 1}`}
                     loading="lazy"
-                    className="w-full h-auto object-cover rounded-lg shadow-md mx-auto block"
+                    className={`w-full h-auto object-cover mx-auto block transition-all duration-300 ${
+                      isProtectedNovel
+                        ? "rounded-xl border border-current/10"
+                        : "rounded-lg shadow-md"
+                    }`}
+                    style={getProtectedImageStyle()}
                     onError={(e) => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=800&q=80";
@@ -360,18 +484,43 @@ export default function ChapterReadPage() {
             )}
           </div>
         ) : (
-          /* Chế độ Text Reader cho Truyện chữ */
+          /* Chế độ Text Reader cho Truyện chữ: Tự do đổi màu nền, đổi cỡ chữ, đổi font mà vẫn chống copy 100% */
           <div
-            className="font-serif mx-auto opacity-90"
+            className={`${
+              fontFamily === "serif" ? "font-serif" : "font-sans"
+            } mx-auto relative select-none cursor-default py-4`}
             style={{
               fontSize: `${fontSize}px`,
-              lineHeight: 1.85,
+              lineHeight: 1.9,
               maxWidth: "780px",
+              userSelect: "none",
+              WebkitUserSelect: "none",
             }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              showCopyToast("Nội dung đã được bảo vệ bản quyền chống sao chép!");
+            }}
+            onDragStart={(e) => e.preventDefault()}
           >
+            {/* Watermark chìm mờ bảo vệ bản quyền */}
+            <div
+              className="pointer-events-none select-none absolute inset-0 flex flex-col justify-around items-center opacity-[0.03] dark:opacity-[0.04] overflow-hidden"
+              aria-hidden="true"
+            >
+              <div className="text-2xl sm:text-3xl font-black rotate-[-25deg] tracking-widest uppercase">
+                STORYNEST • BẢN QUYỀN ĐỌC TRUYỆN
+              </div>
+              <div className="text-2xl sm:text-3xl font-black rotate-[-25deg] tracking-widest uppercase">
+                STORYNEST • PROTECTED CONTENT
+              </div>
+              <div className="text-2xl sm:text-3xl font-black rotate-[-25deg] tracking-widest uppercase">
+                STORYNEST • BẢN QUYỀN ĐỌC TRUYỆN
+              </div>
+            </div>
+
             {chapter.content.split("\n").map((paragraph, index) =>
               paragraph.trim() ? (
-                <p key={index} className="mb-6 indent-8 text-justify">
+                <p key={index} className="mb-6 indent-8 text-justify relative z-10">
                   {paragraph}
                 </p>
               ) : (
@@ -388,10 +537,11 @@ export default function ChapterReadPage() {
             <button
               onClick={() => prevChapter && goToChapter(prevChapter.id)}
               disabled={!prevChapter}
-              className={`w-full sm:w-auto px-5 py-3 rounded-xl border flex items-center justify-center gap-2 font-medium text-sm transition-all ${prevChapter
+              className={`w-full sm:w-auto px-5 py-3 rounded-xl border flex items-center justify-center gap-2 font-medium text-sm transition-all ${
+                prevChapter
                   ? `${borderClasses[theme]} hover:border-gold hover:text-gold ${cardClasses[theme]}`
                   : "opacity-40 border-transparent cursor-not-allowed"
-                }`}
+              }`}
             >
               <i className="fa-solid fa-chevron-left text-xs" />
               <span>Chương trước</span>
@@ -412,10 +562,11 @@ export default function ChapterReadPage() {
             <button
               onClick={() => nextChapter && goToChapter(nextChapter.id)}
               disabled={!nextChapter}
-              className={`w-full sm:w-auto px-6 py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm transition-all shadow-md ${nextChapter
+              className={`w-full sm:w-auto px-6 py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm transition-all shadow-md ${
+                nextChapter
                   ? "bg-gold text-ink-bg hover:bg-gold-dim shadow-gold/20"
                   : "opacity-40 bg-gray-500/20 text-ink-muted cursor-not-allowed"
-                }`}
+              }`}
             >
               <span>Chương sau</span>
               {nextChapter?.requiresAccess && (
@@ -565,7 +716,15 @@ export default function ChapterReadPage() {
         </div>
       </div>
 
-      {/* Nút Cuộn Lên Đầu Trang mượt mà */}
+      {/* Thông báo Toast khi người đọc cố gắng sao chép hoặc bôi đen */}
+      {copyWarning && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-gray-900/95 dark:bg-black/95 text-white text-xs sm:text-sm font-medium shadow-2xl border border-white/10 flex items-center gap-2.5 backdrop-blur-md animate-bounce pointer-events-none">
+          <i className="fa-solid fa-shield-halved text-amber-400 text-sm" />
+          <span>{copyWarning}</span>
+        </div>
+      )}
+
+      {/* Nút Cuộn Lên Đầu Trang */}
       {showScrollTop && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -604,10 +763,11 @@ export default function ChapterReadPage() {
                   <button
                     key={c.id}
                     onClick={() => goToChapter(c.id)}
-                    className={`w-full text-left p-3 rounded-xl transition-all flex items-center justify-between gap-3 ${isCurrent
+                    className={`w-full text-left p-3 rounded-xl transition-all flex items-center justify-between gap-3 ${
+                      isCurrent
                         ? "bg-gold/15 text-gold border border-gold/30 font-medium"
                         : "hover:bg-ink-bg/60 text-ink-text"
-                      }`}
+                    }`}
                   >
                     <div className="min-w-0">
                       <span className="text-xs opacity-60 font-mono block">Chương {c.chapterNumber}</span>

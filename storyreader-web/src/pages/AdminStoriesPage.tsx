@@ -733,7 +733,7 @@ function EditChapterModal({
                     <i className="fa-solid fa-shield-halved text-xs" />
                     Chống sao chép (Render lại thành ảnh)
                   </span>
-                  Tự động chuyển đổi nội dung chữ thành các trang ảnh có watermark để người đọc xem qua Webtoon và không thể sao chép văn bản.
+                  Tự động chuyển đổi nội dung chữ thành các trang ảnh có watermark. Giao diện đọc sẽ tự động đồng bộ màu ảnh theo theme sáng / sepia / tối của người đọc.
                 </label>
               </div>
             )}
@@ -927,7 +927,7 @@ function AddChapterModal({
                   <i className="fa-solid fa-shield-halved text-xs" />
                   Chống sao chép (Bảo vệ bản quyền bằng ảnh)
                 </span>
-                Hệ thống sẽ tự động chuyển đổi toàn bộ văn bản chữ thành các trang ảnh sắc nét có watermark. Người đọc xem ở chế độ Webtoon mượt mà và không thể copy chữ.
+                Hệ thống sẽ chuyển đổi văn bản thành các trang ảnh có watermark. Giao diện đọc sẽ tự động đồng bộ màu ảnh theo theme sáng / sepia / tối của người đọc.
               </label>
             </div>
           )}
