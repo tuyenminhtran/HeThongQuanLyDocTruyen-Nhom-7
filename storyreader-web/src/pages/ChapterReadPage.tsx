@@ -25,6 +25,7 @@ export default function ChapterReadPage() {
   });
 
   const [showChapterList, setShowChapterList] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [commentText, setCommentText] = useState("");
   const queryClient = useQueryClient();
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
@@ -67,6 +68,14 @@ export default function ChapterReadPage() {
   useEffect(() => {
     localStorage.setItem("storyreader-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const { data: chapter, isLoading, error } = useQuery({
     queryKey: ["chapter", id],
@@ -238,15 +247,23 @@ export default function ChapterReadPage() {
     <div className={`min-h-[calc(100vh-65px)] ${themeClasses[theme]} transition-colors duration-300`}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative">
         {/* Floating Toolbar */}
-        <div className="sticky top-20 z-10 flex justify-end mb-6 -mt-4">
-          <div className={`backdrop-blur-md border ${borderClasses[theme]} rounded-full flex items-center p-1.5 shadow-lg shadow-black/10 ${theme === 'dark' ? 'bg-ink-card/80' : 'bg-white/80'}`}>
-            <button
-              onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/5 transition-colors"
-              title="Quay lại"
-            >
-              <i className="fa-solid fa-arrow-left text-sm" />
-            </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+          <button
+            onClick={() => {
+              if (activeStoryId) {
+                navigate(`/stories/${activeStoryId}`);
+              } else {
+                navigate(-1);
+              }
+            }}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold border ${borderClasses[theme]} ${cardClasses[theme]} hover:border-orange-500 hover:text-orange-600 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs`}
+            title="Quay lại trang truyện"
+          >
+            <i className="fa-solid fa-arrow-left text-xs" />
+            <span>Quay lại truyện</span>
+          </button>
+
+          <div className={`backdrop-blur-md border ${borderClasses[theme]} rounded-full flex items-center p-1.5 shadow-xs ${theme === 'dark' ? 'bg-ink-card/80' : 'bg-white/80'}`}>
 
             <div className={`w-px h-6 mx-1 ${theme === 'dark' ? 'bg-ink-border' : 'bg-gray-300'}`} />
 
@@ -547,6 +564,17 @@ export default function ChapterReadPage() {
           </div>
         </div>
       </div>
+
+      {/* Nút Cuộn Lên Đầu Trang mượt mà */}
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 cursor-pointer"
+          title="Cuộn lên đầu trang"
+        >
+          <i className="fa-solid fa-arrow-up text-sm" />
+        </button>
+      )}
 
       {/* Chapter Selection Drawer / Modal */}
       {showChapterList && (
