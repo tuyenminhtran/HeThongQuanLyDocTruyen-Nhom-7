@@ -149,9 +149,11 @@ export default function ChapterReadPage() {
     enabled: !!activeStoryId,
   });
 
-  const sortedChapters = story?.chapters
-    ? [...story.chapters].sort((a, b) => a.chapterNumber - b.chapterNumber)
-    : [];
+  const sortedChapters = useMemo(() => {
+    return story?.chapters
+      ? [...story.chapters].sort((a, b) => a.chapterNumber - b.chapterNumber)
+      : [];
+  }, [story?.chapters]);
 
   const readChapterGroups = useMemo<ChapterGroup[]>(() => groupChaptersByPart(sortedChapters), [sortedChapters]);
   const [readExpandedFolders, setReadExpandedFolders] = useState<Set<string>>(new Set());
@@ -166,7 +168,7 @@ export default function ChapterReadPage() {
         setReadExpandedFolders(new Set(readChapterGroups.map((g: ChapterGroup) => g.partName)));
       }
     }
-  }, [readChapterGroups, id, showChapterList]);
+  }, [story?.id, id, showChapterList]);
 
   const toggleReadFolder = (partName: string) => {
     setReadExpandedFolders((prev) => {
