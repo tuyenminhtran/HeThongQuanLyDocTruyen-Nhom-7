@@ -12,7 +12,7 @@
 
 ---
 
-## 📑 Mục Lục
+##  Mục Lục
 - [1. Kiến Trúc Tổng Thể](#1-kiến-trúc-tổng-thể)
 - [2. Công Nghệ Sử Dụng](#2-công-nghệ-sử-dụng)
 - [3. Tính Năng Nổi Bật](#3-tính-năng-nổi-bật)
@@ -102,7 +102,7 @@ flowchart TD
   - **Tự động lưu tiến độ đọc (Reading Progress):** Tự động ghi nhớ chương truyện và phần trăm vị trí đang đọc cho từng tài khoản.
 - **Tương tác & Theo dõi:**
   - Theo dõi / Đánh dấu tác phẩm (Follow Story), nhận thông báo (Notification) ngay khi có chương truyện mới.
-  - Thảo luận và đánh giá số sao (Rating 1-5 ⭐) trực tiếp dưới từng chương truyện.
+  - Thảo luận và đánh giá số sao (Rating 1-5) trực tiếp dưới từng chương truyện.
 - **Gói đọc VIP & Mua lẻ linh hoạt:**
   - Đăng ký gói hội viên VIP (1 tháng, 3 tháng, 12 tháng) đọc không giới hạn toàn bộ kho truyện.
   - Mua lẻ từng bộ truyện (Trả phí 1 lần - đọc vĩnh viễn) với giao diện mô phỏng thanh toán trực quan kèm hiệu ứng pháo hoa chúc mừng.
