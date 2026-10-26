@@ -151,19 +151,8 @@ public class TextToImageService : ITextToImageService
             using var surface = SKSurface.Create(new SKImageInfo(canvasWidth, canvasHeight, SKColorType.Rgba8888, SKAlphaType.Premul));
             var canvas = surface.Canvas;
 
-            // Nền tối sang trọng đồng bộ với theme StoryNest
+            // Nền tối chuẩn StoryNest (khi đọc ở theme sáng hoặc sepia, giao diện web sẽ áp bộ lọc thích ứng để đồng bộ màu sắc mượt mà)
             canvas.Clear(new SKColor(18, 22, 31)); // #12161f
-
-            // Viền mỏng xung quanh trang sách
-            using (var borderPaint = new SKPaint
-            {
-                Color = new SKColor(42, 50, 66),
-                IsStroke = true,
-                StrokeWidth = 1.5f
-            })
-            {
-                canvas.DrawRoundRect(10, 10, canvasWidth - 20, canvasHeight - 20, 12, 12, borderPaint);
-            }
 
             // Watermark chìm giữa trang
             canvas.Save();
