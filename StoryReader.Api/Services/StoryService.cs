@@ -72,8 +72,16 @@ public class StoryService : IStoryService
             FreeChapterCount = dto.FreeChapterCount
         };
 
-        foreach (var genreId in dto.GenreIds)
-            story.StoryGenres.Add(new StoryGenre { GenreId = genreId });
+        if (dto.GenreIds?.Any() == true)
+        {
+            var validGenreIds = await _db.Genres
+                .Where(g => dto.GenreIds.Contains(g.Id))
+                .Select(g => g.Id)
+                .ToListAsync();
+
+            foreach (var genreId in validGenreIds)
+                story.StoryGenres.Add(new StoryGenre { GenreId = genreId });
+        }
 
         _db.Stories.Add(story);
         await _db.SaveChangesAsync();
@@ -99,8 +107,16 @@ public class StoryService : IStoryService
         story.UpdatedAt = DateTime.UtcNow;
 
         story.StoryGenres.Clear();
-        foreach (var genreId in dto.GenreIds)
-            story.StoryGenres.Add(new StoryGenre { StoryId = storyId, GenreId = genreId });
+        if (dto.GenreIds?.Any() == true)
+        {
+            var validGenreIds = await _db.Genres
+                .Where(g => dto.GenreIds.Contains(g.Id))
+                .Select(g => g.Id)
+                .ToListAsync();
+
+            foreach (var genreId in validGenreIds)
+                story.StoryGenres.Add(new StoryGenre { StoryId = storyId, GenreId = genreId });
+        }
 
         await _db.SaveChangesAsync();
     }
