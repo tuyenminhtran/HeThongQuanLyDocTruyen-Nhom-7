@@ -54,10 +54,11 @@ export interface CreateChapterInput {
   renderAsImages?: boolean;
 }
 
-export async function searchStories(keyword?: string) {
-  const res = await apiClient.get<StoryListItem[]>("/stories", {
-    params: { keyword },
-  });
+export async function searchStories(keyword?: string, genreId?: string) {
+  const params: Record<string, any> = {};
+  if (keyword) params.keyword = keyword.trim();
+  if (genreId && genreId !== "all") params.genreId = genreId;
+  const res = await apiClient.get<StoryListItem[]>("/stories", { params });
   return res.data;
 }
 
@@ -100,4 +101,3 @@ export async function getIsFollowing(storyId: string) {
   const res = await apiClient.get<{ isFollowing: boolean }>(`/stories/${storyId}/is-following`);
   return res.data.isFollowing;
 }
-

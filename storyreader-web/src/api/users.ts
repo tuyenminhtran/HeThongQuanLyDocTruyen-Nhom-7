@@ -33,6 +33,14 @@ export async function updateUserProfile(displayName: string): Promise<{ message:
   return res.data;
 }
 
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+  const res = await apiClient.post<{ message: string }>("/profile/change-password", {
+    currentPassword,
+    newPassword,
+  });
+  return res.data;
+}
+
 export async function getReadingHistory(): Promise<StoryListItem[]> {
   try {
     const res = await apiClient.get<StoryListItem[]>("/profile/history");

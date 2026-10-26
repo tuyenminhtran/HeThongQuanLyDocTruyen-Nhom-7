@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { searchStories, type StoryListItem } from "../api/stories";
+import { getGenres } from "../api/genres";
 import StoryCard from "../components/StoryCard";
 
 function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }) {
@@ -50,20 +51,27 @@ function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }
 
 export default function HomePage() {
   const [keyword, setKeyword] = useState("");
+  const [genreFilter, setGenreFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<number | "all">("all");
   const [accessFilter, setAccessFilter] = useState<number | "all">("all");
   const [typeFilter, setTypeFilter] = useState<number | "all">("all");
   const [visibleCount, setVisibleCount] = useState(12);
-  const [prevFilterKey, setPrevFilterKey] = useState(`${keyword}-${statusFilter}-${accessFilter}-${typeFilter}`);
-  const currentFilterKey = `${keyword}-${statusFilter}-${accessFilter}-${typeFilter}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(`${keyword}-${genreFilter}-${statusFilter}-${accessFilter}-${typeFilter}`);
+  const currentFilterKey = `${keyword}-${genreFilter}-${statusFilter}-${accessFilter}-${typeFilter}`;
   if (prevFilterKey !== currentFilterKey) {
     setPrevFilterKey(currentFilterKey);
     setVisibleCount(12);
   }
 
+  // Lấy danh sách thể loại từ backend
+  const { data: genres } = useQuery({
+    queryKey: ["genres"],
+    queryFn: getGenres,
+  });
+
   const { data: stories, isLoading } = useQuery({
-    queryKey: ["stories", keyword],
-    queryFn: () => searchStories(keyword || undefined),
+    queryKey: ["stories", keyword, genreFilter],
+    queryFn: () => searchStories(keyword || undefined, genreFilter !== "all" ? genreFilter : undefined),
   });
 
   const filteredStories = stories
@@ -90,7 +98,7 @@ export default function HomePage() {
       {/* ========================================================= */}
       {/* PHẦN TRUYỆN ĐỀ CỬ (GIỐNG GIAO DIỆN NETTRUYEN)           */}
       {/* ========================================================= */}
-      {!keyword && (
+      {!keyword && genreFilter === "all" && (
         <section className="space-y-3">
           {/* Tiêu đề mục Truyện Đề Cử */}
           <div className="flex items-center justify-between border-b border-ink-border/80 pb-2">
@@ -163,10 +171,10 @@ export default function HomePage() {
       )}
 
       {/* ========================================================= */}
-      {/* THANH TÌM KIẾM VÀ BỘ LỌC (GIỮ NGUYÊN BẢN CŨ)             */}
+      {/* THANH TÌM KIẾM VÀ BỘ LỌC ĐA NĂNG                          */}
       {/* ========================================================= */}
       <div className="bg-ink-card border border-ink-border rounded-2xl p-5 shadow-lg">
-        <div className="relative max-w-2xl mx-auto mb-3">
+        <div className="relative max-w-2xl mx-auto mb-4">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gold/80">
             <i className="fa-solid fa-magnifying-glass text-sm" />
           </span>
@@ -187,13 +195,31 @@ export default function HomePage() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center justify-center gap-4 max-w-3xl mx-auto">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 max-w-4xl mx-auto">
+          {/* Thể loại */}
           <div className="flex items-center gap-2">
-            <span className="text-ink-muted text-sm">Hình thức:</span>
+            <span className="text-ink-muted text-xs sm:text-sm">Thể loại:</span>
+            <select
+              value={genreFilter}
+              onChange={(e) => setGenreFilter(e.target.value)}
+              className="bg-ink-bg border border-ink-border rounded-lg px-2.5 py-1.5 text-ink-text focus:outline-none focus:border-gold text-xs sm:text-sm"
+            >
+              <option value="all">Tất cả thể loại</option>
+              {genres?.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Hình thức */}
+          <div className="flex items-center gap-2">
+            <span className="text-ink-muted text-xs sm:text-sm">Hình thức:</span>
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="bg-ink-bg border border-ink-border rounded-lg px-3 py-1.5 text-ink-text focus:outline-none focus:border-gold text-sm"
+              className="bg-ink-bg border border-ink-border rounded-lg px-2.5 py-1.5 text-ink-text focus:outline-none focus:border-gold text-xs sm:text-sm"
             >
               <option value="all">Tất cả hình thức</option>
               <option value={0}>Truyện chữ</option>
@@ -201,31 +227,33 @@ export default function HomePage() {
             </select>
           </div>
 
+          {/* Trạng thái */}
           <div className="flex items-center gap-2">
-            <span className="text-ink-muted text-sm">Trạng thái:</span>
+            <span className="text-ink-muted text-xs sm:text-sm">Trạng thái:</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="bg-ink-bg border border-ink-border rounded-lg px-3 py-1.5 text-ink-text focus:outline-none focus:border-gold text-sm"
+              className="bg-ink-bg border border-ink-border rounded-lg px-2.5 py-1.5 text-ink-text focus:outline-none focus:border-gold text-xs sm:text-sm"
             >
-              <option value="all">Tất cả</option>
+              <option value="all">Tất cả trạng thái</option>
               <option value={0}>Đang phát hành</option>
               <option value={1}>Hoàn thành</option>
               <option value={2}>Tạm ngưng</option>
             </select>
           </div>
 
+          {/* Phân loại phí */}
           <div className="flex items-center gap-2">
-            <span className="text-ink-muted text-sm">Phân loại:</span>
+            <span className="text-ink-muted text-xs sm:text-sm">Phân loại:</span>
             <select
               value={accessFilter}
               onChange={(e) => setAccessFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="bg-ink-bg border border-ink-border rounded-lg px-3 py-1.5 text-ink-text focus:outline-none focus:border-gold text-sm"
+              className="bg-ink-bg border border-ink-border rounded-lg px-2.5 py-1.5 text-ink-text focus:outline-none focus:border-gold text-xs sm:text-sm"
             >
-              <option value="all">Tất cả</option>
+              <option value="all">Tất cả phí</option>
               <option value={0}>Miễn phí</option>
               <option value={1}>Trả phí</option>
-              <option value={2}>Mixed</option>
+              <option value={2}>Hỗn hợp</option>
             </select>
           </div>
         </div>
@@ -238,7 +266,7 @@ export default function HomePage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-6 pb-2 border-b border-ink-border">
             <h2 className="font-serif text-xl font-bold text-gold flex items-center gap-2">
-              <span>{keyword ? "Kết quả tìm kiếm" : "StoryNest - Truyện gì cũng có!"}</span>
+              <span>{keyword ? "Kết quả tìm kiếm" : genreFilter !== "all" ? `Thể loại: ${genres?.find(g => g.id === genreFilter)?.name || ""}` : "StoryNest - Truyện gì cũng có!"}</span>
               <i className="fa-solid fa-angle-right text-base text-gold" />
             </h2>
             <span className="text-xs text-ink-muted bg-ink-card border border-ink-border rounded-full px-3 py-1">
