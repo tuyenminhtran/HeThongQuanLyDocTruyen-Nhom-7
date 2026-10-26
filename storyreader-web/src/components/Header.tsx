@@ -1,4 +1,4 @@
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useAuthStore, useIsAdmin } from "../store/authStore";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -9,11 +9,14 @@ export default function Header() {
   const { accessToken, displayName, logout } = useAuthStore();
   const isAdmin = useIsAdmin();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [keyword, setKeyword] = useState(searchParams.get("q") || "");
   const [showGenreMenu, setShowGenreMenu] = useState(false);
   const genreMenuRef = useRef<HTMLDivElement>(null);
+
+  const isReaderPage = location.pathname.startsWith("/chapters/");
 
   const { data: genres } = useQuery({
     queryKey: ["genres"],
@@ -47,7 +50,7 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-slate-200">
+    <header className={`${isReaderPage ? "relative" : "sticky top-0 z-50"} bg-white shadow-sm border-b border-slate-200 transition-all`}>
       {/* ============================================================ */}
       {/* 1. THANH TRÊN (WHITE TOP BAR) - LOGO, SEARCH, AUTH BUTTONS   */}
       {/* ============================================================ */}
