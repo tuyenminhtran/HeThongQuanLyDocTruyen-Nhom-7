@@ -51,7 +51,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-serif text-2xl sm:text-3xl text-white font-bold mb-1">Tổng quan Hệ thống</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl text-slate-900 font-bold mb-1">Tổng quan Hệ thống</h1>
         <p className="text-sm text-ink-muted">Báo cáo tóm tắt các chỉ số hoạt động và doanh thu StoryReader (Dữ liệu thời gian thực)</p>
       </div>
 
@@ -98,7 +98,7 @@ export default function DashboardPage() {
           {isOverviewLoading ? (
             <div className="h-8 bg-ink-bg rounded-lg animate-pulse w-1/2 mb-2" />
           ) : (
-            <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
               {(overview?.totalUsers ?? 0).toLocaleString("vi-VN")}
             </div>
           )}
@@ -118,7 +118,7 @@ export default function DashboardPage() {
           {isOverviewLoading ? (
             <div className="h-8 bg-ink-bg rounded-lg animate-pulse w-1/2 mb-2" />
           ) : (
-            <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
               {(overview?.totalFollows ?? 0).toLocaleString("vi-VN")}
             </div>
           )}
@@ -138,7 +138,7 @@ export default function DashboardPage() {
           {isOverviewLoading ? (
             <div className="h-8 bg-ink-bg rounded-lg animate-pulse w-1/2 mb-2" />
           ) : (
-            <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
               {(overview?.totalChapterViews ?? 0).toLocaleString("vi-VN")}
             </div>
           )}
@@ -153,7 +153,7 @@ export default function DashboardPage() {
         {/* Recent Transactions */}
         <div className="bg-ink-card border border-ink-border rounded-2xl p-6 shadow-xl shadow-black/20 flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-serif text-lg font-bold text-white">Giao dịch gần đây</h2>
+            <h2 className="font-serif text-lg font-bold text-slate-900">Giao dịch gần đây</h2>
             <span className="text-xs text-ink-muted bg-ink-bg px-2.5 py-1 rounded-full border border-ink-border">
               Trực tiếp từ CSDL
             </span>
@@ -181,7 +181,7 @@ export default function DashboardPage() {
                       </span>
                     </div>
                     <div className="min-w-0">
-                      <div className="text-sm font-medium text-slate-200 truncate">
+                      <div className="text-sm font-semibold text-slate-800 truncate">
                         {tx.userName}
                       </div>
                       <div className="text-xs text-ink-muted flex items-center gap-2 mt-0.5">
@@ -216,7 +216,7 @@ export default function DashboardPage() {
         {/* Recent Activities */}
         <div className="bg-ink-card border border-ink-border rounded-2xl p-6 shadow-xl shadow-black/20 flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-serif text-lg font-bold text-white">Hoạt động mới nhất</h2>
+            <h2 className="font-serif text-lg font-bold text-slate-900">Hoạt động mới nhất</h2>
             <span className="text-xs text-ink-muted bg-ink-bg px-2.5 py-1 rounded-full border border-ink-border">
               Thời gian thực
             </span>
@@ -254,7 +254,7 @@ export default function DashboardPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-slate-200 leading-snug">{act.title}</p>
+                    <p className="text-sm font-medium text-slate-800 leading-snug">{act.title}</p>
                     <p className="text-xs text-ink-muted mt-0.5 truncate">{act.description}</p>
                     <p className="text-[11px] text-ink-muted/70 mt-1">{formatRelativeTime(act.timestamp)}</p>
                   </div>

@@ -254,7 +254,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={updateMutation.isPending}
-                  className="px-4 py-2 rounded-xl text-sm font-medium bg-gold text-ink-bg hover:bg-gold-dim disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 rounded-xl text-sm font-bold bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50 transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
                 >
                   {updateMutation.isPending && (
                     <i className="fa-solid fa-spinner fa-spin text-xs" />
@@ -332,7 +332,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={changePasswordMutation.isPending}
-                  className="px-5 py-2 rounded-xl text-sm font-medium bg-gold text-ink-bg hover:bg-gold-dim disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="px-5 py-2 rounded-xl text-sm font-bold bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50 transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
                 >
                   {changePasswordMutation.isPending && (
                     <i className="fa-solid fa-spinner fa-spin text-xs" />

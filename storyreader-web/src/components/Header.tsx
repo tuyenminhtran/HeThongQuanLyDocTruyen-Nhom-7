@@ -1,6 +1,8 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore, useIsAdmin } from "../store/authStore";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getGenres } from "../api/genres";
 import NotificationBell from "./NotificationBell";
 
 export default function Header() {
@@ -10,11 +12,29 @@ export default function Header() {
   const [searchParams] = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [keyword, setKeyword] = useState(searchParams.get("q") || "");
+  const [showGenreMenu, setShowGenreMenu] = useState(false);
+  const genreMenuRef = useRef<HTMLDivElement>(null);
+
+  const { data: genres } = useQuery({
+    queryKey: ["genres"],
+    queryFn: getGenres,
+  });
 
   // Đồng bộ keyword khi URL param thay đổi
   useEffect(() => {
     setKeyword(searchParams.get("q") || "");
   }, [searchParams]);
+
+  // Click ngoài đóng dropdown thể loại
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (genreMenuRef.current && !genreMenuRef.current.contains(event.target as Node)) {
+        setShowGenreMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,36 +47,55 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-ink-bg/95 backdrop-blur-md border-b border-ink-border transition-colors">
+    <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-slate-200">
+      {/* ============================================================ */}
+      {/* 1. THANH TRÊN (WHITE TOP BAR) - LOGO, SEARCH, AUTH BUTTONS   */}
+      {/* ============================================================ */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
         <div className="flex justify-between items-center h-16 gap-4">
           
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group shrink-0 focus:outline-none">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/20 text-slate-950 font-bold group-hover:scale-105 transition-transform">
-              <i className="fa-solid fa-book-open text-sm" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-serif text-lg font-bold tracking-tight text-white group-hover:text-gold transition-colors">
-                StoryReader
-              </span>
-              <span className="text-[9px] text-ink-muted -mt-1 font-sans tracking-widest uppercase">
-                Đọc Truyện Online
-              </span>
-            </div>
-          </Link>
+          {/* Logo & Lightbulb */}
+          <div className="flex items-center gap-3 shrink-0">
+            <Link to="/" className="flex items-center gap-2.5 group focus:outline-none">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 flex items-center justify-center shadow-md shadow-orange-500/20 text-white font-bold group-hover:scale-105 transition-transform">
+                <i className="fa-solid fa-book-open text-base" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-serif text-xl font-bold tracking-tight text-slate-900 group-hover:text-orange-600 transition-colors">
+                  Story<span className="text-orange-500">Reader</span>
+                </span>
+                <span className="text-[10px] text-slate-600 -mt-1 font-sans tracking-widest uppercase font-semibold">
+                  Đọc Truyện Online
+                </span>
+              </div>
+            </Link>
 
-          {/* Thanh tìm kiếm trên Header (Desktop) */}
-          <div className="flex-1 max-w-md hidden md:block">
+            {/* Lightbulb Decorative Pill (TruyenQQ icon) */}
+            <div
+              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 text-amber-500 bg-amber-50 shadow-xs cursor-pointer hover:bg-amber-100 transition-colors"
+              title="Chế độ giao diện sáng rõ nét"
+            >
+              <i className="fa-solid fa-lightbulb text-sm" />
+            </div>
+          </div>
+
+          {/* Thanh tìm kiếm hình Pill bo tròn chuẩn TruyenQQ (Desktop) */}
+          <div className="flex-1 max-w-lg hidden md:block mx-2">
             <form onSubmit={handleSearchSubmit} className="relative">
               <input
                 type="text"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                placeholder="Tìm kiếm tên truyện, tác giả..."
-                className="w-full bg-ink-card border border-ink-border hover:border-ink-border-hover focus:border-gold rounded-xl pl-9 pr-8 py-2 text-xs sm:text-sm text-ink-text placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 focus:ring-gold/30 transition-all"
+                placeholder="Bạn muốn tìm truyện gì..."
+                className="w-full bg-slate-50 border border-slate-300 hover:border-slate-400 focus:bg-white focus:border-orange-500 rounded-full pl-5 pr-11 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 shadow-xs transition-all"
               />
-              <i className="fa-solid fa-magnifying-glass text-ink-muted text-xs absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <button
+                type="submit"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-orange-500 hover:bg-orange-50 transition-colors"
+                aria-label="Tìm kiếm"
+              >
+                <i className="fa-solid fa-magnifying-glass text-sm" />
+              </button>
               {keyword && (
                 <button
                   type="button"
@@ -64,7 +103,7 @@ export default function Header() {
                     setKeyword("");
                     navigate("/");
                   }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-white p-1"
+                  className="absolute right-9 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                 >
                   <i className="fa-solid fa-xmark text-xs" />
                 </button>
@@ -72,93 +111,84 @@ export default function Header() {
             </form>
           </div>
 
-          {/* Desktop nav menu */}
-          <nav className="hidden md:flex items-center gap-1.5 shrink-0">
-            <Link
-              to="/"
-              className="px-3.5 py-2 rounded-xl text-sm font-medium text-ink-muted hover:text-white hover:bg-ink-card transition-all"
-            >
-              Trang chủ
-            </Link>
-            <Link
-              to="/pricing"
-              className="px-3.5 py-2 rounded-xl text-sm font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/20 transition-all flex items-center gap-1.5 shadow-sm"
-            >
-              <i className="fa-solid fa-crown text-amber-400 text-xs" />
-              Gói VIP
-            </Link>
-
+          {/* Right Area: Buttons for Guest or Logged In User */}
+          <div className="hidden md:flex items-center gap-2.5 shrink-0">
             {accessToken ? (
-              <>
+              <div className="flex items-center gap-3">
+                {/* VIP member badge */}
+                <Link
+                  to="/pricing"
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-300 hover:bg-amber-100 transition-colors flex items-center gap-1.5 shadow-2xs"
+                >
+                  <i className="fa-solid fa-crown text-amber-500 text-xs" />
+                  <span>VIP</span>
+                </Link>
+
+                {/* Quản trị (Admin) */}
                 {isAdmin && (
                   <Link
                     to="/admin"
-                    className="px-3.5 py-2 rounded-xl text-sm font-medium text-ink-muted hover:text-white hover:bg-ink-card transition-all"
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-orange-600 hover:bg-slate-100 transition-colors flex items-center gap-1.5"
                   >
-                    <span className="flex items-center gap-1.5">
-                      <i className="fa-solid fa-sliders text-xs" />
-                      Quản trị
-                    </span>
+                    <i className="fa-solid fa-sliders text-xs" />
+                    <span>Quản trị</span>
                   </Link>
                 )}
-
-                {/* Divider */}
-                <div className="w-px h-5 bg-ink-border mx-1.5" />
 
                 {/* Notification Bell */}
                 <NotificationBell />
 
-                {/* User menu */}
-                <div className="flex items-center gap-2">
-                  <Link
-                    to="/profile"
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-ink-card border border-transparent hover:border-ink-border transition-all group"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/30 flex items-center justify-center group-hover:border-gold transition-colors">
-                      <span className="text-xs font-bold text-amber-400 uppercase">
-                        {displayName?.charAt(0) || "U"}
-                      </span>
-                    </div>
-                    <span className="text-sm text-ink-text font-medium max-w-[120px] truncate group-hover:text-gold transition-colors">
-                      {displayName}
-                    </span>
-                  </Link>
-                  <button
-                    onClick={() => {
-                      logout();
-                      navigate("/login");
-                    }}
-                    className="px-3 py-1.5 rounded-xl text-xs font-medium text-ink-muted hover:text-red-400 hover:bg-red-500/10 transition-all"
-                  >
-                    Đăng xuất
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="w-px h-5 bg-ink-border mx-1.5" />
+                {/* Profile Link with Avatar */}
                 <Link
-                  to="/login"
-                  className="px-3.5 py-2 rounded-xl text-sm font-medium text-ink-muted hover:text-white hover:bg-ink-card transition-all"
+                  to="/profile"
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 border border-slate-200 transition-colors group"
                 >
-                  Đăng nhập
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    {displayName?.charAt(0).toUpperCase() || "U"}
+                  </div>
+                  <span className="text-xs font-semibold text-slate-800 max-w-[110px] truncate group-hover:text-orange-600 transition-colors">
+                    {displayName}
+                  </span>
                 </Link>
+
+                {/* Logout Button */}
+                <button
+                  onClick={() => {
+                    logout();
+                    navigate("/login");
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                  title="Đăng xuất"
+                >
+                  <i className="fa-solid fa-arrow-right-from-bracket text-xs" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                {/* Đăng ký (Nút xanh da trời chuẩn TruyenQQ) */}
                 <Link
                   to="/register"
-                  className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:brightness-110 transition-all shadow-md shadow-amber-500/20"
+                  className="px-4 py-1.5 rounded-lg text-sm font-semibold bg-sky-500 hover:bg-sky-600 text-white shadow-xs transition-colors"
                 >
                   Đăng ký
                 </Link>
-              </>
+                {/* Đăng nhập (Nút xanh dương chuẩn TruyenQQ) */}
+                <Link
+                  to="/login"
+                  className="px-4 py-1.5 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors"
+                >
+                  Đăng nhập
+                </Link>
+              </div>
             )}
-          </nav>
+          </div>
 
-          {/* Mobile actions (Search icon + Bell + Hamburger) */}
+          {/* Mobile hamburger & bell */}
           <div className="flex items-center gap-2 md:hidden">
             {accessToken && <NotificationBell />}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="p-2 rounded-xl text-ink-muted hover:text-white hover:bg-ink-card transition-all border border-transparent hover:border-ink-border w-10 h-10 flex items-center justify-center"
+              className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 w-10 h-10 flex items-center justify-center focus:outline-none"
               aria-label="Toggle menu"
             >
               {mobileOpen ? (
@@ -171,36 +201,143 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile menu dropdown */}
+      {/* ============================================================ */}
+      {/* 2. THANH ĐIỀU HƯỚNG MÀU CAM RỰC RỠ (TRUYENQQ SIGNATURE BAR)  */}
+      {/* ============================================================ */}
+      <nav className="bg-[#f37021] text-white shadow-md relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
+          <div className="flex items-center justify-between overflow-x-auto scrollbar-none py-2 gap-1 sm:gap-2 text-xs sm:text-sm font-semibold whitespace-nowrap">
+            
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Link
+                to="/"
+                className="px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors flex items-center gap-1.5"
+              >
+                <i className="fa-solid fa-house text-xs" />
+                <span>Trang Chủ</span>
+              </Link>
+
+              {/* Thể loại Dropdown */}
+              <div className="relative" ref={genreMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowGenreMenu(!showGenreMenu)}
+                  className="px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Thể Loại</span>
+                  <i className={`fa-solid fa-chevron-down text-[10px] transform transition-transform ${showGenreMenu ? "rotate-180" : ""}`} />
+                </button>
+
+                {showGenreMenu && (
+                  <div className="absolute left-0 mt-2 w-72 sm:w-96 bg-white border border-slate-200 rounded-xl shadow-xl p-4 z-50 text-slate-800 text-xs animate-fadeIn">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 pb-1 border-b border-slate-100">
+                      Tất cả thể loại
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <Link
+                        to="/"
+                        onClick={() => setShowGenreMenu(false)}
+                        className="p-1.5 rounded hover:bg-orange-50 hover:text-orange-600 font-medium transition-colors"
+                      >
+                        Tất cả
+                      </Link>
+                      {genres?.map((g) => (
+                        <Link
+                          key={g.id}
+                          to={`/?genre=${g.id}`}
+                          onClick={() => setShowGenreMenu(false)}
+                          className="p-1.5 rounded hover:bg-orange-50 hover:text-orange-600 font-medium transition-colors truncate"
+                        >
+                          {g.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Xếp Hạng */}
+              <Link
+                to="/?sort=top"
+                className="px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors flex items-center gap-1"
+              >
+                <span>Xếp Hạng</span>
+                <i className="fa-solid fa-arrow-trend-up text-xs" />
+              </Link>
+
+              {/* Tìm truyện */}
+              <Link
+                to="/?filter=advance"
+                className="px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors flex items-center gap-1"
+              >
+                <span>Tìm Truyện</span>
+              </Link>
+
+              {/* Lịch sử / Tủ sách */}
+              <Link
+                to={accessToken ? "/profile" : "/login"}
+                className="px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors flex items-center gap-1"
+              >
+                <span>Lịch Sử</span>
+              </Link>
+
+              {/* Theo dõi */}
+              <Link
+                to={accessToken ? "/profile?tab=bookmarks" : "/login"}
+                className="px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors flex items-center gap-1"
+              >
+                <span>Theo Dõi</span>
+              </Link>
+            </div>
+
+            {/* Bên phải thanh cam: Gói VIP nổi bật */}
+            <div className="flex items-center gap-2">
+              <Link
+                to="/pricing"
+                className="px-3 py-1 rounded-md bg-amber-400 text-slate-950 font-bold hover:bg-amber-300 transition-colors flex items-center gap-1.5 shadow-xs text-xs"
+              >
+                <i className="fa-solid fa-crown text-xs" />
+                <span>Nâng cấp VIP</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* ============================================================ */}
+      {/* 3. MENU MOBILE KHI BẤM NÚT HAMBURGER                          */}
+      {/* ============================================================ */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-ink-border bg-ink-card/95 backdrop-blur-2xl">
+        <div className="md:hidden border-t border-slate-200 bg-white">
           <div className="px-4 py-4 space-y-3">
-            {/* Mobile Search Input */}
+            {/* Mobile Search */}
             <form onSubmit={(e) => { handleSearchSubmit(e); setMobileOpen(false); }} className="relative">
               <input
                 type="text"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                placeholder="Tìm kiếm truyện, tác giả..."
-                className="w-full bg-ink-bg border border-ink-border rounded-xl pl-9 pr-4 py-2 text-sm text-ink-text placeholder:text-ink-muted focus:outline-none focus:border-gold"
+                placeholder="Bạn muốn tìm truyện gì..."
+                className="w-full bg-slate-50 border border-slate-300 rounded-full pl-4 pr-10 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-orange-500"
               />
-              <i className="fa-solid fa-magnifying-glass text-ink-muted text-xs absolute left-3 top-1/2 -translate-y-1/2" />
+              <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-500">
+                <i className="fa-solid fa-magnifying-glass text-sm" />
+              </button>
             </form>
 
-            <div className="space-y-1">
+            <div className="space-y-1 pt-1">
               <Link
                 to="/"
                 onClick={() => setMobileOpen(false)}
-                className="block px-3.5 py-2.5 rounded-xl text-sm font-medium text-ink-muted hover:text-white hover:bg-ink-elevated transition-all"
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
               >
                 Trang chủ
               </Link>
               <Link
                 to="/pricing"
                 onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm text-amber-400 bg-amber-500/10 border border-amber-500/20 font-semibold"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-amber-700 bg-amber-50 font-semibold"
               >
-                <i className="fa-solid fa-crown text-amber-400 text-xs" />
+                <i className="fa-solid fa-crown text-amber-500 text-xs" />
                 Gói VIP
               </Link>
 
@@ -210,63 +347,46 @@ export default function Header() {
                     <Link
                       to="/admin"
                       onClick={() => setMobileOpen(false)}
-                      className="block px-3.5 py-2.5 rounded-xl text-sm font-medium text-ink-muted hover:text-white hover:bg-ink-elevated transition-all"
+                      className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
                     >
                       Trang quản trị
                     </Link>
                   )}
-
-                  <div className="border-t border-ink-border my-2" />
-
                   <Link
                     to="/profile"
-                    onClick={() => setMobileOpen(false)} 
-                    className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-ink-elevated rounded-xl transition-colors"
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/30 flex items-center justify-center">
-                      <span className="text-xs font-bold text-amber-400 uppercase">
-                        {displayName?.charAt(0) || "U"}
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm text-ink-text font-semibold">
-                        {displayName}
-                      </span>
-                      <span className="text-xs text-ink-muted">Xem trang cá nhân</span>
-                    </div>
+                    Tủ sách & Hồ sơ ({displayName})
                   </Link>
-
                   <button
                     onClick={() => {
                       logout();
                       navigate("/login");
                       setMobileOpen(false);
                     }}
-                    className="w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all"
+                    className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50"
                   >
                     Đăng xuất
                   </button>
                 </>
               ) : (
-                <>
-                  <div className="border-t border-ink-border my-2" />
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <Link
-                      to="/login"
-                      onClick={() => setMobileOpen(false)}
-                      className="block px-4 py-2.5 rounded-xl text-sm text-center font-medium text-ink-muted hover:text-white bg-ink-elevated border border-ink-border"
-                    >
-                      Đăng nhập
-                    </Link>
-                    <Link
-                      to="/register"
-                      onClick={() => setMobileOpen(false)}
-                      className="block px-4 py-2.5 rounded-xl text-sm text-center font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950"
-                    >
-                      Đăng ký
-                    </Link>
-                  </div>
-                </>
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                  <Link
+                    to="/register"
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-4 py-2 rounded-lg text-sm text-center font-semibold bg-sky-500 text-white"
+                  >
+                    Đăng ký
+                  </Link>
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-4 py-2 rounded-lg text-sm text-center font-semibold bg-blue-600 text-white"
+                  >
+                    Đăng nhập
+                  </Link>
+                </div>
               )}
             </div>
           </div>

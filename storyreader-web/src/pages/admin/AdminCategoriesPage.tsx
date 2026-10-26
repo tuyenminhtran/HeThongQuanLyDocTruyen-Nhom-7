@@ -95,7 +95,7 @@ export default function AdminCategoriesPage() {
         </div>
         <button
           onClick={handleOpenAdd}
-          className="px-5 py-2.5 rounded-xl text-sm font-medium bg-gold text-ink-bg hover:bg-gold-dim transition-all shadow-sm flex items-center justify-center gap-2"
+          className="px-5 py-2.5 rounded-xl text-sm font-bold bg-orange-600 text-white hover:bg-orange-700 transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
         >
           <i className="fa-solid fa-plus text-xs" />
           Thêm thể loại
@@ -177,7 +177,7 @@ export default function AdminCategoriesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsAddOpen(false)} />
           <div className="relative w-full max-w-md bg-ink-card border border-ink-border rounded-2xl shadow-2xl p-6">
-            <h2 className="font-serif text-lg font-bold text-white mb-4">Thêm thể loại mới</h2>
+            <h2 className="font-serif text-lg font-bold text-slate-900 mb-4">Thêm thể loại mới</h2>
             <form onSubmit={handleSubmitAdd} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">
@@ -223,7 +223,7 @@ export default function AdminCategoriesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditingGenre(null)} />
           <div className="relative w-full max-w-md bg-ink-card border border-ink-border rounded-2xl shadow-2xl p-6">
-            <h2 className="font-serif text-lg font-bold text-white mb-4">Cập nhật thể loại</h2>
+            <h2 className="font-serif text-lg font-bold text-slate-900 mb-4">Cập nhật thể loại</h2>
             <form onSubmit={handleSubmitEdit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">
