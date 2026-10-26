@@ -190,34 +190,34 @@ export default function PricingPage() {
 
                 <div className="mb-6 relative z-10">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-serif text-2xl text-white font-bold">{plan.name}</h3>
+                    <h3 className="font-serif text-2xl text-slate-900 font-bold">{plan.name}</h3>
                     {savings && (
-                      <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                      <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
                         {savings}
                       </span>
                     )}
                   </div>
-                  <p className="text-ink-muted text-xs leading-relaxed">
+                  <p className="text-slate-500 text-xs leading-relaxed">
                     Thời hạn sử dụng: {plan.durationDays} ngày đọc không giới hạn
                   </p>
                 </div>
 
-                <div className="mb-8 pb-6 border-b border-ink-border/60 relative z-10">
+                <div className="mb-8 pb-6 border-b border-slate-200 relative z-10">
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                    <span className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
                       {formatCurrency(plan.price)}
                     </span>
-                    <span className="text-ink-muted text-xs font-medium">/{plan.durationDays} ngày</span>
+                    <span className="text-slate-500 text-xs font-medium">/{plan.durationDays} ngày</span>
                   </div>
                 </div>
 
                 <ul className="flex-1 space-y-3.5 mb-8 relative z-10">
                   {features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-gold/15 flex items-center justify-center shrink-0 mt-0.5">
-                        <i className="fa-solid fa-check text-gold text-xs" />
+                      <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <i className="fa-solid fa-check text-orange-600 text-xs" />
                       </div>
-                      <span className="text-xs sm:text-sm text-slate-300 leading-relaxed">{feature}</span>
+                      <span className="text-xs sm:text-sm text-slate-600 leading-relaxed">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -225,10 +225,10 @@ export default function PricingPage() {
                 <button
                   onClick={() => handleSelectPlan(plan)}
                   disabled={buyMutation.isPending}
-                  className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 relative z-10 ${
+                  className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 relative z-10 cursor-pointer ${
                     isRecommended
-                      ? "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 hover:brightness-110 hover:shadow-lg hover:shadow-gold/25"
-                      : "bg-ink-bg border border-ink-border text-slate-200 hover:border-gold/60 hover:text-gold"
+                      ? "bg-orange-600 hover:bg-orange-700 text-white shadow-md"
+                      : "bg-slate-100 border border-slate-300 text-slate-800 hover:border-orange-500 hover:text-orange-600 hover:bg-orange-50"
                   }`}
                 >
                   {buyMutation.isPending && selectedPlan?.id === plan.id ? (
@@ -251,25 +251,25 @@ export default function PricingPage() {
 
       {/* MODAL THANH TOÁN (DEMO & VNPay GATEWAY) */}
       {paymentInfo && selectedPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-ink-card border border-ink-border rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative overflow-hidden text-slate-800">
             <button
               onClick={() => {
                 setPaymentInfo(null);
                 setSelectedPlan(null);
               }}
-              className="absolute top-5 right-5 text-ink-muted hover:text-white p-2 rounded-xl transition-colors z-20"
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-800 p-2 rounded-xl transition-colors z-20 cursor-pointer"
             >
               <i className="fa-solid fa-xmark text-lg" />
             </button>
 
             {paymentSuccess ? (
               <div className="text-center py-6 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto text-2xl shadow-lg shadow-emerald-500/20 animate-bounce">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-300 flex items-center justify-center mx-auto text-2xl shadow-xs animate-bounce">
                   <i className="fa-solid fa-circle-check" />
                 </div>
-                <h3 className="font-serif text-2xl text-white font-bold">Thanh Toán Thành Công!</h3>
-                <p className="text-sm text-ink-muted">
+                <h3 className="font-serif text-2xl text-slate-900 font-bold">Thanh Toán Thành Công!</h3>
+                <p className="text-sm text-slate-600">
                   Chúc mừng bạn đã trở thành hội viên <strong>{selectedPlan.name}</strong>. Gói VIP của bạn đã được kích hoạt thành công trên hệ thống.
                 </p>
                 <div className="pt-4 flex justify-center gap-3">
@@ -279,7 +279,7 @@ export default function PricingPage() {
                       setSelectedPlan(null);
                       navigate("/profile");
                     }}
-                    className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-gold text-ink-bg hover:bg-gold-dim transition-all shadow-md shadow-gold/20"
+                    className="px-6 py-2.5 rounded-xl text-sm font-bold bg-orange-600 hover:bg-orange-700 text-white transition-all shadow-xs cursor-pointer"
                   >
                     Xem hồ sơ VIP
                   </button>
@@ -289,7 +289,7 @@ export default function PricingPage() {
                       setSelectedPlan(null);
                       navigate("/");
                     }}
-                    className="px-6 py-2.5 rounded-xl text-sm font-medium border border-ink-border text-ink-text hover:bg-ink-bg transition-all"
+                    className="px-6 py-2.5 rounded-xl text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
                   >
                     Về trang chủ đọc truyện
                   </button>
@@ -298,24 +298,24 @@ export default function PricingPage() {
             ) : (
               <div className="space-y-6">
                 <div>
-                  <span className="text-gold text-xs font-semibold uppercase tracking-wider block mb-1">
+                  <span className="text-orange-600 text-xs font-bold uppercase tracking-wider block mb-1">
                     Cổng thanh toán điện tử
                   </span>
-                  <h3 className="font-serif text-2xl text-white font-bold">Thanh toán {selectedPlan.name}</h3>
+                  <h3 className="font-serif text-2xl text-slate-900 font-bold">Thanh toán {selectedPlan.name}</h3>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-ink-bg border border-ink-border space-y-2 text-sm">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-ink-muted">Gói dịch vụ:</span>
-                    <span className="font-semibold text-white">{selectedPlan.name} ({selectedPlan.durationDays} ngày)</span>
+                    <span className="text-slate-500">Gói dịch vụ:</span>
+                    <span className="font-bold text-slate-900">{selectedPlan.name} ({selectedPlan.durationDays} ngày)</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-ink-muted">Tổng thanh toán:</span>
-                    <span className="text-gold font-bold text-base">{formatCurrency(selectedPlan.price)}</span>
+                    <span className="text-slate-500">Tổng thanh toán:</span>
+                    <span className="text-orange-600 font-bold text-base">{formatCurrency(selectedPlan.price)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-ink-muted">Mã tham chiếu:</span>
-                    <span className="font-mono text-ink-muted">{paymentInfo.ref.slice(0, 16)}...</span>
+                    <span className="text-slate-500">Mã tham chiếu:</span>
+                    <span className="font-mono text-slate-600">{paymentInfo.ref.slice(0, 16)}...</span>
                   </div>
                 </div>
 
@@ -355,7 +355,7 @@ export default function PricingPage() {
                     href={paymentInfo.paymentUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="w-full py-3 rounded-xl font-medium text-xs border border-ink-border text-ink-muted hover:text-white hover:bg-ink-bg transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl font-medium text-xs border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
                   >
                     <i className="fa-solid fa-arrow-up-right-from-square" />
                     <span>Mở cổng thanh toán VNPay Sandbox</span>

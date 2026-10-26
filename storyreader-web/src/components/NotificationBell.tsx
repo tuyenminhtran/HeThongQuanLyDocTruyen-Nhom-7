@@ -75,7 +75,7 @@ export default function NotificationBell() {
       {/* Nút Chuông */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative w-9 h-9 rounded-xl flex items-center justify-center text-ink-muted hover:text-white hover:bg-ink-card transition-all focus:outline-none"
+        className="relative w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all focus:outline-none"
         title="Thông báo"
         aria-label="Thông báo"
       >
@@ -89,13 +89,13 @@ export default function NotificationBell() {
 
       {/* Dropdown thông báo */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-ink-card border border-ink-border rounded-2xl shadow-2xl shadow-black/60 z-50 overflow-hidden flex flex-col max-h-[460px]">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden flex flex-col max-h-[460px]">
           {/* Header */}
-          <div className="p-3.5 border-b border-ink-border flex items-center justify-between bg-ink-card/95 backdrop-blur-sm">
+          <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-white">
             <div className="flex items-center gap-2">
-              <span className="font-serif font-bold text-sm text-white">Thông báo</span>
+              <span className="font-serif font-bold text-sm text-slate-900">Thông báo</span>
               {unreadCount > 0 && (
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
                   {unreadCount} mới
                 </span>
               )}
@@ -104,7 +104,7 @@ export default function NotificationBell() {
               <button
                 onClick={() => markAllReadMutation.mutate()}
                 disabled={markAllReadMutation.isPending}
-                className="text-xs text-gold hover:text-gold-dim transition-colors flex items-center gap-1"
+                className="text-xs text-orange-600 hover:text-orange-700 transition-colors flex items-center gap-1 font-semibold cursor-pointer"
               >
                 <i className="fa-solid fa-check-double text-[11px]" />
                 Đọc tất cả
@@ -113,9 +113,9 @@ export default function NotificationBell() {
           </div>
 
           {/* List items */}
-          <div className="overflow-y-auto divide-y divide-ink-border/40 flex-1">
+          <div className="overflow-y-auto divide-y divide-slate-100 flex-1">
             {notifications.length === 0 ? (
-              <div className="py-12 text-center text-ink-muted">
+              <div className="py-12 text-center text-slate-400">
                 <i className="fa-regular fa-bell-slash text-3xl mb-2 opacity-40 block" />
                 <p className="text-xs">Chưa có thông báo nào</p>
               </div>
@@ -124,23 +124,23 @@ export default function NotificationBell() {
                 <button
                   key={item.id}
                   onClick={() => handleNotificationClick(item)}
-                  className={`w-full text-left p-3.5 hover:bg-ink-bg/60 transition-colors flex gap-3 items-start group ${
-                    !item.isRead ? "bg-gold/5" : ""
+                  className={`w-full text-left p-3.5 hover:bg-slate-50 transition-colors flex gap-3 items-start group ${
+                    !item.isRead ? "bg-orange-50/40" : ""
                   }`}
                 >
                   <div
                     className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                      !item.isRead ? "bg-gold ring-4 ring-gold/20" : "bg-transparent"
+                      !item.isRead ? "bg-orange-500 ring-4 ring-orange-500/20" : "bg-transparent"
                     }`}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs text-white truncate ${!item.isRead ? "font-bold" : "font-medium"}`}>
+                    <p className={`text-xs text-slate-900 truncate ${!item.isRead ? "font-bold" : "font-medium"}`}>
                       {item.title}
                     </p>
-                    <p className="text-xs text-ink-muted line-clamp-2 mt-0.5 leading-relaxed">
+                    <p className="text-xs text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
                       {item.message}
                     </p>
-                    <span className="text-[10px] text-ink-muted/70 font-mono mt-1.5 block">
+                    <span className="text-[10px] text-slate-400 font-mono mt-1.5 block">
                       {formatRelativeTime(item.createdAt)}
                     </span>
                   </div>

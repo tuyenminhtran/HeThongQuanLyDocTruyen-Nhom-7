@@ -123,14 +123,14 @@ export default function StoryDetailPage() {
   if (!story) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-        <div className="w-20 h-20 rounded-full bg-ink-card border border-ink-border flex items-center justify-center mb-4 text-ink-muted">
+        <div className="w-20 h-20 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mb-4 text-slate-400">
           <i className="fa-solid fa-book-open text-3xl opacity-50" />
         </div>
-        <p className="text-white text-xl font-serif font-bold mb-2">Không tìm thấy truyện</p>
-        <p className="text-ink-muted text-sm mb-6">Tác phẩm này có thể đã bị gỡ hoặc không tồn tại</p>
+        <p className="text-slate-900 text-xl font-serif font-bold mb-2">Không tìm thấy truyện</p>
+        <p className="text-slate-500 text-sm mb-6">Tác phẩm này có thể đã bị gỡ hoặc không tồn tại</p>
         <Link
           to="/"
-          className="px-6 py-2.5 rounded-xl bg-gold text-ink-bg font-semibold text-sm hover:brightness-110 transition-all shadow-md shadow-gold/20"
+          className="px-6 py-2.5 rounded-xl bg-orange-600 text-white font-bold text-sm hover:bg-orange-700 transition-all shadow-sm"
         >
           Quay lại trang chủ
         </Link>
@@ -201,12 +201,12 @@ export default function StoryDetailPage() {
               </div>
 
               {/* Title & Author */}
-              <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 leading-tight">
+              <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-2 leading-tight">
                 {story.title}
               </h1>
-              <p className="text-ink-muted text-sm sm:text-base mb-4 flex items-center gap-2">
-                <i className="fa-solid fa-pen-nib text-xs text-gold" />
-                <span>Tác giả: <strong>{story.author || "Đang cập nhật"}</strong></span>
+              <p className="text-slate-600 text-sm sm:text-base mb-4 flex items-center gap-2">
+                <i className="fa-solid fa-pen-nib text-xs text-orange-500" />
+                <span>Tác giả: <strong className="text-slate-800">{story.author || "Đang cập nhật"}</strong></span>
               </p>
 
               {/* Genres */}
@@ -215,7 +215,7 @@ export default function StoryDetailPage() {
                   {story.genres.map((genre) => (
                     <span
                       key={genre}
-                      className="text-xs font-medium px-3 py-1 rounded-lg bg-ink-card border border-ink-border text-ink-text hover:border-gold/50 transition-colors"
+                      className="text-xs font-semibold px-3 py-1 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 hover:bg-orange-100 transition-colors"
                     >
                       {genre}
                     </span>
@@ -224,12 +224,12 @@ export default function StoryDetailPage() {
               )}
 
               {/* Description */}
-              <div className="bg-ink-card/60 backdrop-blur-sm border border-ink-border rounded-2xl p-5 mb-6">
-                <h3 className="font-serif text-base font-bold text-white mb-2 flex items-center gap-2">
-                  <i className="fa-solid fa-circle-info text-gold text-sm" />
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6 shadow-xs">
+                <h3 className="font-serif text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+                  <i className="fa-solid fa-circle-info text-orange-500 text-sm" />
                   Giới thiệu
                 </h3>
-                <p className="text-sm text-ink-text/80 leading-relaxed whitespace-pre-line">
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
                   {story.description}
                 </p>
               </div>
@@ -281,7 +281,7 @@ export default function StoryDetailPage() {
                   <Link
                     to={`/chapters/${story.chapters[0].id}`}
                     state={{ storyId: story.id }}
-                    className="px-8 py-3 rounded-xl font-medium bg-ink-text text-ink-bg hover:bg-white transition-all shadow-lg flex items-center gap-2"
+                    className="px-8 py-3 rounded-xl font-bold bg-orange-600 text-white hover:bg-orange-700 transition-all shadow-md flex items-center gap-2"
                   >
                     <i className="fa-solid fa-book-open-reader text-sm" />
                     <span>Đọc từ đầu</span>
@@ -291,14 +291,14 @@ export default function StoryDetailPage() {
                 <button
                   onClick={handleToggleFollow}
                   disabled={followMutation.isPending}
-                  className={`px-5 py-3 rounded-xl font-medium transition-all flex items-center gap-2 border ${
+                  className={`px-5 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 border ${
                     isFollowing
-                      ? "bg-red-500/15 border-red-500/30 text-red-400 hover:bg-red-500/25"
-                      : "bg-ink-card border-ink-border text-ink-text hover:border-gold hover:text-gold"
+                      ? "bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
+                      : "bg-white border-slate-300 text-slate-700 hover:border-orange-500 hover:text-orange-600 shadow-2xs"
                   }`}
                   title={isFollowing ? "Bỏ theo dõi truyện này" : "Nhận thông báo khi có chương mới"}
                 >
-                  <i className={`${isFollowing ? "fa-solid text-red-400" : "fa-regular"} fa-heart text-sm`} />
+                  <i className={`${isFollowing ? "fa-solid text-red-500" : "fa-regular"} fa-heart text-sm`} />
                   <span>{isFollowing ? "Đang theo dõi" : "Theo dõi truyện"}</span>
                 </button>
               </div>
@@ -308,10 +308,10 @@ export default function StoryDetailPage() {
 
         {/* Chapters Section */}
         <div className="mb-16">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-3 border-b border-ink-border">
-            <h2 className="font-serif text-2xl text-white font-bold flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-3 border-b border-slate-200">
+            <h2 className="font-serif text-2xl text-slate-900 font-bold flex items-center gap-3">
               Danh sách chương
-              <span className="text-xs font-sans font-medium text-ink-muted bg-ink-card border border-ink-border rounded-full px-3 py-1">
+              <span className="text-xs font-sans font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded-full px-3 py-1">
                 {story.chapters.length} chương
               </span>
             </h2>
@@ -323,15 +323,15 @@ export default function StoryDetailPage() {
                   value={chapterSearch}
                   onChange={(e) => setChapterSearch(e.target.value)}
                   placeholder="Tìm chương..."
-                  className="bg-ink-card border border-ink-border rounded-xl pl-8 pr-3 py-1.5 text-xs text-ink-text placeholder:text-ink-muted focus:outline-none focus:border-gold w-36 sm:w-48"
+                  className="bg-white border border-slate-300 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 w-36 sm:w-48 shadow-2xs"
                 />
-                <i className="fa-solid fa-magnifying-glass text-ink-muted text-xs absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <i className="fa-solid fa-magnifying-glass text-slate-400 text-xs absolute left-2.5 top-1/2 -translate-y-1/2" />
               </div>
 
               {/* Sort button */}
               <button
                 onClick={() => setSortAsc(!sortAsc)}
-                className="w-8 h-8 rounded-xl border border-ink-border bg-ink-card text-ink-muted hover:text-white transition-colors flex items-center justify-center"
+                className="w-8 h-8 rounded-xl border border-slate-300 bg-white text-slate-600 hover:text-slate-900 hover:border-slate-400 transition-colors flex items-center justify-center cursor-pointer shadow-2xs"
                 title={sortAsc ? "Thứ tự: Cũ nhất trước" : "Thứ tự: Mới nhất trước"}
               >
                 <i className={`fa-solid ${sortAsc ? "fa-arrow-down-1-9" : "fa-arrow-up-9-1"} text-xs`} />
@@ -340,9 +340,9 @@ export default function StoryDetailPage() {
           </div>
 
           {filteredChapters.length === 0 ? (
-            <div className="text-center py-12 bg-ink-card/50 border border-ink-border rounded-2xl">
-              <i className="fa-solid fa-book-open text-3xl mx-auto mb-3 text-ink-muted/30 block" />
-              <p className="text-ink-muted">Chưa tìm thấy chương phù hợp.</p>
+            <div className="text-center py-12 bg-white border border-slate-200 rounded-2xl shadow-xs">
+              <i className="fa-solid fa-book-open text-3xl mx-auto mb-3 text-slate-300 block" />
+              <p className="text-slate-500">Chưa tìm thấy chương phù hợp.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -351,18 +351,18 @@ export default function StoryDetailPage() {
                   key={c.id}
                   to={`/chapters/${c.id}`}
                   state={{ storyId: story.id }}
-                  className="flex items-center justify-between p-3.5 rounded-xl border border-ink-border bg-ink-card hover:border-gold/50 hover:bg-ink-elevated transition-all group"
+                  className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-white hover:border-orange-400 hover:bg-orange-50/30 shadow-2xs transition-all group"
                 >
                   <div className="min-w-0 pr-3">
-                    <p className="text-xs text-amber-400/80 mb-0.5 font-mono font-medium">
+                    <p className="text-xs text-orange-600 mb-0.5 font-mono font-bold">
                       Chương {c.chapterNumber}
                     </p>
-                    <p className="text-ink-text text-sm font-medium truncate group-hover:text-gold transition-colors">
+                    <p className="text-slate-800 text-sm font-semibold truncate group-hover:text-orange-600 transition-colors">
                       {c.title}
                     </p>
                   </div>
                   {c.requiresAccess && (
-                    <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400" title="Chương VIP / Cần mở khóa">
+                    <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 border border-amber-300 text-amber-600" title="Chương VIP / Cần mở khóa">
                       <i className="fa-solid fa-lock text-xs" />
                     </div>
                   )}
@@ -452,22 +452,22 @@ export default function StoryDetailPage() {
 
       {/* MODAL THANH TOÁN MUA TRUYỆN */}
       {paymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-ink-card border border-ink-border rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative text-slate-800">
             <button
               onClick={() => setPaymentModal(null)}
-              className="absolute top-5 right-5 text-ink-muted hover:text-white p-2 rounded-xl transition-colors"
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-800 p-2 rounded-xl transition-colors cursor-pointer"
             >
               <i className="fa-solid fa-xmark text-lg" />
             </button>
 
             {paymentSuccess ? (
               <div className="text-center py-6 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto text-2xl">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-300 flex items-center justify-center mx-auto text-2xl shadow-xs">
                   <i className="fa-solid fa-circle-check" />
                 </div>
-                <h3 className="font-serif text-2xl text-white font-bold">Mua Truyện Thành Công!</h3>
-                <p className="text-sm text-ink-muted">
+                <h3 className="font-serif text-2xl text-slate-900 font-bold">Mua Truyện Thành Công!</h3>
+                <p className="text-sm text-slate-600">
                   Bạn đã mở khóa toàn bộ quyền đọc tác phẩm <strong>{story.title}</strong>. Chúc bạn có những giây phút thưởng thức truyện vui vẻ!
                 </p>
                 <div className="pt-4 flex justify-center gap-3">
@@ -478,13 +478,13 @@ export default function StoryDetailPage() {
                         navigate(`/chapters/${story.chapters[0].id}`, { state: { storyId: story.id } });
                       }
                     }}
-                    className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-gold text-ink-bg hover:bg-gold-dim transition-all"
+                    className="px-6 py-2.5 rounded-xl text-sm font-bold bg-orange-600 text-white hover:bg-orange-700 transition-all shadow-xs"
                   >
                     Bắt đầu đọc ngay
                   </button>
                   <button
                     onClick={() => setPaymentModal(null)}
-                    className="px-5 py-2.5 rounded-xl text-sm font-medium border border-ink-border text-ink-text hover:bg-ink-bg transition-all"
+                    className="px-5 py-2.5 rounded-xl text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all"
                   >
                     Đóng
                   </button>
@@ -493,26 +493,26 @@ export default function StoryDetailPage() {
             ) : (
               <div className="space-y-6">
                 <div>
-                  <span className="text-gold text-xs font-semibold uppercase tracking-wider block mb-1">
+                  <span className="text-orange-600 text-xs font-bold uppercase tracking-wider block mb-1">
                     Thanh toán mua truyện
                   </span>
-                  <h3 className="font-serif text-xl sm:text-2xl text-white font-bold truncate">
+                  <h3 className="font-serif text-xl sm:text-2xl text-slate-900 font-bold truncate">
                     {story.title}
                   </h3>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-ink-bg border border-ink-border space-y-2 text-sm">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-ink-muted">Tác phẩm:</span>
-                    <span className="font-semibold text-white truncate max-w-[200px]">{story.title}</span>
+                    <span className="text-slate-500">Tác phẩm:</span>
+                    <span className="font-bold text-slate-900 truncate max-w-[200px]">{story.title}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-ink-muted">Quyền lợi:</span>
-                    <span className="text-emerald-400 font-medium">Mở khóa vĩnh viễn</span>
+                    <span className="text-slate-500">Quyền lợi:</span>
+                    <span className="text-emerald-600 font-semibold">Mở khóa vĩnh viễn</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-ink-muted">Giá bán:</span>
-                    <span className="text-gold font-bold text-base">{story.price?.toLocaleString()}đ</span>
+                    <span className="text-slate-500">Giá bán:</span>
+                    <span className="text-orange-600 font-bold text-base">{story.price?.toLocaleString()}đ</span>
                   </div>
                 </div>
 
@@ -552,7 +552,7 @@ export default function StoryDetailPage() {
                     href={paymentModal.paymentUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="w-full py-2.5 rounded-xl font-medium text-xs border border-ink-border text-ink-muted hover:text-white hover:bg-ink-bg transition-all flex items-center justify-center gap-2"
+                    className="w-full py-2.5 rounded-xl font-medium text-xs border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
                   >
                     <i className="fa-solid fa-arrow-up-right-from-square" />
                     <span>Mở cổng VNPay Sandbox</span>

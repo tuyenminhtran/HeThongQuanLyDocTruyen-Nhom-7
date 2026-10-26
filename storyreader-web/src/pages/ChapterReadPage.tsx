@@ -1,4 +1,4 @@
-﻿import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
+import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChapterContent } from "../api/chapters";
 import { getStoryDetail } from "../api/stories";
@@ -21,7 +21,7 @@ export default function ChapterReadPage() {
   });
 
   const [theme, setTheme] = useState<Theme>(() => {
-    return (localStorage.getItem("storyreader-theme") as Theme) || "dark";
+    return (localStorage.getItem("storyreader-theme") as Theme) || "light";
   });
 
   const [showChapterList, setShowChapterList] = useState(false);

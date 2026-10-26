@@ -8,20 +8,20 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Custom smooth scrollbar */
+  /* Custom smooth scrollbar for light theme */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   ::-webkit-scrollbar-track {
-    background: #111216;
+    background: #F1F5F9;
   }
   ::-webkit-scrollbar-thumb {
-    background: #282B35;
+    background: #CBD5E1;
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #3D4150;
+    background: #94A3B8;
   }
 }
 
@@ -37,19 +37,19 @@
     border-radius: inherit;
     background: linear-gradient(
       to right,
-      rgba(0, 0, 0, 0.45) 0%,
-      rgba(255, 255, 255, 0.12) 2.5%,
-      rgba(0, 0, 0, 0.25) 5%,
+      rgba(0, 0, 0, 0.25) 0%,
+      rgba(255, 255, 255, 0.3) 2.5%,
+      rgba(0, 0, 0, 0.15) 5%,
       transparent 12%
     );
     z-index: 10;
   }
 
   .glass-card {
-    @apply bg-ink-card/90 backdrop-blur-md border border-ink-border shadow-xl;
+    @apply bg-white border border-slate-200 shadow-sm;
   }
 
   .glass-header {
-    @apply bg-ink-bg/85 backdrop-blur-xl border-b border-ink-border/80;
+    @apply bg-white/95 backdrop-blur-md border-b border-slate-200;
   }
 }

@@ -52,10 +52,10 @@ export default function RegisterPage() {
   }, [password, passwordCriteria]);
 
   const strengthLabel = useMemo(() => {
-    if (!password) return { text: "Chưa nhập", color: "text-ink-muted" };
-    if (passwordScore === 1) return { text: "Yếu", color: "text-rose-400" };
-    if (passwordScore === 2) return { text: "Khá", color: "text-amber-400" };
-    return { text: "Mạnh", color: "text-emerald-400" };
+    if (!password) return { text: "Chưa nhập", color: "text-slate-400" };
+    if (passwordScore === 1) return { text: "Yếu", color: "text-rose-500 font-semibold" };
+    if (passwordScore === 2) return { text: "Khá", color: "text-amber-500 font-semibold" };
+    return { text: "Mạnh", color: "text-emerald-600 font-semibold" };
   }, [password, passwordScore]);
 
   const onSubmit = async (data: RegisterForm) => {
@@ -97,7 +97,7 @@ export default function RegisterPage() {
         <div className="mb-4">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-xs font-medium text-ink-muted hover:text-amber-400 transition-colors group"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-orange-600 transition-colors group"
           >
             <i className="fa-solid fa-arrow-left text-[11px] transform group-hover:-translate-x-1 transition-transform" />
             <span>Quay lại trang chủ</span>
@@ -105,31 +105,31 @@ export default function RegisterPage() {
         </div>
 
         {/* Auth Card */}
-        <div className="bg-ink-card border border-ink-border rounded-2xl shadow-xl shadow-black/40 p-6 sm:p-8">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-md p-6 sm:p-8">
           {/* Brand Header */}
           <div className="text-center mb-6">
             <Link to="/" className="inline-block group mb-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-ink-bg font-serif text-2xl font-black shadow-md shadow-amber-500/20 mx-auto group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white font-serif text-2xl font-black shadow-md shadow-orange-500/20 mx-auto group-hover:scale-105 transition-transform">
                 S
               </div>
             </Link>
-            <h1 className="font-serif text-2xl font-bold text-white tracking-tight">
+            <h1 className="font-serif text-2xl font-bold text-slate-900 tracking-tight">
               Tạo tài khoản mới
             </h1>
-            <p className="text-xs text-ink-muted mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Đăng ký miễn phí để lưu tủ sách và theo dõi chương truyện mới
             </p>
           </div>
 
           {/* Segmented Switcher */}
-          <div className="grid grid-cols-2 p-1 bg-ink-bg border border-ink-border rounded-xl mb-5 text-center text-xs font-semibold">
+          <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl mb-5 text-center text-xs font-semibold">
             <Link
               to="/login"
-              className="py-2 text-ink-muted hover:text-white transition-colors"
+              className="py-2 text-slate-600 hover:text-slate-900 transition-colors"
             >
               Đăng nhập
             </Link>
-            <span className="py-2 rounded-lg bg-amber-500 text-ink-bg shadow-sm">
+            <span className="py-2 rounded-lg bg-orange-600 text-white shadow-xs">
               Đăng ký mới
             </span>
           </div>
@@ -138,11 +138,11 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Display Name */}
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Tên hiển thị / Biệt danh
               </label>
               <div className="relative group">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted group-focus-within:text-amber-400 transition-colors">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors">
                   <i className="fa-solid fa-user text-xs" />
                 </span>
                 <input
@@ -154,11 +154,11 @@ export default function RegisterPage() {
                     },
                   })}
                   placeholder="Ví dụ: Độc Cô Cầu Bại"
-                  className="w-full bg-ink-bg border border-ink-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                 />
               </div>
               {errors.displayName && (
-                <p className="flex items-center gap-1.5 text-red-400 text-xs mt-1.5">
+                <p className="flex items-center gap-1.5 text-red-500 text-xs mt-1.5">
                   <i className="fa-solid fa-circle-exclamation text-xs shrink-0" />
                   <span>{errors.displayName.message}</span>
                 </p>
@@ -167,11 +167,11 @@ export default function RegisterPage() {
 
             {/* Email */}
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Địa chỉ Email
               </label>
               <div className="relative group">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted group-focus-within:text-amber-400 transition-colors">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors">
                   <i className="fa-solid fa-envelope text-xs" />
                 </span>
                 <input
@@ -184,11 +184,11 @@ export default function RegisterPage() {
                   })}
                   type="email"
                   placeholder="ban@example.com"
-                  className="w-full bg-ink-bg border border-ink-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                 />
               </div>
               {errors.email && (
-                <p className="flex items-center gap-1.5 text-red-400 text-xs mt-1.5">
+                <p className="flex items-center gap-1.5 text-red-500 text-xs mt-1.5">
                   <i className="fa-solid fa-circle-exclamation text-xs shrink-0" />
                   <span>{errors.email.message}</span>
                 </p>
@@ -198,17 +198,17 @@ export default function RegisterPage() {
             {/* Password */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-medium text-slate-300">
+                <label className="text-xs font-semibold text-slate-700">
                   Mật khẩu
                 </label>
                 {password.length > 0 && (
-                  <span className={`text-[11px] font-medium ${strengthLabel.color}`}>
+                  <span className={`text-[11px] ${strengthLabel.color}`}>
                     Độ mạnh: {strengthLabel.text}
                   </span>
                 )}
               </div>
               <div className="relative group">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted group-focus-within:text-amber-400 transition-colors">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors">
                   <i className="fa-solid fa-lock text-xs" />
                 </span>
                 <input
@@ -221,12 +221,12 @@ export default function RegisterPage() {
                   })}
                   type={showPassword ? "text" : "password"}
                   placeholder="Tối thiểu 6 ký tự"
-                  className="w-full bg-ink-bg border border-ink-border rounded-xl pl-10 pr-10 py-2.5 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-white transition-colors cursor-pointer"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
                   aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                 >
                   {showPassword ? (
@@ -249,7 +249,7 @@ export default function RegisterPage() {
                             : passwordScore === 2
                             ? "bg-amber-500"
                             : "bg-emerald-500"
-                          : "bg-ink-border"
+                          : "bg-slate-200"
                       }`}
                     />
                     <div
@@ -258,12 +258,12 @@ export default function RegisterPage() {
                           ? passwordScore === 2
                             ? "bg-amber-500"
                             : "bg-emerald-500"
-                          : "bg-ink-border"
+                          : "bg-slate-200"
                       }`}
                     />
                     <div
                       className={`rounded-full transition-colors ${
-                        passwordScore >= 3 ? "bg-emerald-500" : "bg-ink-border"
+                        passwordScore >= 3 ? "bg-emerald-500" : "bg-slate-200"
                       }`}
                     />
                   </div>
@@ -271,7 +271,7 @@ export default function RegisterPage() {
               )}
 
               {errors.password && (
-                <p className="flex items-center gap-1.5 text-red-400 text-xs mt-1.5">
+                <p className="flex items-center gap-1.5 text-red-500 text-xs mt-1.5">
                   <i className="fa-solid fa-circle-exclamation text-xs shrink-0" />
                   <span>{errors.password.message}</span>
                 </p>
@@ -281,15 +281,15 @@ export default function RegisterPage() {
             {/* Confirm Password */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-medium text-slate-300">
+                <label className="text-xs font-semibold text-slate-700">
                   Xác nhận mật khẩu
                 </label>
                 {confirmPassword.length > 0 && (
                   <span
-                    className={`text-[11px] font-medium flex items-center gap-1 ${
+                    className={`text-[11px] font-semibold flex items-center gap-1 ${
                       confirmPassword === password
-                        ? "text-emerald-400"
-                        : "text-rose-400"
+                        ? "text-emerald-600"
+                        : "text-rose-500"
                     }`}
                   >
                     {confirmPassword === password ? (
@@ -304,7 +304,7 @@ export default function RegisterPage() {
                 )}
               </div>
               <div className="relative group">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted group-focus-within:text-amber-400 transition-colors">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors">
                   <i className="fa-solid fa-shield-halved text-xs" />
                 </span>
                 <input
@@ -315,11 +315,11 @@ export default function RegisterPage() {
                   })}
                   type={showPassword ? "text" : "password"}
                   placeholder="Nhập lại mật khẩu"
-                  className="w-full bg-ink-bg border border-ink-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-ink-text placeholder:text-ink-muted/40 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                 />
               </div>
               {errors.confirmPassword && (
-                <p className="flex items-center gap-1.5 text-red-400 text-xs mt-1.5">
+                <p className="flex items-center gap-1.5 text-red-500 text-xs mt-1.5">
                   <i className="fa-solid fa-circle-exclamation text-xs shrink-0" />
                   <span>{errors.confirmPassword.message}</span>
                 </p>
@@ -334,32 +334,32 @@ export default function RegisterPage() {
                   {...register("agreeTerms", {
                     required: "Vui lòng đồng ý với điều khoản để tiếp tục",
                   })}
-                  className="w-4 h-4 rounded border-ink-border bg-ink-bg text-amber-500 focus:ring-amber-400/30 focus:ring-offset-0 mt-0.5 transition-colors"
+                  className="w-4 h-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500/30 mt-0.5 transition-colors"
                 />
-                <span className="text-xs text-ink-muted leading-relaxed">
+                <span className="text-xs text-slate-600 leading-relaxed">
                   Tôi đồng ý với{" "}
-                  <span className="text-amber-400">Điều khoản dịch vụ</span> &{" "}
-                  <span className="text-amber-400">Chính sách bảo mật</span>
+                  <span className="text-orange-600 font-medium">Điều khoản dịch vụ</span> &{" "}
+                  <span className="text-orange-600 font-medium">Chính sách bảo mật</span>
                 </span>
               </label>
               {errors.agreeTerms && (
-                <p className="text-red-400 text-xs mt-1 ml-6">{errors.agreeTerms.message}</p>
+                <p className="text-red-500 text-xs mt-1 ml-6">{errors.agreeTerms.message}</p>
               )}
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/25 flex items-start gap-2.5">
-                <i className="fa-solid fa-circle-exclamation text-red-400 text-xs shrink-0 mt-0.5" />
-                <p className="text-xs text-red-300 leading-relaxed flex-1">{error}</p>
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5">
+                <i className="fa-solid fa-circle-exclamation text-red-500 text-xs shrink-0 mt-0.5" />
+                <p className="text-xs text-red-700 leading-relaxed flex-1">{error}</p>
               </div>
             )}
 
             {/* Social Notice */}
             {socialNotice && (
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5">
-                <i className="fa-solid fa-circle-info text-amber-400 text-xs shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-300 leading-relaxed flex-1">{socialNotice}</p>
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5">
+                <i className="fa-solid fa-circle-info text-amber-600 text-xs shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-800 leading-relaxed flex-1">{socialNotice}</p>
               </div>
             )}
 
@@ -367,11 +367,11 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:brightness-110 active:scale-[0.99] text-ink-bg font-bold py-3 px-5 rounded-xl shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full bg-orange-600 hover:bg-orange-700 active:scale-[0.99] text-white font-bold py-3 px-5 rounded-xl shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               {loading ? (
                 <>
-                  <i className="fa-solid fa-spinner fa-spin text-xs text-ink-bg" />
+                  <i className="fa-solid fa-spinner fa-spin text-xs" />
                   <span className="text-sm">Đang tạo tài khoản...</span>
                 </>
               ) : (
@@ -386,10 +386,10 @@ export default function RegisterPage() {
           {/* Social Divider */}
           <div className="relative my-5">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-ink-border" />
+              <div className="w-full border-t border-slate-200" />
             </div>
             <div className="relative flex justify-center text-[11px] uppercase">
-              <span className="bg-ink-card px-2.5 text-ink-muted/70 tracking-wider">
+              <span className="bg-white px-2.5 text-slate-400 tracking-wider">
                 Hoặc đăng ký nhanh bằng
               </span>
             </div>
@@ -400,29 +400,29 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => handleSocialClick("Google")}
-              className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-ink-bg border border-ink-border hover:border-ink-border-hover hover:bg-ink-elevated text-xs font-medium text-slate-300 transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition-all cursor-pointer shadow-2xs"
             >
-              <i className="fa-brands fa-google text-red-400 text-xs" />
+              <i className="fa-brands fa-google text-red-500 text-xs" />
               <span>Google</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleSocialClick("GitHub")}
-              className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-ink-bg border border-ink-border hover:border-ink-border-hover hover:bg-ink-elevated text-xs font-medium text-slate-300 transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition-all cursor-pointer shadow-2xs"
             >
-              <i className="fa-brands fa-github text-white text-xs" />
+              <i className="fa-brands fa-github text-slate-900 text-xs" />
               <span>GitHub</span>
             </button>
           </div>
 
           {/* Bottom Switch Link */}
-          <div className="mt-6 pt-4 border-t border-ink-border text-center">
-            <p className="text-xs text-ink-muted">
+          <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+            <p className="text-xs text-slate-600">
               Đã có tài khoản?{" "}
               <Link
                 to="/login"
-                className="text-amber-400 font-semibold hover:text-amber-300 transition-colors"
+                className="text-orange-600 font-bold hover:text-orange-700 transition-colors"
               >
                 Đăng nhập ngay
               </Link>
@@ -431,9 +431,9 @@ export default function RegisterPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-5 text-center text-[11px] text-ink-muted/60 flex items-center justify-center gap-3">
+        <div className="mt-5 text-center text-[11px] text-slate-400 flex items-center justify-center gap-3">
           <span className="flex items-center gap-1.5">
-            <i className="fa-solid fa-lock text-emerald-400 text-[10px]" />
+            <i className="fa-solid fa-lock text-emerald-600 text-[10px]" />
             Bảo mật SSL 256-bit
           </span>
           <span>•</span>
