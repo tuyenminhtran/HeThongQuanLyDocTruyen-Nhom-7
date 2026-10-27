@@ -1,161 +1,143 @@
 # StoryReader Mobile App
 
-Ứng dụng đọc truyện trực tuyến **StoryReader Mobile**, được xây dựng bằng **Flutter (Dart)** với Material 3 Dark Theme tùy chỉnh, đồng bộ 100% ngôn ngữ thiết kế, màu sắc, font chữ và trải nghiệm từ phiên bản Web `storyreader-web`, tích hợp trực tiếp vào hệ thống backend RESTful API của `StoryReader.Api`.
+> **Hệ thống Quản lý Đọc truyện Trực tuyến - Đồ án Công nghệ Phần mềm (Nhóm 7)**  
+> Ứng dụng di động đa nền tảng (Flutter / Dart) dành cho độc giả đọc truyện chữ (Novel) và truyện tranh (Comic/Webtoon/Manga).
 
 ---
 
-## 1. Yêu Cầu Môi Trường
-
-- **Flutter SDK**: Phiên bản `>= 3.44.0` (Dart `>= 3.12.0`)
-- **Android Studio / Xcode**:
-  - Android SDK (API 34+) & Android Emulator hoặc thiết bị thật.
-  - Xcode 15+ & iOS Simulator (nếu chạy trên macOS).
-- **Hệ điều hành Backend**:
-  - Docker & Docker Compose (chạy PostgreSQL & Redis).
-  - .NET SDK 8.0+ (chạy `StoryReader.Api`).
+## 1. Giới thiệu Tổng quan
+`Storyreader_mobile` là phân hệ ứng dụng di động kết nối trực tiếp với backend ASP.NET Core (`StoryReader.Api`). Ứng dụng được thiết kế theo tiêu chuẩn công thái học di động, giao diện Midnight Gold hiện đại và kiến trúc Clean Architecture hướng dữ liệu, mang đến trải nghiệm đọc sách mượt mà, chuyên nghiệp tương đương các ứng dụng thương mại.
 
 ---
 
-## 2. Cấu Hình & Chạy Backend
+## 2. Các Tính năng Nổi bật
 
-1. **Khởi động Docker containers (Database & Cache):**
-   ```bash
-   cd c:\Users\PC\Desktop\HeThongQuanLyDocTruyen-Nhom-7
-   docker compose up -d
-   ```
-   *Lưu ý:* Đảm bảo PostgreSQL đang chạy trên cổng `5432` và Redis đang chạy trên cổng `6379`.
+### 2.1. Trình đọc Truyện tranh Chuyên biệt (Comic / Webtoon Viewer)
+- **Cuộn dọc liên tục (Infinite Webtoon Stream)**: Tối ưu hóa bộ nhớ với `ListView.builder` và `CachedNetworkImage`, hỗ trợ đọc mượt mà cả những chương có hơn 50 ảnh chất lượng cao.
+- **Pinch-to-zoom đa điểm**: Tích hợp `InteractiveViewer` cho phép phóng to ảnh từ 1.0x đến 3.5x bằng 2 ngón tay để quan sát chi tiết nét vẽ.
+- **Cơ chế tải lại từng ảnh độc lập**: Nếu một trang ảnh bị sự cố mạng, độc giả có thể bấm "Thử lại" ngay tại trang đó mà không cần tải lại toàn bộ chương.
+- **Chỉ báo trang nổi**: Hiển thị vị trí trang hiện tại theo thời gian thực (`X / Tổng số trang`).
 
-2. **Chạy Backend RESTful API:**
-   ```bash
-   dotnet run --project StoryReader.Api\StoryReader.Api.csproj
-   ```
-   Backend mặc định lắng nghe tại:
-   - HTTP: `http://localhost:5066`
-   - HTTPS: `https://localhost:7244`
+### 2.2. Trình đọc Truyện chữ Đẳng cấp (Novel Reader)
+- **Typography sách in cao cấp**: Tự động chia tách đoạn văn bản, thụt đầu dòng, căn đều hai bên (justify) chống mỏi mắt.
+- **Tùy biến phông chữ đa dạng**: Hỗ trợ chuyển đổi nhanh giữa 3 bộ phông chữ: **Lora (Serif cổ điển)**, **Inter (Sans-serif hiện đại)**, **Noto Serif (Truyền thống)**.
+- **Tùy biến cỡ chữ & giãn dòng**: Cỡ chữ từ 14pt đến 32pt; khoảng cách dòng linh hoạt 1.5, 1.8, 2.2.
+- **3 Chế độ nền đọc**: **Midnight Dark** (Tối sâu tiết kiệm pin), **Sepia** (Giấy ngà bảo vệ mắt ban đêm), **Paper Light** (Trang sách sáng).
 
----
+### 2.3. Cây Thư mục Chương Cha - Con (Collapsible Part Folders)
+- Tự động gom nhóm các chương theo `partName` của backend (Ví dụ: *Quyển 1: Khởi đầu*, *Quyển 2: Xuống núi*).
+- Cho phép người đọc chạm để mở/đóng từng tập, đảo chiều thứ tự chương (Mới nhất / Cũ nhất), và tìm kiếm chương theo số hoặc tên.
 
-## 3. Cấu Hình Base URL cho Mobile App
+### 2.4. Tủ sách Cá nhân (My Library)
+- Gồm 3 tab riêng biệt:
+  - **Đang theo dõi**: Danh sách các bộ truyện độc giả đã đánh dấu bookmark, đồng bộ tức thì với server.
+  - **Lịch sử đọc**: Lưu vết các chương truyện đã đọc kèm tiến độ cuộn trang.
+  - **Đã mua**: Quản lý các bộ truyện đã mua bản quyền trọn bộ.
 
-File cấu hình tập trung tại:  
-[`lib/core/constants/api_constants.dart`](file:///lib/core/constants/api_constants.dart)
+### 2.5. Thảo luận & Bình luận Chương Trực tiếp
+- Đọc và gửi bình luận ngay trong chương đọc (`GET /api/chapters/{id}/discussions` và `POST /api/chapters/{id}/discussions`).
+- Định dạng thời gian tương đối ("Vừa xong", "15 phút trước", "Hôm qua").
+- Tự động kiểm tra quyền đăng nhập trước khi tham gia thảo luận.
 
-Mặc định ứng dụng tự động nhận diện nền tảng:
-- **Android Emulator**: `http://10.0.2.2:5066/api` (Android emulator định tuyến `10.0.2.2` về `localhost` của máy host).
-- **iOS Simulator / Web / Desktop**: `http://localhost:5066/api`
-- **Thiết bị thật (Android / iOS qua Wi-Fi)**:  
-  Cần mở file `lib/core/constants/api_constants.dart` và gán IP mạng LAN của máy tính đang chạy backend:
-  ```dart
-  static String baseUrl = 'http://192.168.1.xxx:5066/api';
-  ```
+### 2.6. Chế độ Ngoại tuyến (Offline-First Cache) & Đồng bộ
+- Tự động lưu nội dung chương vào bộ nhớ cục bộ (`ReadingCacheService`). Khi mất mạng, độc giả vẫn có thể mở lại các chương đã tải để đọc tiếp.
+- Lưu lại phần trăm đọc `%` và vị trí cuộn `scrollOffset`, tự động đồng bộ lên server khi có mạng trở lại.
 
-### Lưu ý về bảo mật mạng (Cleartext HTTP):
-- **Android**: Đã cấu hình `android:usesCleartextTraffic="true"` trong `AndroidManifest.xml` để cho phép kết nối `http://` cục bộ mà không bị chặn bởi chính sách bảo mật Android 9+.
-- **iOS**: Đã cấu hình ngoại lệ `NSAppTransportSecurity` (`NSAllowsArbitraryLoads = true`) trong `ios/Runner/Info.plist` cho môi trường phát triển cục bộ.
-
----
-
-## 4. Hướng Dẫn Cài Đặt & Khởi Chạy Ứng Dụng
-
-Di chuyển vào thư mục `Storyreader_mobile`:
-```bash
-cd Storyreader_mobile
-```
-
-1. **Tải các gói thư viện phụ thuộc:**
-   ```bash
-   flutter pub get
-   ```
-
-2. **Kiểm tra mã nguồn và linter (0 lỗi):**
-   ```bash
-   flutter analyze
-   ```
-
-3. **Khởi chạy ứng dụng:**
-   - Trên Android Emulator đang mở:
-     ```bash
-     flutter run -d emulator
-     ```
-   - Hoặc để Flutter tự chọn thiết bị khả dụng:
-     ```bash
-     flutter run
-     ```
+### 2.7. Hệ thống Theme Toàn Ứng dụng
+- Hỗ trợ đầy đủ **Chế độ Tối (Dark)**, **Chế độ Sáng (Light)**, và **Theo cài đặt Hệ thống (System)**.
+- Đạt chuẩn Touch Target công thái học ($\ge 48\times 48\text{ dp}$ cho mọi nút bấm).
 
 ---
 
-## 5. Bảng Đối Chiếu: Trang Web ↔ Màn Hình Mobile
-
-| Trang Web (`storyreader-web`) | Màn Mobile (`Storyreader_mobile`) | Đường dẫn Route | Mô tả & Chức năng |
-|---|---|---|---|
-| **Header (App Header)** | [`AppHeader`](file:///lib/widgets/app_header.dart) | Chung toàn app | Thanh điều hướng sticky trên cùng, nền mờ kính 80%, logo 36x36 viền vàng, menu xổ xuống hỗ trợ Auth, Gói VIP, Trang quản trị |
-| **Footer (App Footer)** | [`AppFooter`](file:///lib/widgets/app_footer.dart) | Cuối trang cuộn | Giới thiệu, Khám phá, Tài khoản, Liên hệ, bản quyền © StoryReader |
-| **Trang chủ (`HomePage.tsx`)** | [`HomeScreen`](file:///lib/features/home/home_screen.dart) | `/` | Tìm kiếm debounce 400ms, bộ lọc Trạng thái & Thu phí, lưới truyện 2 cột tải phân trang (12 truyện/lần), khối Top Đọc Nhiều Nhất, banner Premium |
-| **Chi tiết truyện (`StoryDetailPage.tsx`)** | [`StoryDetailScreen`](file:///lib/features/story_detail/story_detail_screen.dart) | `/stories/:id` | Bìa truyện lớn bo 16, tags thể loại, mô tả, nút "Mua ngay" (`POST /payments/story/{id}`) hoặc "Đọc từ đầu", danh sách chương, khối Đánh giá & Bình luận |
-| **Đọc chương (`ChapterReadPage.tsx`)** | [`ChapterReadScreen`](file:///lib/features/chapter_read/chapter_read_screen.dart) | `/chapters/:id` | 3 theme đọc (Dark, Light, Sepia), tùy chỉnh cỡ chữ A-/A+ (14-32px), lưu trữ SharedPreferences, xử lý lỗi khóa chương 403 yêu cầu mua |
-| **Đăng nhập (`LoginPage.tsx`)** | [`LoginScreen`](file:///lib/features/auth/login_screen.dart) | `/login` | Đăng nhập bằng email/password, validate form, hiển thị lỗi API, giải mã vai trò JWT |
-| **Đăng ký (`RegisterPage.tsx`)** | [`RegisterScreen`](file:///lib/features/auth/register_screen.dart) | `/register` | Tên hiển thị, email, mật khẩu & xác nhận mật khẩu, validate tức thì |
-| **Bảng giá VIP (`PricingPage.tsx`)** | [`PricingScreen`](file:///lib/features/pricing/pricing_screen.dart) | `/pricing` | Chuyển đổi Theo tháng / Theo năm (-15%), 3 gói: Đọc Thử (19k), Premium (49k - Phổ biến nhất), Nạp Xu Lẻ (từ 10k), cổng thanh toán |
-| **Trang cá nhân (`ProfilePage.tsx`)** | [`ProfileScreen`](file:///lib/features/profile/profile_screen.dart) | `/profile` | Avatar chữ cái đầu, đổi tên hiển thị, 3 tab: Lịch sử đọc, Đã lưu (Bookmark), Truyện đã mua |
-| **Quản trị (`AdminLayout.tsx`)** | [`AdminLayoutScreen`](file:///lib/features/admin/admin_layout_screen.dart) | `/admin` | Khung quản trị với Drawer và Tab Bar, kiểm tra quyền Admin role từ JWT claim |
-| **Admin Dashboard (`DashboardPage.tsx`)** | [`AdminDashboardScreen`](file:///lib/features/admin/admin_dashboard_screen.dart) | `/admin` (Tab 0) | Thẻ thống kê: Doanh thu, Người dùng, Truyện mới, Lượt đọc, cùng danh sách giao dịch & hoạt động gần đây |
-| **Quản lý Truyện (`AdminStoriesPage.tsx`)** | [`AdminStoriesScreen`](file:///lib/features/admin/admin_stories_screen.dart) | `/admin/stories` (Tab 1) | Quản lý danh sách truyện, modal Thêm truyện mới (`POST /stories`), modal Thêm chương (`POST /stories/{id}/chapters`), xem danh sách chương theo truyện |
-| **Quản lý Thể loại (`AdminCategoriesPage.tsx`)** | [`AdminCategoriesScreen`](file:///lib/features/admin/admin_categories_screen.dart) | `/admin/categories` (Tab 2) | Danh sách thể loại truyện, tìm kiếm, modal Thêm/Sửa/Xóa thể loại |
-| **Quản lý Người dùng (`AdminUsersPage.tsx`)** | [`AdminUsersScreen`](file:///lib/features/admin/admin_users_screen.dart) | `/admin/users` (Tab 3) | Danh sách tài khoản, trạng thái Hoạt động / Đã khóa, phân quyền User / Admin |
-
----
-
-## 6. Danh Sách Phần Mock / Giả Lập (Đúng Hành Vi Bản Web)
-
-Theo đúng yêu cầu "Giống web 100%": những phần trên Web đang mock/giả lập dữ liệu thì Mobile cũng giả lập tương tự và được tách riêng vào các repository để dễ dàng thay bằng API thật sau này:
-
-1. **Thư viện người dùng (`lib/data/repositories/user_mock_repository.dart`):**
-   - **Lịch sử đọc, Đã lưu (Bookmark), Truyện đã mua**: Giống như web lấy một tập hợp truyện từ API `/stories` để hiển thị trong 3 tab của `ProfileScreen`.
-   - *Đánh dấu code:* `// TODO: thay bằng API thật khi backend hỗ trợ GET /users/me/history, bookmarks, purchases`.
-
-2. **Khối Đánh giá & Bình luận (`StoryDetailScreen`):**
-   - Khối bình luận mẫu (bình luận từ người dùng *Anh Tuấn*, *Minh Phượng*) và form gửi bình luận lưu vào state cục bộ giống như web.
-   - *Đánh dấu code:* `// TODO: thay bằng API thật GET/POST /chapters/{chapterId}/discussions khi backend hỗ trợ thảo luận cấp truyện`.
-
-3. **Gói cước VIP (`PricingScreen`):**
-   - Dữ liệu 3 gói hiển thị tĩnh theo thiết kế web. Nút thanh toán thông báo hoặc tạo đơn qua `/payments/subscription/{planId}` khi chọn gói.
-   - *Đánh dấu code:* `// TODO: thay bằng API thật GET /subscriptions/plans`.
-
-4. **Thống kê Admin Dashboard, Quản lý Thể loại, Quản lý Người dùng:**
-   - Số liệu tổng quan (Doanh thu 12.8M, Người dùng 1,420, v.v.), danh sách thể loại mẫu và người dùng mẫu được giả lập giao diện bảng điều khiển như web.
-   - *Đánh dấu code:* `// TODO: thay bằng API thật khi backend hoàn thiện endpoints quản trị danh mục/người dùng`.
-   - **Lưu ý:** Phần **Quản lý Truyện và Thêm Chương** được kết nối **100% API THẬT** (`GET /stories`, `POST /stories`, `POST /stories/{id}/chapters`).
-
----
-
-## 7. Cấu Trúc Mã Nguồn Dự Án
+## 3. Cấu trúc Thư mục (Architecture)
 
 ```
 Storyreader_mobile/
-├── android/                    # Cấu hình Android native (usesCleartextTraffic, permissions)
-├── ios/                        # Cấu hình iOS native (ATS exception, bundle identifier)
 ├── lib/
-│   ├── core/
-│   │   ├── constants/          # AppColors (bảng màu Ink & Gold), ApiConstants (Base URL)
-│   │   ├── network/            # DioClient cấu hình Interceptor, Token Bearer & tự động bắt 401
-│   │   ├── router/             # GoRouter cấu hình điều hướng & route guard (Auth / Admin)
-│   │   ├── storage/            # FlutterSecureStorage (Token) & SharedPreferences (Theme/Font)
-│   │   └── theme/              # AppTheme Material 3 Dark tùy biến theo web tokens
-│   ├── data/
-│   │   ├── api/                # AuthApi, StoryApi, ChapterApi, PaymentApi
-│   │   ├── models/             # AuthModel, StoryModel, ChapterModel, PaymentModel
-│   │   └── repositories/       # UserMockRepository (Mock data giống web)
-│   ├── features/
-│   │   ├── admin/              # Layout, Dashboard, Quản lý Truyện, Thể Loại, Người Dùng
-│   │   ├── auth/               # Màn hình Đăng nhập (Login), Đăng ký (Register)
-│   │   ├── chapter_read/       # Trình đọc chương (Dark, Light, Sepia, cỡ chữ động)
-│   │   ├── home/               # Trang chủ (Tìm kiếm, Lọc, Lưới truyện, Top xem nhiều)
-│   │   ├── pricing/            # Trang gói VIP (Theo tháng/năm, tính năng, cổng thanh toán)
-│   │   ├── profile/            # Trang cá nhân (Hồ sơ, Lịch sử, Bookmark, Truyện đã mua)
-│   │   └── story_detail/       # Chi tiết truyện (Giới thiệu, Mua truyện, Danh sách chương)
-│   ├── providers/              # AuthNotifier, StoryNotifier, ReaderNotifier (Riverpod)
-│   ├── widgets/                # AppHeader, AppFooter, StoryCard, LoadingSkeleton, EmptyState
-│   └── main.dart               # Entry point, ProviderScope, khởi tạo App & 401 handler
-├── test/                       # Smoke tests
-└── pubspec.yaml                # Cấu hình dependencies (dio, riverpod, go_router, google_fonts...)
+│   ├── core/                      # Các thành phần cốt lõi
+│   │   ├── constants/             # Màu sắc, chuỗi Tiếng Việt, Endpoint API
+│   │   ├── network/               # DioClient, interceptor, AppException
+│   │   ├── router/                # GoRouter điều hướng các màn hình
+│   │   ├── storage/               # SecureStorage (token) & SharedPreferences
+│   │   ├── theme/                 # AppTheme (Dark & Light theme)
+│   │   └── utils/                 # Phân nhóm chương (chapter_grouping, sequence)
+│   ├── data/                      # Tầng dữ liệu & Kho lưu trữ
+│   │   ├── api/                   # API client kết nối StoryReader.Api
+│   │   ├── local/                 # ReadingCacheService (Offline cache & sync)
+│   │   ├── models/                # DTOs an toàn (Story, Chapter, Discussion, v.v.)
+│   │   └── repositories/          # Repositories (Story, Chapter, Auth, Profile...)
+│   ├── features/                  # Các màn hình chức năng
+│   │   ├── admin/                 # Quản trị hệ thống (Thể loại, Người dùng, Thống kê)
+│   │   ├── auth/                  # Đăng nhập & Đăng ký
+│   │   ├── chapter_read/          # Trình đọc Comic, Novel, Cài đặt, Bình luận
+│   │   ├── home/                  # Trang chủ (Banner Hero, Tìm kiếm, Lọc thể loại)
+│   │   ├── library/               # Tủ sách (Theo dõi, Lịch sử, Đã mua)
+│   │   ├── pricing/               # Gói thành viên VIP
+│   │   ├── profile/               # Hồ sơ cá nhân & Cài đặt Theme
+│   │   └── story_detail/          # Chi tiết truyện & Cây thư mục chương
+│   ├── providers/                 # Quản lý trạng thái (Riverpod Providers)
+│   ├── widgets/                   # Widgets tái sử dụng (StoryCard, Skeleton, Header...)
+│   └── main.dart                  # Điểm khởi chạy ứng dụng
+├── test/                          # Unit & Widget tests tự động
+├── docs/                          # Tài liệu kiến trúc & API trích xuất
+├── API_REQUESTS.md                # Danh sách đề xuất API mở rộng cho backend
+└── README.md                      # Hướng dẫn này
 ```
+
+---
+
+## 4. Hướng dẫn Cài đặt & Khởi chạy
+
+### 4.1. Yêu cầu Môi trường
+- Flutter SDK $\ge 3.29.0$
+- Dart SDK $\ge 3.7.0$
+- Backend `StoryReader.Api` đang chạy tại cổng `5066`.
+
+### 4.2. Cấu hình Địa chỉ IP Backend ([api_constants.dart](file:///c:/Users/PC/Desktop/HeThongQuanLyDocTruyen-Nhom-7/Storyreader_mobile/lib/core/constants/api_constants.dart))
+Tùy vào thiết bị bạn đang chạy app:
+- **Android Emulator**: Sử dụng mặc định `http://10.0.2.2:5066/api`.
+- **iOS Simulator / Windows Desktop / Web**: Sử dụng `http://localhost:5066/api`.
+- **Điện thoại thật (Physical Device qua Wi-Fi)**: Đổi thành `http://<IP_LAN_MAY_TINH>:5066/api` (Ví dụ: `http://192.168.1.15:5066/api`).
+
+### 4.3. Các lệnh Thao tác
+Cài đặt thư viện dependencies:
+```bash
+cd Storyreader_mobile
+flutter pub get
+```
+
+Chạy kiểm tra tĩnh (Linter):
+```bash
+flutter analyze
+```
+
+Chạy toàn bộ bộ kiểm thử tự động (Unit & Widget Tests):
+```bash
+flutter test
+```
+
+Khởi chạy ứng dụng trên thiết bị/máy ảo:
+```bash
+flutter run
+```
+
+Biên dịch gói cài đặt Android APK (Debug / Release):
+```bash
+flutter build apk --debug
+# hoặc
+flutter build apk --release
+```
+Tệp APK sau khi build sẽ nằm tại: `build/app/outputs/flutter-apk/app-debug.apk`.
+
+---
+
+## 5. Danh sách Kiểm thử Tự động (Test Suites)
+Hệ thống bao gồm 32 bài test tự động bao phủ toàn diện các chức năng:
+1. `data_layer_test.dart`: Kiểm thử Safe Parsing JSON, Enums (StoryType, AccessPolicy, ReleaseStatus), phân nhóm chương (`groupChaptersByPart`), cơ chế Offline Cache & Sync.
+2. `ui_components_test.dart`: Kiểm thử hiển thị Badge Comic/Chữ, Badge VIP/Miễn phí, bộ chuyển đổi Theme Mode (Sáng/Tối/Hệ thống).
+3. `reader_flow_test.dart`: Kiểm thử Trình đọc Novel, Trình đọc Comic (zoom, indicator), Bottom Sheet Cài đặt đọc sách, Model Bình luận chương.
+4. `admin_flows_test.dart`: Kiểm thử các luồng quản trị (CRUD thể loại, quản lý người dùng, dashboard, xử lý lỗi mạng).
+5. `chapter_navigation_test.dart`: Kiểm thử chuyển chương kế tiếp / chương trước và mở mục lục.
+
+---
+*Đồ án Công nghệ Phần mềm - Nhóm 7 (2026)*

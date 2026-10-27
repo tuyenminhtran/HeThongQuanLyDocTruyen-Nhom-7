@@ -7,7 +7,6 @@ import 'package:storyreader_mobile/data/models/discussion_model.dart';
 import 'package:storyreader_mobile/features/chapter_read/comic_reader_view.dart';
 import 'package:storyreader_mobile/features/chapter_read/novel_reader_view.dart';
 import 'package:storyreader_mobile/features/chapter_read/reader_settings_sheet.dart';
-import 'package:storyreader_mobile/providers/reader_provider.dart';
 
 void main() {
   setUp(() {
