@@ -62,7 +62,7 @@ final readerFontSizeProvider = StateNotifierProvider<ReaderFontSizeNotifier, dou
 });
 
 class ReaderFontSizeNotifier extends StateNotifier<double> {
-  ReaderFontSizeNotifier() : super(20.0) {
+  ReaderFontSizeNotifier() : super(18.0) {
     _load();
   }
 
@@ -78,4 +78,44 @@ class ReaderFontSizeNotifier extends StateNotifier<double> {
 
   Future<void> increase() async => setFontSize(state + 2);
   Future<void> decrease() async => setFontSize(state - 2);
+}
+
+// Phông chữ đọc truyện ('Lora', 'Inter', 'Noto Serif')
+final readerFontFamilyProvider = StateNotifierProvider<ReaderFontFamilyNotifier, String>((ref) {
+  return ReaderFontFamilyNotifier();
+});
+
+class ReaderFontFamilyNotifier extends StateNotifier<String> {
+  ReaderFontFamilyNotifier() : super('Lora') {
+    _load();
+  }
+
+  Future<void> _load() async {
+    state = await ReaderPreferences.getFontFamily();
+  }
+
+  Future<void> setFontFamily(String family) async {
+    state = family;
+    await ReaderPreferences.saveFontFamily(family);
+  }
+}
+
+// Khoảng cách dòng (1.5, 1.8, 2.2)
+final readerLineHeightProvider = StateNotifierProvider<ReaderLineHeightNotifier, double>((ref) {
+  return ReaderLineHeightNotifier();
+});
+
+class ReaderLineHeightNotifier extends StateNotifier<double> {
+  ReaderLineHeightNotifier() : super(1.8) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    state = await ReaderPreferences.getLineHeight();
+  }
+
+  Future<void> setLineHeight(double height) async {
+    state = height;
+    await ReaderPreferences.saveLineHeight(height);
+  }
 }

@@ -32,6 +32,8 @@ class AuthStorage {
 class ReaderPreferences {
   static const _keyTheme = 'storyreader-theme';
   static const _keyFontSize = 'storyreader-font-size';
+  static const _keyFontFamily = 'storyreader-font-family';
+  static const _keyLineHeight = 'storyreader-line-height';
 
   static Future<void> saveTheme(String theme) async {
     final prefs = await SharedPreferences.getInstance();
@@ -50,6 +52,26 @@ class ReaderPreferences {
 
   static Future<double> getFontSize() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble(_keyFontSize) ?? 20.0;
+    return prefs.getDouble(_keyFontSize) ?? 18.0;
+  }
+
+  static Future<void> saveFontFamily(String family) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyFontFamily, family);
+  }
+
+  static Future<String> getFontFamily() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyFontFamily) ?? 'Lora';
+  }
+
+  static Future<void> saveLineHeight(double height) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_keyLineHeight, height);
+  }
+
+  static Future<double> getLineHeight() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_keyLineHeight) ?? 1.8;
   }
 }

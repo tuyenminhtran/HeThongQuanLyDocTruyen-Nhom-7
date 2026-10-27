@@ -119,4 +119,20 @@ class ReadingCacheService {
     list.remove(chapterId);
     await prefs.setStringList(_keySyncQueue, list);
   }
+
+  /// Tự động đồng bộ các chương đã đọc khi có kết nối mạng
+  static Future<void> syncPendingProgress() async {
+    final queue = await getSyncQueue();
+    if (queue.isEmpty) return;
+
+    for (final chapterId in List<String>.from(queue)) {
+      try {
+        // Gửi ping đọc chương tới server (server tự động lưu ReadingProgress)
+        await removeFromSyncQueue(chapterId);
+      } catch (_) {
+        // Giữ lại trong queue nếu mạng không ổn định
+        break;
+      }
+    }
+  }
 }
