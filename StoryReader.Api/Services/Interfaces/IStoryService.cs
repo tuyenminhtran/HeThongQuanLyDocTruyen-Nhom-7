@@ -4,7 +4,7 @@ namespace StoryReader.Api.Services.Interfaces;
 
 public interface IStoryService
 {
-    Task<IEnumerable<StoryListItemDto>> SearchAsync(string? keyword, Guid? genreId, int page, int pageSize);
+    Task<IEnumerable<StoryListItemDto>> SearchAsync(string? keyword, Guid? genreId, int page, int pageSize, string? sortBy = null);
     Task<StoryDetailDto?> GetDetailAsync(Guid storyId, Guid? currentUserId);
     Task<Guid> CreateAsync(CreateStoryDto dto);
     Task UpdateAsync(Guid storyId, UpdateStoryDto dto);

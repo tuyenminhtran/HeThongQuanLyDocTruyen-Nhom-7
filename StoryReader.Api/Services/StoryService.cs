@@ -19,7 +19,7 @@ public class StoryService : IStoryService
         _textToImageService = textToImageService;
     }
 
-    public async Task<IEnumerable<StoryListItemDto>> SearchAsync(string? keyword, Guid? genreId, int page, int pageSize)
+    public async Task<IEnumerable<StoryListItemDto>> SearchAsync(string? keyword, Guid? genreId, int page, int pageSize, string? sortBy = null)
     {
         var query = _db.Stories.AsNoTracking().AsQueryable();
 
@@ -29,8 +29,16 @@ public class StoryService : IStoryService
         if (genreId is not null)
             query = query.Where(s => s.StoryGenres.Any(g => g.GenreId == genreId));
 
+        query = sortBy?.ToLowerInvariant() switch
+        {
+            "top" or "views" or "popular" => query.OrderByDescending(s => s.ViewCount),
+            "newest" or "recent" => query.OrderByDescending(s => s.CreatedAt),
+            "title" or "az" => query.OrderBy(s => s.Title),
+            _ => query.OrderByDescending(s => s.UpdatedAt)
+        };
+
         return await query
-            .OrderByDescending(s => s.UpdatedAt)
+
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(s => new StoryListItemDto(s.Id, s.Title, s.CoverImageUrl, s.Author, s.Status, s.AccessPolicy, s.ViewCount, s.Type, s.Chapters.Count, s.Chapters.OrderByDescending(c => c.ChapterNumber).Select(c => (int?)c.ChapterNumber).FirstOrDefault()))

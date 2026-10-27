@@ -23,9 +23,9 @@ public class StoriesController : ControllerBase
     [HttpGet]
     [AllowAnonymous]
     public async Task<IActionResult> Search([FromQuery] string? keyword, [FromQuery] Guid? genreId,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 100)
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 100, [FromQuery] string? sortBy = null)
     {
-        var result = await _stories.SearchAsync(keyword, genreId, page, pageSize);
+        var result = await _stories.SearchAsync(keyword, genreId, page, pageSize, sortBy);
         return Ok(result);
     }
 

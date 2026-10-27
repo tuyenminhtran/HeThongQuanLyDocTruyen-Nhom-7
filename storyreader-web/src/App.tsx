@@ -8,6 +8,7 @@ import RegisterPage from "./pages/RegisterPage";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 
+import RankingsPage from "./pages/RankingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import FollowingPage from "./pages/FollowingPage";
 import HistoryPage from "./pages/HistoryPage";
@@ -29,6 +30,8 @@ export default function App() {
         <Routes>
           {/* Public / User Routes */}
           <Route path="/" element={<HomePage />} />
+          <Route path="/rankings" element={<RankingsPage />} />
+          <Route path="/bang-xep-hang" element={<RankingsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/following" element={<FollowingPage />} />
           <Route path="/bookmarks" element={<FollowingPage />} />

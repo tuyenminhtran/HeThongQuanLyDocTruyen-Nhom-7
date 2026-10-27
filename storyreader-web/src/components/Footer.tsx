@@ -44,7 +44,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  to="/?sort=top"
+                  to="/rankings"
                   className="text-slate-600 hover:text-orange-600 transition-colors"
                 >
                   Bảng xếp hạng

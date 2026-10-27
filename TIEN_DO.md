@@ -60,8 +60,8 @@
   - Quản lý khóa / mở khóa tài khoản thành viên (`restricted`).
   - Kiểm duyệt nội dung thảo luận, ẩn bình luận vi phạm hoặc spam.
 - **Cơ sở dữ liệu & Nội dung thực tế:**
-  - Đã nạp (seed) **35 bộ tiểu thuyết hoàn chỉnh** (Tuyển tập Studio Ghibli, Tuyển tập Siêu phẩm Cảm xúc & Thế giới Giả tưởng: *Darling in the Franxx, Violet Evergarden, Pháp Sư Tiễn Táng Frieren, The Witcher, Truyện Cổ Grimm*, Văn học kinh điển và Light Novel).
-  - Hơn **225 chương truyện chi tiết** với nội dung phong phú.
+  - Đã nạp (seed) **30 bộ tiểu thuyết hoàn chỉnh** (Tuyển tập Studio Ghibli: *Totoro, Vùng đất linh hồn, Lâu đài bay của Howl, Laputa, Kiki, Mononoke, Gió nổi, Pom Poko, Lời thì thầm của trái tim,...*, Văn học kinh điển và Light Novel).
+  - Gần **200 chương truyện chi tiết** với nội dung phong phú.
   - **31 thể loại phân loại chuẩn hóa**: Thêm các thể loại đặc sắc như *Anime, Light Novel, Isekai, Shounen, Shoujo, Seinen, Giả Tưởng, Phép Thuật, Gia Đình, Thể Thao, Mecha*; chuẩn hóa tên thể loại *Ngôn Tình* thành *Tình Cảm*.
   - Cấu hình phân trang mặc định lên tới 100 truyện để đáp ứng hiển thị đầy đủ thư viện truyện.
 
@@ -72,7 +72,7 @@
      - Banner carousel truyện nổi bật.
      - Thanh tìm kiếm tức thì (Debounced Search) theo tên truyện, tác giả, thể loại.
      - Bảng xếp hạng Top truyện đọc nhiều nhất.
-     - Bộ lọc thể loại dạng thanh cuộn ngang mượt mà, hỗ trợ hiển thị đồng thời toàn bộ 35 bộ truyện.
+     - Bộ lọc thể loại dạng thanh cuộn ngang mượt mà, hỗ trợ hiển thị đồng thời toàn bộ 30 bộ truyện.
   2. **Trang chi tiết truyện (`StoryDetailPage.tsx`):**
      - Hiển thị ảnh bìa sắc nét, tác giả, trạng thái phát hành, tags thể loại, số lượt xem, số chương.
      - **Danh sách chương dạng Accordion theo Phần/Hồi (Parts):** Tự động gom nhóm chương trực quan (Phần 1: Khởi đầu, Phần 2: Biến cố,...).
@@ -125,7 +125,7 @@ Dưới đây là bảng theo dõi chi tiết toàn bộ 35 User Stories trong h
 | **PB23** | Đăng xuất tài khoản (Logout) | 1 | Lê Hoàng | Sprint 0 | Hoàn thành [x] | Xóa token, clear Zustand store an toàn |
 | **PB08** | Quản lý Hồ sơ cá nhân (Manage Profile) | 2 | Trần Mỹ Duyên + Hồ Minh Tuyền | Sprint 0 | Hoàn thành [x] | Đổi tên hiển thị, đổi mật khẩu |
 | **PB01** | Xem Trang chủ (View HomePage) | 2 | Hồ Minh Tuyền + Trần Mỹ Duyên | Sprint 1 | Hoàn thành [x] | Hero banners, Ranking, Thư viện truyện |
-| **PB02** | Xem Danh sách truyện (Story List) | 3 | Trần Minh Tuyên + Lê Hoàng | Sprint 1 | Hoàn thành [x] | Lưới truyện, hiển thị đầy đủ 35 tác phẩm |
+| **PB02** | Xem Danh sách truyện (Story List) | 3 | Trần Minh Tuyên + Lê Hoàng | Sprint 1 | Hoàn thành [x] | Lưới truyện, hiển thị đầy đủ 30 tác phẩm |
 | **PB03** | Tìm kiếm truyện (Search Story) | 3 | Lê Hoàng | Sprint 1 | Hoàn thành [x] | Tìm kiếm theo tên, tác giả, thể loại đa năng |
 | **PB05** | Danh sách gợi ý (Suggested Lists) | 3 | Trần Mỹ Duyên | Sprint 1 | Hoàn thành [x] | Gợi ý truyện mới, truyện hot đọc nhiều |
 | **PB04** | Xem Chi tiết truyện (Story Details) | 3 | Trần Minh Tuyên | Sprint 1 | Hoàn thành [x] | Bìa, mô tả, Accordion chương theo Phần |

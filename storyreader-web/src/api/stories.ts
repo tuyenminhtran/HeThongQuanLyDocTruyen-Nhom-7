@@ -58,10 +58,11 @@ export interface CreateChapterInput {
   partName?: string | null;
 }
 
-export async function searchStories(keyword?: string, genreId?: string, pageSize: number = 100) {
+export async function searchStories(keyword?: string, genreId?: string, pageSize: number = 100, sortBy?: string) {
   const params: Record<string, any> = { pageSize };
   if (keyword) params.keyword = keyword.trim();
   if (genreId && genreId !== "all") params.genreId = genreId;
+  if (sortBy) params.sortBy = sortBy;
   const res = await apiClient.get<StoryListItem[]>("/stories", { params });
   return res.data;
 }
