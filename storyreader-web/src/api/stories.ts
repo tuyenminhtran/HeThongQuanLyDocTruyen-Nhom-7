@@ -58,8 +58,8 @@ export interface CreateChapterInput {
   partName?: string | null;
 }
 
-export async function searchStories(keyword?: string, genreId?: string) {
-  const params: Record<string, any> = {};
+export async function searchStories(keyword?: string, genreId?: string, pageSize: number = 100) {
+  const params: Record<string, any> = { pageSize };
   if (keyword) params.keyword = keyword.trim();
   if (genreId && genreId !== "all") params.genreId = genreId;
   const res = await apiClient.get<StoryListItem[]>("/stories", { params });
