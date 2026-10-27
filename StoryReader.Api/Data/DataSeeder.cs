@@ -56,7 +56,7 @@ public static class DataSeeder
             [Guid.Parse("a1000000-0000-0000-0000-000000000003")] = "Huyền Huyễn",
             [Guid.Parse("a1000000-0000-0000-0000-000000000004")] = "Đô Thị",
             [Guid.Parse("a1000000-0000-0000-0000-000000000005")] = "Khoa Huyễn",
-            [Guid.Parse("a1000000-0000-0000-0000-000000000006")] = "Ngôn Tình",
+            [Guid.Parse("a1000000-0000-0000-0000-000000000006")] = "Tình Cảm",
             [Guid.Parse("a1000000-0000-0000-0000-000000000007")] = "Xuyên Không",
             [Guid.Parse("a1000000-0000-0000-0000-000000000008")] = "Võng Du",
             [Guid.Parse("a1000000-0000-0000-0000-000000000009")] = "Dị Năng",
@@ -106,6 +106,17 @@ public static class DataSeeder
             [Guid.Parse("a1000000-0000-0000-0000-000000000028")] = "Mạt Thế",
             [Guid.Parse("a1000000-0000-0000-0000-000000000029")] = "Quân Sự",
             [Guid.Parse("a1000000-0000-0000-0000-000000000030")] = "Lịch Sử",
+            [Guid.Parse("eed16ce5-caee-4371-9d78-409eacf39967")] = "Anime",
+            [Guid.Parse("78e26738-f145-4347-8b08-a5a52e4a9809")] = "Light Novel",
+            [Guid.Parse("d3e1d9e0-4677-40d5-bbf2-e7e6c88a7d89")] = "Isekai",
+            [Guid.Parse("cda6fba4-b872-44ca-8936-ecb8bc29cd25")] = "Shounen",
+            [Guid.Parse("0031524b-1101-4f49-bc88-07bf59dbdbf3")] = "Shoujo",
+            [Guid.Parse("02de1b99-65bc-460f-bad7-d75e5ac43442")] = "Seinen",
+            [Guid.Parse("a63af464-7952-498a-a561-224a892cabd4")] = "Giả Tưởng",
+            [Guid.Parse("07ec4d80-525b-4d3b-8ede-76d7351f3b54")] = "Phép Thuật",
+            [Guid.Parse("b40696a4-10d6-433a-8bf6-762ff8ff309b")] = "Gia Đình",
+            [Guid.Parse("64e8441d-4144-48db-a8ee-683eeb81a3d7")] = "Thể Thao",
+            [Guid.Parse("e4dd1aa0-48f9-4dd3-9b8c-f8556c7f680a")] = "Mecha",
         };
 
         foreach (var (gId, gName) in additionalGenres)
