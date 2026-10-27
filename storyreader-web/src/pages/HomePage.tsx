@@ -60,11 +60,38 @@ export default function HomePage() {
   const [statusFilter, setStatusFilter] = useState<number | "all">("all");
   const [accessFilter, setAccessFilter] = useState<number | "all">("all");
   const [typeFilter, setTypeFilter] = useState<number | "all">("all");
-  const [visibleCount, setVisibleCount] = useState(36);
+  const [pageSize, setPageSize] = useState<number>(50);
+
+  const pageParam = parseInt(searchParams.get("page") || "1", 10);
+  const [currentPage, setCurrentPage] = useState<number>(isNaN(pageParam) || pageParam < 1 ? 1 : pageParam);
 
   useEffect(() => {
     setGenreFilter(genreParam);
   }, [genreParam]);
+
+  useEffect(() => {
+    const p = parseInt(searchParams.get("page") || "1", 10);
+    const validP = isNaN(p) || p < 1 ? 1 : p;
+    if (validP !== currentPage) {
+      setCurrentPage(validP);
+    }
+  }, [searchParams]);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    if (newPage === 1) {
+      searchParams.delete("page");
+    } else {
+      searchParams.set("page", String(newPage));
+    }
+    setSearchParams(searchParams);
+    const target = document.getElementById("story-grid-section");
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   const handleGenreChange = (newGenre: string) => {
     setGenreFilter(newGenre);
@@ -73,6 +100,8 @@ export default function HomePage() {
     } else {
       searchParams.set("genre", newGenre);
     }
+    searchParams.delete("page");
+    setCurrentPage(1);
     setSearchParams(searchParams);
   };
 
@@ -109,9 +138,17 @@ export default function HomePage() {
   const handleClearSearch = () => {
     searchParams.delete("q");
     searchParams.delete("genre");
+    searchParams.delete("page");
     setSearchParams(searchParams);
     setGenreFilter("all");
+    setCurrentPage(1);
   };
+
+  const totalPages = Math.ceil(filteredStories.length / pageSize) || 1;
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredStories.length);
+  const displayedStories = filteredStories.slice(startIndex, endIndex);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-5 space-y-6">
@@ -247,7 +284,10 @@ export default function HomePage() {
         {/* Pills chọn Hình thức */}
         <div className="inline-flex items-center bg-slate-100 rounded-lg p-1 shrink-0">
           <button
-            onClick={() => setTypeFilter("all")}
+            onClick={() => {
+              setTypeFilter("all");
+              handlePageChange(1);
+            }}
             className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               typeFilter === "all"
                 ? "bg-orange-600 text-white shadow-xs"
@@ -257,7 +297,10 @@ export default function HomePage() {
             Tất cả
           </button>
           <button
-            onClick={() => setTypeFilter(0)}
+            onClick={() => {
+              setTypeFilter(0);
+              handlePageChange(1);
+            }}
             className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               typeFilter === 0
                 ? "bg-orange-600 text-white shadow-xs"
@@ -267,7 +310,10 @@ export default function HomePage() {
             Truyện chữ
           </button>
           <button
-            onClick={() => setTypeFilter(1)}
+            onClick={() => {
+              setTypeFilter(1);
+              handlePageChange(1);
+            }}
             className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               typeFilter === 1
                 ? "bg-orange-600 text-white shadow-xs"
@@ -297,7 +343,10 @@ export default function HomePage() {
           {/* Trạng thái */}
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
+            onChange={(e) => {
+              setStatusFilter(e.target.value === "all" ? "all" : Number(e.target.value));
+              handlePageChange(1);
+            }}
             className="bg-white border border-slate-300 hover:border-slate-400 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-orange-500 cursor-pointer shadow-2xs"
           >
             <option value="all">Tất cả trạng thái</option>
@@ -309,7 +358,10 @@ export default function HomePage() {
           {/* Phí */}
           <select
             value={accessFilter}
-            onChange={(e) => setAccessFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
+            onChange={(e) => {
+              setAccessFilter(e.target.value === "all" ? "all" : Number(e.target.value));
+              handlePageChange(1);
+            }}
             className="bg-white border border-slate-300 hover:border-slate-400 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-orange-500 cursor-pointer shadow-2xs"
           >
             <option value="all">Tất cả mức phí</option>
@@ -327,17 +379,42 @@ export default function HomePage() {
 
         {/* Cột trái: Lưới truyện */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200">
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-              {keyword
-                ? "Kết quả tìm kiếm"
-                : genreFilter !== "all"
-                ? `Thể loại: ${genres?.find((g) => g.id === genreFilter)?.name || ""}`
-                : "Truyện Mới Cập Nhật"}
-            </h2>
-            <span className="text-xs text-slate-600 bg-white border border-slate-200 rounded-full px-3 py-1 shadow-2xs">
-              {filteredStories.length} tác phẩm
-            </span>
+          <div id="story-grid-section" className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-2 border-b border-slate-200">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                {keyword
+                  ? "Kết quả tìm kiếm"
+                  : genreFilter !== "all"
+                  ? `Thể loại: ${genres?.find((g) => g.id === genreFilter)?.name || ""}`
+                  : "Truyện Mới Cập Nhật"}
+              </h2>
+              <span className="text-xs text-slate-600 bg-white border border-slate-200 rounded-full px-2.5 py-0.5 shadow-2xs">
+                {filteredStories.length} tác phẩm
+              </span>
+            </div>
+
+            {/* Bộ chọn số lượng hiển thị mỗi trang */}
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 self-end sm:self-auto">
+              <span className="text-[11px] text-slate-400">Hiển thị:</span>
+              {[24, 36, 50].map((sz) => (
+                <button
+                  key={sz}
+                  onClick={() => {
+                    setPageSize(sz);
+                    handlePageChange(1);
+                  }}
+                  className={`px-2 py-0.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                    pageSize === sz
+                      ? "bg-orange-600 text-white shadow-xs"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                  title={`${sz} truyện mỗi trang`}
+                >
+                  {sz}
+                </button>
+              ))}
+              <span className="text-[11px] text-slate-400">/ trang</span>
+            </div>
           </div>
 
           {/* Loading Skeleton */}
@@ -368,19 +445,82 @@ export default function HomePage() {
           {!isLoading && filteredStories && filteredStories.length > 0 && (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-6">
-                {filteredStories.slice(0, visibleCount).map((story) => (
+                {displayedStories.map((story) => (
                   <StoryCard key={story.id} story={story} />
                 ))}
               </div>
 
-              {visibleCount < filteredStories.length && (
-                <div className="mt-8 text-center">
-                  <button
-                    onClick={() => setVisibleCount((prev) => prev + 12)}
-                    className="px-6 py-2.5 rounded-xl font-bold border border-slate-300 text-slate-700 hover:border-orange-500 hover:text-orange-600 hover:bg-orange-50 transition-all text-xs sm:text-sm shadow-xs cursor-pointer"
-                  >
-                    Xem thêm truyện ({filteredStories.length - visibleCount} còn lại)
-                  </button>
+              {/* Thanh Phân Trang (Pagination Navigation) */}
+              {totalPages > 1 && (
+                <div className="mt-8 pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-xs text-slate-500 text-center sm:text-left">
+                    Hiển thị <strong>{startIndex + 1} - {endIndex}</strong> / <strong>{filteredStories.length}</strong> truyện (Trang <strong>{safePage}</strong>/{totalPages})
+                  </div>
+
+                  <div className="flex items-center gap-1 flex-wrap justify-center">
+                    {/* Nút Về đầu */}
+                    <button
+                      onClick={() => handlePageChange(1)}
+                      disabled={safePage === 1}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      title="Trang đầu"
+                    >
+                      <i className="fa-solid fa-angles-left text-[10px]" />
+                    </button>
+
+                    {/* Nút Trước */}
+                    <button
+                      onClick={() => handlePageChange(safePage - 1)}
+                      disabled={safePage === 1}
+                      className="px-2.5 h-8 rounded-lg flex items-center justify-center gap-1 text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      <i className="fa-solid fa-chevron-left text-[10px]" />
+                      <span className="hidden sm:inline">Trước</span>
+                    </button>
+
+                    {/* Danh sách các số trang */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                      .map((p, idx, arr) => {
+                        const prev = arr[idx - 1];
+                        const showEllipsis = prev && p - prev > 1;
+                        return (
+                          <div key={p} className="flex items-center">
+                            {showEllipsis && <span className="px-1 text-slate-400 text-xs">...</span>}
+                            <button
+                              onClick={() => handlePageChange(p)}
+                              className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                p === safePage
+                                  ? "bg-orange-600 text-white shadow-xs"
+                                  : "border border-slate-200 text-slate-700 hover:bg-slate-100"
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                    {/* Nút Sau */}
+                    <button
+                      onClick={() => handlePageChange(safePage + 1)}
+                      disabled={safePage === totalPages}
+                      className="px-2.5 h-8 rounded-lg flex items-center justify-center gap-1 text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      <span className="hidden sm:inline">Sau</span>
+                      <i className="fa-solid fa-chevron-right text-[10px]" />
+                    </button>
+
+                    {/* Nút Về cuối */}
+                    <button
+                      onClick={() => handlePageChange(totalPages)}
+                      disabled={safePage === totalPages}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      title="Trang cuối"
+                    >
+                      <i className="fa-solid fa-angles-right text-[10px]" />
+                    </button>
+                  </div>
                 </div>
               )}
             </>
