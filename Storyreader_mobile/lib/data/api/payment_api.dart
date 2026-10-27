@@ -1,15 +1,26 @@
-import '../../core/constants/api_constants.dart';
-import '../../core/network/dio_client.dart';
 import '../models/payment_model.dart';
+import '../repositories/subscription_repository.dart';
 
 class PaymentApi {
+  static final _repository = SubscriptionRepository();
+
   static Future<InitiatePaymentResult> buyStory(String storyId) async {
-    final res = await DioClient.instance.post(ApiConstants.buyStory(storyId));
-    return InitiatePaymentResult.fromJson(res.data as Map<String, dynamic>);
+    return await _repository.buyStory(storyId);
   }
 
   static Future<InitiatePaymentResult> buySubscription(String planId) async {
-    final res = await DioClient.instance.post(ApiConstants.buySubscription(planId));
-    return InitiatePaymentResult.fromJson(res.data as Map<String, dynamic>);
+    return await _repository.buySubscription(planId);
+  }
+
+  static Future<List<SubscriptionPlanItem>> getPlans() async {
+    return await _repository.getPlans();
+  }
+
+  static Future<List<MySubscriptionItem>> getMySubscriptions() async {
+    return await _repository.getMySubscriptions();
+  }
+
+  static Future<List<MyPurchaseItem>> getMyPurchases() async {
+    return await _repository.getMyPurchases();
   }
 }

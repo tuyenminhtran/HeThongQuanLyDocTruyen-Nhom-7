@@ -5,17 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../data/api/chapter_api.dart';
-import '../../data/models/chapter_model.dart';
 import '../../providers/reader_provider.dart';
-import '../../providers/auth_provider.dart';
 import 'chapter_navigation.dart';
 
-final chapterContentFamily = FutureProvider.autoDispose
-    .family<ChapterContent, String>((ref, id) async {
-      ref.watch(authProvider.select((auth) => auth.accessToken));
-      return await ChapterApi.getChapterContent(id);
-    });
 
 class ChapterReadScreen extends ConsumerWidget {
   final String chapterId;
