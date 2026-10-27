@@ -250,8 +250,10 @@ export default function Header() {
 
               {/* Xếp Hạng */}
               <Link
-                to="/?sort=top"
-                className="px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors flex items-center gap-1"
+                to="/rankings"
+                className={`px-3 py-1.5 rounded-md hover:bg-black/10 transition-colors flex items-center gap-1 ${
+                  location.pathname === "/rankings" ? "bg-black/20 font-bold" : ""
+                }`}
               >
                 <span>Xếp Hạng</span>
                 <i className="fa-solid fa-arrow-trend-up text-xs" />
@@ -315,6 +317,15 @@ export default function Header() {
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
               >
                 Trang chủ
+              </Link>
+
+              <Link
+                to="/rankings"
+                onClick={() => setMobileOpen(false)}
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 flex items-center justify-between"
+              >
+                <span>Bảng Xếp Hạng</span>
+                <i className="fa-solid fa-arrow-trend-up text-xs text-orange-500" />
               </Link>
 
               {/* Mobile Thể Loại Accordion */}
