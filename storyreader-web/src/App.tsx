@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import ScrollToTop from "./components/ScrollToTop";
 import HomePage from "./pages/HomePage";
@@ -21,9 +22,37 @@ import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import AdminTransactionsPage from "./pages/admin/AdminTransactionsPage";
 
+import AtmosphericOverlay, { type AtmosphereType } from "./components/AtmosphericOverlay";
+import InteractiveMascot from "./components/InteractiveMascot";
+
 export default function App() {
+  const [atmosphere, setAtmosphere] = useState<AtmosphereType>(() => {
+    return (localStorage.getItem("storyreader-atmosphere") as AtmosphereType) || "none";
+  });
+
+  const handleAtmosphereChange = (type: AtmosphereType) => {
+    setAtmosphere(type);
+    localStorage.setItem("storyreader-atmosphere", type);
+    window.dispatchEvent(new CustomEvent("storyreader-atmosphere-changed", { detail: type }));
+  };
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<AtmosphereType>;
+      if (custom.detail) {
+        setAtmosphere(custom.detail);
+        localStorage.setItem("storyreader-atmosphere", custom.detail);
+      }
+    };
+    window.addEventListener("storyreader-atmosphere-changed", handler);
+    return () => window.removeEventListener("storyreader-atmosphere-changed", handler);
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
+      {/* Easter Egg #1: Hiệu ứng bối cảnh canvas toàn màn hình */}
+      <AtmosphericOverlay type={atmosphere} />
+
       <ScrollToTop />
       <Header />
       <main className="flex-1">
@@ -53,6 +82,12 @@ export default function App() {
         </Routes>
       </main>
       <Footer />
+
+      {/* Easter Egg #3: Linh vật tương tác Mèo Jiji & Biến hình Totoro */}
+      <InteractiveMascot
+        currentAtmosphere={atmosphere}
+        onAtmosphereChange={handleAtmosphereChange}
+      />
     </div>
   );
 }

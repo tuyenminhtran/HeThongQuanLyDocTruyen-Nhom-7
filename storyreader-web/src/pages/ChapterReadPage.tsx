@@ -7,6 +7,7 @@ import { getChapterDiscussions, postChapterDiscussion, hideDiscussion } from "..
 import { useAuthStore, useIsAdmin } from "../store/authStore";
 import { AxiosError } from "axios";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import type { AtmosphereType } from "../components/AtmosphericOverlay";
 
 type Theme = "dark" | "light" | "sepia";
 type FontFamily = "serif" | "sans";
@@ -38,10 +39,32 @@ export default function ChapterReadPage() {
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
   const isAdmin = useIsAdmin();
 
-  // Tự động cuộn lên đầu trang mỗi khi vào trang hoặc chuyển chương
+  // Hiệu ứng bối cảnh Atmospheric Reader (Easter Egg #1)
+  const ATMOSPHERE_MODES: { type: AtmosphereType; label: string }[] = useMemo(
+    () => [
+      { type: "none", label: "Tắt hiệu ứng" },
+      { type: "sakura", label: "Hoa anh đào rơi 🌸" },
+      { type: "fireflies", label: "Đom đóm mùa hạ ✨" },
+      { type: "rain", label: "Mưa rơi êm đềm 🌧️" },
+      { type: "stars", label: "Bầu trời sao băng 🌠" },
+    ],
+    []
+  );
+
+  const [currentAtmosphere, setCurrentAtmosphere] = useState<AtmosphereType>(() => {
+    return (localStorage.getItem("storyreader-atmosphere") as AtmosphereType) || "none";
+  });
+
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-  }, [id]);
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<AtmosphereType>;
+      if (custom.detail) {
+        setCurrentAtmosphere(custom.detail);
+      }
+    };
+    window.addEventListener("storyreader-atmosphere-changed", handler);
+    return () => window.removeEventListener("storyreader-atmosphere-changed", handler);
+  }, []);
 
   const showCopyToast = useCallback((msg: string) => {
     setCopyWarning(msg);
@@ -49,6 +72,22 @@ export default function ChapterReadPage() {
       setCopyWarning((prev) => (prev === msg ? null : prev));
     }, 2500);
   }, []);
+
+  const cycleAtmosphere = useCallback(() => {
+    const cur = (localStorage.getItem("storyreader-atmosphere") as AtmosphereType) || "none";
+    const curIdx = ATMOSPHERE_MODES.findIndex((m) => m.type === cur);
+    const nextIdx = (curIdx + 1) % ATMOSPHERE_MODES.length;
+    const nextMode = ATMOSPHERE_MODES[nextIdx];
+    localStorage.setItem("storyreader-atmosphere", nextMode.type);
+    window.dispatchEvent(new CustomEvent("storyreader-atmosphere-changed", { detail: nextMode.type }));
+    setCurrentAtmosphere(nextMode.type);
+    showCopyToast(`Hiệu ứng bối cảnh: ${nextMode.label}`);
+  }, [ATMOSPHERE_MODES, showCopyToast]);
+
+  // Tự động cuộn lên đầu trang mỗi khi vào trang hoặc chuyển chương
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [id]);
 
   const { data: discussions, isLoading: isDiscussionsLoading } = useQuery({
     queryKey: ["discussions", id],
@@ -132,6 +171,14 @@ export default function ChapterReadPage() {
       if ((e.ctrlKey || e.metaKey) && ["u", "s", "p"].includes(e.key.toLowerCase())) {
         e.preventDefault();
       }
+
+      // Phím tắt 'E' để đổi hiệu ứng bối cảnh (Atmospheric Reader - Easter Egg #1)
+      const target = e.target as HTMLElement | null;
+      const isInput = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (!isInput && (e.key === "e" || e.key === "E") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        cycleAtmosphere();
+      }
     };
 
     document.addEventListener("copy", handleCopy);
@@ -140,7 +187,7 @@ export default function ChapterReadPage() {
       document.removeEventListener("copy", handleCopy);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [chapter?.title, showCopyToast]);
+  }, [chapter?.title, showCopyToast, cycleAtmosphere]);
 
   // Fetch story details to know full chapter list & adjacent chapters
   const { data: story } = useQuery({
@@ -403,6 +450,47 @@ export default function ChapterReadPage() {
               } bg-[#12161f] shadow-xs`}
               title="Nền tối"
             />
+
+            {/* Nút Hiệu ứng bối cảnh Atmospheric Reader (Easter Egg #1) */}
+            <div className={`w-px h-5 mx-1 ${theme === 'dark' ? 'bg-[#2a3242]' : theme === 'sepia' ? 'bg-[#D6C5A5]' : 'bg-gray-200'}`} />
+            <button
+              onClick={cycleAtmosphere}
+              className={`w-7 h-7 rounded-full flex items-center justify-center mx-1 border transition-all relative ${
+                currentAtmosphere !== "none"
+                  ? "border-pink-500 bg-pink-500/20 text-pink-500 dark:text-pink-400 ring-2 ring-pink-500/30 scale-105"
+                  : theme === "dark"
+                  ? "border-[#2a3242] text-gray-400 hover:text-white hover:bg-white/5"
+                  : "border-gray-300 text-gray-600 hover:text-gray-900 hover:bg-black/5"
+              }`}
+              title={`Hiệu ứng bối cảnh: ${
+                currentAtmosphere === "sakura"
+                  ? "Hoa anh đào rơi 🌸"
+                  : currentAtmosphere === "fireflies"
+                  ? "Đom đóm mùa hạ ✨"
+                  : currentAtmosphere === "rain"
+                  ? "Mưa rơi êm đềm 🌧️"
+                  : currentAtmosphere === "stars"
+                  ? "Bầu trời sao băng 🌠"
+                  : "Đang tắt"
+              } (Phím tắt: E)`}
+            >
+              <i
+                className={`fa-solid ${
+                  currentAtmosphere === "sakura"
+                    ? "fa-seedling text-pink-400"
+                    : currentAtmosphere === "fireflies"
+                    ? "fa-wand-magic-sparkles text-amber-400 animate-pulse"
+                    : currentAtmosphere === "rain"
+                    ? "fa-cloud-rain text-cyan-400"
+                    : currentAtmosphere === "stars"
+                    ? "fa-star text-indigo-400"
+                    : "fa-wand-magic"
+                } text-xs`}
+              />
+              {currentAtmosphere !== "none" && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-pink-500 border border-white dark:border-gray-900" />
+              )}
+            </button>
 
             {/* Chế độ Truyện chữ: Hỗ trợ đổi cỡ chữ và font */}
             {!hasImages && (
