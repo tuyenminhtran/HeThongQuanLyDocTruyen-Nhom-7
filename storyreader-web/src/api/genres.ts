@@ -13,7 +13,7 @@ export const FALLBACK_GENRES: Genre[] = [
   { id: "a1000000-0000-0000-0000-000000000003", name: "Huyền Huyễn", slug: "huyen-huyen", storyCount: 0 },
   { id: "a1000000-0000-0000-0000-000000000004", name: "Đô Thị", slug: "do-thi", storyCount: 0 },
   { id: "a1000000-0000-0000-0000-000000000005", name: "Khoa Huyễn", slug: "khoa-huyen", storyCount: 0 },
-  { id: "a1000000-0000-0000-0000-000000000006", name: "Ngôn Tình", slug: "ngon-tinh", storyCount: 0 },
+  { id: "a1000000-0000-0000-0000-000000000006", name: "Tình Cảm", slug: "tinh-cam", storyCount: 0 },
   { id: "a1000000-0000-0000-0000-000000000007", name: "Xuyên Không", slug: "xuyen-khong", storyCount: 0 },
   { id: "a1000000-0000-0000-0000-000000000008", name: "Võng Du", slug: "vong-du", storyCount: 0 },
   { id: "a1000000-0000-0000-0000-000000000009", name: "Dị Năng", slug: "di-nang", storyCount: 0 },
@@ -38,16 +38,17 @@ export const FALLBACK_GENRES: Genre[] = [
   { id: "a1000000-0000-0000-0000-000000000028", name: "Mạt Thế", slug: "mat-the", storyCount: 0 },
   { id: "a1000000-0000-0000-0000-000000000029", name: "Quân Sự", slug: "quan-su", storyCount: 0 },
   { id: "a1000000-0000-0000-0000-000000000030", name: "Lịch Sử", slug: "lich-su", storyCount: 0 },
+  { id: "a1000000-0000-0000-0000-000000000031", name: "Ngôn Tình", slug: "ngon-tinh", storyCount: 0 },
 ];
 
 export async function getGenres(): Promise<Genre[]> {
   try {
     const res = await apiClient.get<Genre[]>("/genres");
     if (res.data && res.data.length > 0) {
-      // Hợp nhất danh sách từ backend với danh sách thể loại phong phú
+      // Hợp nhất danh sách: ưu tiên backend, sau đó bổ sung thể loại fallback chưa có
       const map = new Map<string, Genre>();
-      FALLBACK_GENRES.forEach((g) => map.set(g.name.toLowerCase(), g));
-      res.data.forEach((g) => map.set(g.name.toLowerCase(), g));
+      FALLBACK_GENRES.forEach((g) => map.set(g.id, g));
+      res.data.forEach((g) => map.set(g.id, g));
       return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "vi"));
     }
   } catch (err) {
