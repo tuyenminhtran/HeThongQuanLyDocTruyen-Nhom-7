@@ -5,13 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_strings.dart';
 import '../../core/utils/chapter_grouping.dart';
 import '../../data/models/story_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/story_provider.dart';
 import '../../widgets/app_header.dart';
-import '../../widgets/empty_state.dart';
 import '../../widgets/loading_skeleton.dart';
 import '../../widgets/request_error.dart';
 
@@ -59,7 +57,9 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isFollowing ? 'Đã thêm vào truyện đang theo dõi.' : 'Đã bỏ theo dõi truyện.',
+              isFollowing
+                  ? 'Đã thêm vào truyện đang theo dõi.'
+                  : 'Đã bỏ theo dõi truyện.',
             ),
             duration: const Duration(seconds: 2),
           ),
@@ -80,6 +80,7 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     final isFollowingAsync = ref.watch(isFollowingProvider(widget.storyId));
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F6F9), // Slate sáng chuẩn Web
       appBar: const AppHeader(),
       body: storyAsync.when(
         loading: () => const StoryDetailSkeleton(),
@@ -114,6 +115,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
             _expandedFolders.addAll(chapterGroups.map((g) => g.partName));
           }
 
+          final coverUrl = story.fullCoverUrl.isNotEmpty
+              ? story.fullCoverUrl
+              : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80';
+
           return RefreshIndicator(
             color: AppColors.gold,
             onRefresh: () async {
@@ -122,17 +127,40 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: Stack(
                 children: [
-                  _buildHeaderInfo(story, isFollowing),
-                  const SizedBox(height: 24),
-                  _buildActionButtons(story, isFollowing),
-                  const SizedBox(height: 28),
-                  _buildDescription(story),
-                  const SizedBox(height: 28),
-                  _buildChapterSection(story, chapterGroups),
+                  // Ambient blur header giống Web
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 220,
+                    child: Opacity(
+                      opacity: 0.18,
+                      child: CachedNetworkImage(
+                        imageUrl: coverUrl,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+
+                  // Nội dung chính
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildHeaderInfo(story, coverUrl),
+                        const SizedBox(height: 16),
+                        _buildActionButtons(story, isFollowing),
+                        const SizedBox(height: 20),
+                        _buildDescription(story),
+                        const SizedBox(height: 24),
+                        _buildChapterSection(story, chapterGroups),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -142,121 +170,191 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     );
   }
 
-  Widget _buildHeaderInfo(StoryDetail story, bool isFollowing) {
-    final coverUrl = story.fullCoverUrl.isNotEmpty
-        ? story.fullCoverUrl
-        : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80';
-
+  Widget _buildHeaderInfo(StoryDetail story, String coverUrl) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Bìa truyện
-        ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: SizedBox(
-            width: 120,
-            height: 175,
-            child: CachedNetworkImage(
-              imageUrl: coverUrl,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(color: Colors.black12),
-              errorWidget: (context, url, error) => Container(
-                color: Colors.black12,
-                child: const Icon(Icons.book, size: 36),
+        // Ảnh bìa sách tỉ lệ 2/3 bo góc 14px, viền Slate-200, bóng đổ
+        Container(
+          width: 125,
+          height: 185,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+            color: Colors.white,
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x18000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
               ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: CachedNetworkImage(
+            imageUrl: coverUrl,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Container(color: const Color(0xFFF1F5F9)),
+            errorWidget: (context, url, error) => Container(
+              color: const Color(0xFFF1F5F9),
+              child: const Icon(Icons.book, size: 36, color: Color(0xFF94A3B8)),
             ),
           ),
         ),
-        const SizedBox(width: 16),
-        // Thông tin truyện
+        const SizedBox(width: 14),
+
+        // Cột thông tin chi tiết
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Badges
-              Row(
+              // Hàng Badges: Loại truyện + Chính sách
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                     decoration: BoxDecoration(
-                      color: story.isComic ? AppColors.purple400 : AppColors.gold,
+                      color: story.isComic
+                          ? const Color(0xFFE0F2FE) // Sky-100
+                          : const Color(0xFFFFEDD5), // Orange-100
                       borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: story.isComic
+                            ? const Color(0xFF7DD3FC)
+                            : const Color(0xFFFDBA74),
+                      ),
                     ),
                     child: Text(
                       story.isComic ? 'Truyện tranh' : 'Truyện chữ',
                       style: GoogleFonts.inter(
-                        color: Colors.white,
+                        color: story.isComic
+                            ? const Color(0xFF0369A1)
+                            : const Color(0xFFC2410C),
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                     decoration: BoxDecoration(
-                      color: story.releaseStatus == ReleaseStatus.completed
-                          ? AppColors.green400.withValues(alpha: 0.2)
-                          : AppColors.sky400.withValues(alpha: 0.2),
+                      color: story.accessPolicy == 0
+                          ? const Color(0xFFD1FAE5) // Emerald-100
+                          : const Color(0xFFFEF3C7), // Amber-100
                       borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: story.accessPolicy == 0
+                            ? const Color(0xFF6EE7B7)
+                            : const Color(0xFFFCD34D),
+                      ),
                     ),
                     child: Text(
-                      story.releaseStatus.label,
+                      story.accessPolicy == 0
+                          ? 'Miễn phí'
+                          : (story.accessPolicy == 1 ? 'VIP' : 'Hỗn hợp'),
                       style: GoogleFonts.inter(
-                        color: story.releaseStatus == ReleaseStatus.completed
-                            ? AppColors.green400
-                            : AppColors.sky400,
+                        color: story.accessPolicy == 0
+                            ? const Color(0xFF047857)
+                            : const Color(0xFFB45309),
                         fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
+
+              // Tiêu đề truyện: Font Lora đậm to chuẩn Web
               Text(
                 story.title,
                 style: GoogleFonts.lora(
-                  fontSize: 18,
+                  fontSize: 19,
                   fontWeight: FontWeight.bold,
-                  height: 1.3,
+                  color: const Color(0xFF0F172A),
+                  height: 1.25,
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 6),
-              Text(
-                'Tác giả: ${story.author}',
-                style: GoogleFonts.inter(
-                  color: AppColors.inkMuted,
-                  fontSize: 13,
-                ),
+
+              // Tác giả với icon bút cam
+              Row(
+                children: [
+                  const Icon(
+                    Icons.edit,
+                    size: 13,
+                    color: AppColors.gold,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Tác giả: ${story.author.isNotEmpty ? story.author : "Đang cập nhật"}',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF475569),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
-              Text(
-                'Số chương: ${story.chapters.length}',
-                style: GoogleFonts.inter(
-                  color: AppColors.inkMuted,
-                  fontSize: 13,
-                ),
+
+              // Số lượt đọc & số chương
+              Row(
+                children: [
+                  const Icon(
+                    Icons.visibility,
+                    size: 13,
+                    color: Color(0xFFF59E0B),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${story.viewCount} lượt đọc',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFF64748B),
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${story.chapters.length} chương',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFF64748B),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
-              // Thể loại chips
+
+              // Thể loại Chips cam nhạt chuẩn Web (bg-orange-50 border-orange-200 text-orange-700)
               if (story.genres.isNotEmpty)
                 Wrap(
                   spacing: 6,
-                  runSpacing: 6,
-                  children: story.genres.take(3).map((g) {
+                  runSpacing: 4,
+                  children: story.genres.take(4).map((g) {
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
+                        color: const Color(0xFFFFF7ED), // Orange-50
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Theme.of(context).dividerColor),
+                        border: Border.all(color: const Color(0xFFFED7AA)), // Orange-200
                       ),
                       child: Text(
                         g,
-                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.inkMuted),
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFC2410C), // Orange-700
+                        ),
                       ),
                     );
                   }).toList(),
@@ -273,37 +371,58 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
 
     return Row(
       children: [
-        // Nút Đọc từ đầu
+        // Nút "Đọc từ đầu" màu cam thương hiệu Web
         Expanded(
           flex: 3,
           child: ElevatedButton.icon(
             onPressed: firstChapter == null ? null : () => _openChapter(firstChapter.id),
-            icon: const Icon(Icons.play_arrow_rounded, size: 20),
-            label: const Text(AppStrings.readFromBeginning),
+            icon: const Icon(Icons.play_arrow, size: 20, color: Colors.white),
+            label: Text(
+              'Đọc từ đầu',
+              style: GoogleFonts.inter(
+                fontSize: 13.5,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              backgroundColor: AppColors.gold,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
         ),
         const SizedBox(width: 10),
-        // Nút Theo dõi
+
+        // Nút "Theo dõi"
         Expanded(
           flex: 2,
           child: OutlinedButton.icon(
             onPressed: _toggleFollow,
             icon: Icon(
               isFollowing ? Icons.bookmark : Icons.bookmark_border,
-              color: isFollowing ? AppColors.gold : null,
+              color: isFollowing ? AppColors.gold : const Color(0xFF475569),
               size: 18,
             ),
             label: Text(
-              isFollowing ? 'Đang theo dõi' : AppStrings.followStory,
-              style: TextStyle(color: isFollowing ? AppColors.gold : null),
+              isFollowing ? 'Đang theo dõi' : 'Theo dõi',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isFollowing ? AppColors.gold : const Color(0xFF334155),
+              ),
             ),
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              backgroundColor: Colors.white,
               side: BorderSide(
-                color: isFollowing ? AppColors.gold : Theme.of(context).dividerColor,
+                color: isFollowing ? AppColors.gold : const Color(0xFFCBD5E1),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),
@@ -314,31 +433,49 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
 
   Widget _buildDescription(StoryDetail story) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Giới thiệu',
-            style: GoogleFonts.lora(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              const Icon(
+                Icons.menu_book,
+                color: AppColors.gold,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Giới thiệu nội dung',
+                style: GoogleFonts.lora(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             story.description.isNotEmpty
                 ? story.description
-                : 'Chưa có thông tin tóm tắt cho bộ truyện này.',
+                : 'Chưa có thông tin tóm tắt cho tác phẩm này.',
             style: GoogleFonts.inter(
               height: 1.6,
-              fontSize: 13.5,
-              color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.9),
+              fontSize: 13,
+              color: const Color(0xFF334155),
             ),
           ),
         ],
@@ -347,194 +484,307 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
   }
 
   Widget _buildChapterSection(StoryDetail story, List<ChapterGroup> groups) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Tiêu đề & Thao tác
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppStrings.chapterList,
-              style: GoogleFonts.lora(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Row(
-              children: [
-                // Đổi thứ tự Cũ/Mới
-                IconButton(
-                  tooltip: _isAscending ? AppStrings.sortAscending : AppStrings.sortDescending,
-                  onPressed: () => setState(() => _isAscending = !_isAscending),
-                  icon: Icon(
-                    _isAscending ? Icons.arrow_downward : Icons.arrow_upward,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header Danh Sách Chương
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.format_list_bulleted,
+                    color: AppColors.gold,
                     size: 18,
                   ),
-                ),
-                // Mở/Đóng tất cả folder
-                if (groups.any((g) => g.isFolder))
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        if (_expandedFolders.length == groups.length) {
-                          _expandedFolders.clear();
-                        } else {
-                          _expandedFolders.addAll(groups.map((g) => g.partName));
-                        }
-                      });
-                    },
-                    child: Text(
-                      _expandedFolders.length == groups.length ? 'Thu gọn' : 'Mở tất cả',
-                      style: GoogleFonts.inter(color: AppColors.gold, fontSize: 12),
+                  const SizedBox(width: 6),
+                  Text(
+                    'DANH SÁCH CHƯƠNG',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF0F172A),
                     ),
                   ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // Tìm kiếm chương
-        TextField(
-          onChanged: (val) => setState(() => _chapterSearch = val.trim()),
-          style: GoogleFonts.inter(fontSize: 13),
-          decoration: InputDecoration(
-            hintText: AppStrings.searchChapter,
-            prefixIcon: const Icon(Icons.search, size: 18),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            isDense: true,
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        // Cây Thư mục Danh sách chương (Folder Cha - Con)
-        if (groups.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: EmptyState(
-              icon: Icons.menu_book,
-              title: 'Không tìm thấy chương phù hợp',
-            ),
-          )
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: groups.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 10),
-            itemBuilder: (context, gIndex) {
-              final group = groups[gIndex];
-
-              // Nếu không phải dạng folder thì render danh sách phẳng
-              if (!group.isFolder) {
-                return _buildChapterListItems(group.chapters);
-              }
-
-              final isExpanded = _expandedFolders.contains(group.partName);
-
-              return Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Theme.of(context).dividerColor),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  children: [
-                    // Folder Header
-                    InkWell(
-                      onTap: () {
+                ],
+              ),
+              Row(
+                children: [
+                  // Đổi chiều Cũ/Mới
+                  IconButton(
+                    tooltip: _isAscending ? 'Cũ nhất trước' : 'Mới nhất trước',
+                    onPressed: () => setState(() => _isAscending = !_isAscending),
+                    icon: Icon(
+                      _isAscending ? Icons.arrow_downward : Icons.arrow_upward,
+                      size: 17,
+                      color: const Color(0xFF64748B),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  if (groups.any((g) => g.isFolder))
+                    TextButton(
+                      onPressed: () {
                         setState(() {
-                          if (isExpanded) {
-                            _expandedFolders.remove(group.partName);
+                          if (_expandedFolders.length == groups.length) {
+                            _expandedFolders.clear();
                           } else {
-                            _expandedFolders.add(group.partName);
+                            _expandedFolders.addAll(groups.map((g) => g.partName));
                           }
                         });
                       },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        child: Row(
-                          children: [
-                            Icon(
-                              isExpanded ? Icons.folder_open : Icons.folder,
-                              color: AppColors.gold,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                group.partName,
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).scaffoldBackgroundColor,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '${group.chapters.length} c.',
-                                style: GoogleFonts.inter(
-                                  color: AppColors.inkMuted,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(
-                              isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                              color: AppColors.inkMuted,
-                              size: 18,
-                            ),
-                          ],
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      child: Text(
+                        _expandedFolders.length == groups.length ? 'Thu gọn' : 'Mở tất cả',
+                        style: GoogleFonts.inter(
+                          color: AppColors.gold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                    // Folder Chapter Items
-                    if (isExpanded) ...[
-                      const Divider(height: 1),
-                      _buildChapterListItems(group.chapters),
-                    ],
-                  ],
-                ),
-              );
-            },
+                ],
+              ),
+            ],
           ),
-      ],
+          const SizedBox(height: 10),
+
+          // Ô tìm kiếm chương chuẩn Pill
+          Container(
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: TextField(
+              onChanged: (val) => setState(() => _chapterSearch = val.trim()),
+              style: GoogleFonts.inter(fontSize: 12.5),
+              decoration: const InputDecoration(
+                hintText: 'Nhập số hoặc tên chương để tìm...',
+                hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5),
+                prefixIcon: Icon(Icons.search, size: 18, color: Color(0xFF94A3B8)),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Hiển thị danh sách nhóm chương
+          if (groups.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'Không tìm thấy chương phù hợp',
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: groups.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 10),
+              itemBuilder: (context, gIndex) {
+                final group = groups[gIndex];
+
+                if (!group.isFolder) {
+                  return _buildChapterListCards(group.chapters);
+                }
+
+                final isExpanded = _expandedFolders.contains(group.partName);
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: [
+                      // Folder Header
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            if (isExpanded) {
+                              _expandedFolders.remove(group.partName);
+                            } else {
+                              _expandedFolders.add(group.partName);
+                            }
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isExpanded ? Icons.folder_open : Icons.folder,
+                                color: AppColors.gold,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  group.partName,
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13.5,
+                                    color: const Color(0xFF1E293B),
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                ),
+                                child: Text(
+                                  '${group.chapters.length} c.',
+                                  style: GoogleFonts.inter(
+                                    color: const Color(0xFF64748B),
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                isExpanded
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                color: const Color(0xFF94A3B8),
+                                size: 18,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (isExpanded) ...[
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: _buildChapterListCards(group.chapters),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _buildChapterListItems(List<ChapterListItem> chapters) {
+  // Từng Chapter Card chuẩn ChapterCard trong StoryDetailPage.tsx
+  Widget _buildChapterListCards(List<ChapterListItem> chapters) {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: chapters.length,
-      separatorBuilder: (context, index) => Divider(
-        height: 1,
-        color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-      ),
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, cIndex) {
         final chapter = chapters[cIndex];
 
-        return ListTile(
+        return InkWell(
           onTap: () => _openChapter(chapter.id),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-          dense: true,
-          title: Text(
-            'Chương ${chapter.chapterNumber}: ${chapter.title}',
-            style: GoogleFonts.inter(fontSize: 13.5),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x04000000),
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Chương ${chapter.chapterNumber}',
+                        style: GoogleFonts.spaceMono(
+                          color: AppColors.gold,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        chapter.title,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF0F172A),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (chapter.requiresAccess)
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFBEB), // Amber-50
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFFCD34D)), // Amber-300
+                    ),
+                    child: const Icon(
+                      Icons.lock,
+                      size: 14,
+                      color: Color(0xFFD97706), // Amber-600
+                    ),
+                  )
+                else
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: Color(0xFFCBD5E1),
+                  ),
+              ],
+            ),
           ),
-          trailing: chapter.requiresAccess
-              ? const Icon(Icons.lock, size: 16, color: AppColors.gold)
-              : const Icon(Icons.chevron_right, size: 16, color: AppColors.inkMuted),
         );
       },
     );

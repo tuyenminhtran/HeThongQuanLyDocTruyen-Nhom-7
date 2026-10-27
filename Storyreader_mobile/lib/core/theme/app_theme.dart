@@ -129,9 +129,9 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: lightBg,
-      primaryColor: AppColors.goldDim,
+      primaryColor: AppColors.gold,
       colorScheme: const ColorScheme.light(
-        primary: AppColors.goldDim,
+        primary: AppColors.gold,
         onPrimary: Colors.white,
         surface: lightCard,
         onSurface: lightText,

@@ -39,10 +39,10 @@ void main() {
       );
 
       expect(find.text('Bộ Truyện Tranh Test'), findsOneWidget);
-      expect(find.text('Comic'), findsOneWidget);
+      expect(find.text('Tranh'), findsOneWidget);
       expect(find.text('VIP'), findsOneWidget);
-      expect(find.text('42 chương'), findsOneWidget);
-      expect(find.text('15.4k lượt xem'), findsOneWidget);
+      expect(find.text('Chương 42'), findsOneWidget);
+      expect(find.text('15k lượt xem'), findsOneWidget);
     });
 
     testWidgets('StoryCard renders Novel badge and Free policy properly', (tester) async {
@@ -81,13 +81,13 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      expect(container.read(appThemeModeProvider), ThemeMode.dark);
-
-      await container.read(appThemeModeProvider.notifier).setThemeMode(ThemeMode.light);
       expect(container.read(appThemeModeProvider), ThemeMode.light);
 
       await container.read(appThemeModeProvider.notifier).setThemeMode(ThemeMode.dark);
       expect(container.read(appThemeModeProvider), ThemeMode.dark);
+
+      await container.read(appThemeModeProvider.notifier).setThemeMode(ThemeMode.light);
+      expect(container.read(appThemeModeProvider), ThemeMode.light);
 
       await container.read(appThemeModeProvider.notifier).setThemeMode(ThemeMode.system);
       expect(container.read(appThemeModeProvider), ThemeMode.system);

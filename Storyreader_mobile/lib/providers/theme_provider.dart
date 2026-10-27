@@ -9,27 +9,27 @@ final appThemeModeProvider = StateNotifierProvider<AppThemeModeNotifier, ThemeMo
 class AppThemeModeNotifier extends StateNotifier<ThemeMode> {
   static const _key = 'app_theme_mode';
 
-  AppThemeModeNotifier() : super(ThemeMode.dark) {
+  AppThemeModeNotifier() : super(ThemeMode.light) {
     _load();
   }
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     final val = prefs.getString(_key);
-    if (val == 'light') {
-      state = ThemeMode.light;
-    } else if (val == 'dark') {
+    if (val == 'dark') {
       state = ThemeMode.dark;
     } else if (val == 'system') {
       state = ThemeMode.system;
+    } else {
+      state = ThemeMode.light;
     }
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
     state = mode;
     final prefs = await SharedPreferences.getInstance();
-    String val = 'dark';
-    if (mode == ThemeMode.light) val = 'light';
+    String val = 'light';
+    if (mode == ThemeMode.dark) val = 'dark';
     if (mode == ThemeMode.system) val = 'system';
     await prefs.setString(_key, val);
   }

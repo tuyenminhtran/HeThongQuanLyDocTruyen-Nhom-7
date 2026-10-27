@@ -181,6 +181,7 @@ class StoryDetail {
   final List<String> genres;
   final List<ChapterListItem> chapters;
   final StoryType type;
+  final int viewCount;
 
   StoryDetail({
     required this.id,
@@ -195,6 +196,7 @@ class StoryDetail {
     required this.genres,
     required this.chapters,
     this.type = StoryType.novel,
+    this.viewCount = 0,
   });
 
   String get fullCoverUrl => ApiConstants.resolveImageUrl(coverImageUrl);
@@ -247,6 +249,7 @@ class StoryDetail {
       genres: parsedGenres,
       chapters: parsedChapters,
       type: StoryType.fromValue(json['type']),
+      viewCount: (json['viewCount'] is num) ? (json['viewCount'] as num).toInt() : 0,
     );
   }
 }

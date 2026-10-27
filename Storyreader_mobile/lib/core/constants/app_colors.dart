@@ -1,51 +1,60 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Midnight Obsidian tokens (matching web Tailwind tokens)
-  static const Color inkBg = Color(0xFF0A0D14);
-  static const Color inkCard = Color(0xFF121722);
-  static const Color inkElevated = Color(0xFF1A202E);
-  static const Color inkBorder = Color(0xFF262E3D);
-  static const Color inkBorderLight = Color(0xFF374357);
-  static const Color inkText = Color(0xFFF1F5F9);
-  static const Color inkMuted = Color(0xFF94A3B8);
+  // Bảng màu chuẩn 1-1 với Web StoryReader (Tailwind TruyenQQ Palette)
+  static const Color inkBg = Color(0xFFF4F6F9);            // Nền Slate sáng sạch sẽ
+  static const Color inkCard = Color(0xFFFFFFFF);          // Khung card trắng tinh, nổi khối rõ nét
+  static const Color inkElevated = Color(0xFFF8FAFC);      // Khối nổi nhẹ / hover
+  static const Color inkBorder = Color(0xFFE2E8F0);        // Viền Slate-200 sáng nét
+  static const Color inkBorderLight = Color(0xFFCBD5E1);   // Viền Slate-300
+  static const Color inkText = Color(0xFF0F172A);          // Chữ Slate-900 đen đậm, cực kỳ dễ đọc
+  static const Color inkMuted = Color(0xFF64748B);         // Chữ phụ Slate-500
 
-  // Imperial Gold tokens
-  static const Color gold = Color(0xFFF59E0B);
-  static const Color goldDim = Color(0xFFD97706);
-  static const Color goldLight = Color(0xFFFDE68A);
+  // Màu Cam thương hiệu TruyenQQ của Web
+  static const Color gold = Color(0xFFEA580C);             // Cam đậm chuẩn Web
+  static const Color goldDim = Color(0xFFC2410C);          // Cam đậm
+  static const Color goldLight = Color(0xFFFFEDD5);        // Cam nhạt background
+  static const Color brandOrange = Color(0xFFF37021);      // Cam thanh menu đặc trưng Web
+  static const Color brandBlue = Color(0xFF2563EB);        // Xanh dương nút Đăng nhập Web
+  static const Color brandSky = Color(0xFF0284C7);         // Xanh da trời nút Đăng ký Web
 
   // Status & accent colors
-  static const Color red400 = Color(0xFFEF4444);
-  static const Color green400 = Color(0xFF10B981);
-  static const Color sky400 = Color(0xFF38BDF8);
-  static const Color blue400 = Color(0xFF3B82F6);
-  static const Color purple400 = Color(0xFF8B5CF6);
+  static const Color red400 = Color(0xFFEF4444);           // Đỏ cảnh báo / HOT badge
+  static const Color green400 = Color(0xFF10B981);         // Xanh lá Miễn phí (Emerald)
+  static const Color sky400 = Color(0xFF0284C7);           // Xanh tranh (Sky)
+  static const Color blue400 = Color(0xFF2563EB);          // Xanh dương
+  static const Color purple400 = Color(0xFF8B5CF6);        // Tím Comic
 
   // Reader Themes
-  static const Color readerLightBg = Color(0xFFFAFAF9);
-  static const Color readerLightText = Color(0xFF1E293B);
+  static const Color readerLightBg = Color(0xFFFFFFFF);
+  static const Color readerLightText = Color(0xFF0F172A);
   static const Color readerLightBorder = Color(0xFFE2E8F0);
 
-  static const Color readerSepiaBg = Color(0xFFF5EFEB);
-  static const Color readerSepiaText = Color(0xFF3D2E1E);
-  static const Color readerSepiaBorder = Color(0xFFE2D7C3);
+  static const Color readerSepiaBg = Color(0xFFFBF0D9);
+  static const Color readerSepiaText = Color(0xFF433422);
+  static const Color readerSepiaBorder = Color(0xFFEADBCE);
 
-  static const Color readerDarkBg = inkBg;
-  static const Color readerDarkText = inkText;
-  static const Color readerDarkBorder = inkBorder;
+  static const Color readerDarkBg = Color(0xFF0D1117);
+  static const Color readerDarkText = Color(0xFFE6EDF3);
+  static const Color readerDarkBorder = Color(0xFF30363D);
 
-  // Gradients
+  // Gradients chuẩn Web
   static const LinearGradient goldGradient = LinearGradient(
-    colors: [gold, goldDim],
+    colors: [Color(0xFFF59E0B), Color(0xFFEA580C)], // Amber sang Orange như Web
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
+  static const LinearGradient orangeBarGradient = LinearGradient(
+    colors: [brandOrange, Color(0xFFEA580C)],
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+  );
+
   static const LinearGradient avatarGradient = LinearGradient(
     colors: [
-      Color(0x33F59E0B), // gold 20%
-      Color(0x0DF59E0B), // gold ~5%
+      Color(0xFFF37021),
+      Color(0xFFF59E0B),
     ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
