@@ -16,6 +16,7 @@ const CAT_QUOTES = [
   "Frieren bảo: 'Phép thuật tuyệt nhất là phép làm bạn mỉm cười!' 🪄",
   "Thử click liên tục vào mình 5 lần xem điều gì kỳ diệu xảy ra nào! 😉",
   "Nhóm 7 (StoryReader) gửi ngàn lời yêu thương đến bạn! 💖",
+  "Bật mí: Ghé thăm căn phòng bí mật của Nhóm 7 tại đường dẫn /secret nhé! 🎮",
 ];
 
 // Tạo âm thanh Meow dễ thương bằng Web Audio API thuần (không cần file mp3 ngoài)
@@ -291,6 +292,15 @@ export default function InteractiveMascot({
           >
             <i className="fa-solid fa-wand-magic-sparkles text-[10px]" />
           </button>
+
+          {/* Nút vào phòng bí mật Nhóm 7 (Easter Egg #5) */}
+          <a
+            href="/secret"
+            className="w-7 h-7 rounded-full bg-white border border-slate-200 text-purple-600 shadow-md hover:bg-purple-50 flex items-center justify-center text-xs cursor-pointer transition-colors"
+            title="Phòng bí mật Nhóm 7 (Secret Credits)"
+          >
+            <i className="fa-solid fa-gamepad text-[10px]" />
+          </a>
 
           {/* Nút hoàn về mèo nếu đang là Totoro */}
           {isTotoro && (
