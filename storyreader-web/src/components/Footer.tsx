@@ -125,15 +125,6 @@ export default function Footer() {
             <span className="hover:text-orange-600 transition-colors cursor-pointer">
               Chính sách bảo mật
             </span>
-            <span>•</span>
-            <Link
-              to="/secret"
-              className="text-slate-400 hover:text-orange-600 transition-colors flex items-center gap-1 group/secret"
-              title="Căn phòng bí mật của Nhóm 7 (Secret Credits)"
-            >
-              <i className="fa-solid fa-gamepad text-xs group-hover/secret:rotate-12 transition-transform" />
-              <span>Nhóm 7 Lounge</span>
-            </Link>
           </div>
         </div>
       </div>

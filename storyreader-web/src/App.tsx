@@ -14,7 +14,6 @@ import ProfilePage from "./pages/ProfilePage";
 import FollowingPage from "./pages/FollowingPage";
 import HistoryPage from "./pages/HistoryPage";
 import PricingPage from "./pages/PricingPage";
-import SecretCreditsPage from "./pages/SecretCreditsPage";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import DashboardPage from "./pages/admin/DashboardPage";
@@ -71,11 +70,6 @@ export default function App() {
           <Route path="/chapters/:id" element={<ChapterReadPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-
-          {/* Easter Egg #5: Phòng bí mật Nhóm 7 (Secret Credits / Retro Lounge) */}
-          <Route path="/secret" element={<SecretCreditsPage />} />
-          <Route path="/nhom7" element={<SecretCreditsPage />} />
-          <Route path="/credits" element={<SecretCreditsPage />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>
