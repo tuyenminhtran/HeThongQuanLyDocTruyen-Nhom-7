@@ -8,6 +8,7 @@ import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/chapter_read/chapter_read_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/library/library_screen.dart';
 import '../../features/pricing/pricing_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/story_detail/story_detail_screen.dart';
@@ -70,6 +71,28 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/pricing',
         builder: (context, state) => const PricingScreen(),
+      ),
+      GoRoute(
+        path: '/library',
+        builder: (context, state) {
+          final tab = state.uri.queryParameters['tab'];
+          int initialTab = 0;
+          if (tab == 'history') initialTab = 1;
+          if (tab == 'purchased') initialTab = 2;
+          return LibraryScreen(initialTab: initialTab);
+        },
+      ),
+      GoRoute(
+        path: '/following',
+        builder: (context, state) => const LibraryScreen(initialTab: 0),
+      ),
+      GoRoute(
+        path: '/history',
+        builder: (context, state) => const LibraryScreen(initialTab: 1),
+      ),
+      GoRoute(
+        path: '/bookmarks',
+        builder: (context, state) => const LibraryScreen(initialTab: 0),
       ),
       GoRoute(
         path: '/profile',

@@ -98,6 +98,14 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                             },
                           ),
                           _buildMenuItem(
+                            title: 'Tủ sách',
+                            icon: Icons.bookmarks_outlined,
+                            onTap: () {
+                              _closeMenu();
+                              context.push('/library');
+                            },
+                          ),
+                          _buildMenuItem(
                             title: 'Gói VIP',
                             textColor: AppColors.gold,
                             icon: Icons.auto_awesome,

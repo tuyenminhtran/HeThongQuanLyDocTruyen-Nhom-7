@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/story_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/app_footer.dart';
 import '../../widgets/empty_state.dart';
@@ -766,7 +767,74 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 16),
+
+                  // Cài đặt Giao diện Theme Mode (Sáng / Tối / Hệ thống)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.palette_outlined, size: 20, color: AppColors.gold),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Giao diện ứng dụng',
+                              style: GoogleFonts.lora(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final currentTheme = ref.watch(appThemeModeProvider);
+                            return Row(
+                              children: [
+                                Expanded(
+                                  child: _buildThemeOption(
+                                    label: 'Tối',
+                                    icon: Icons.dark_mode_outlined,
+                                    isSelected: currentTheme == ThemeMode.dark,
+                                    onTap: () => ref.read(appThemeModeProvider.notifier).setThemeMode(ThemeMode.dark),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _buildThemeOption(
+                                    label: 'Sáng',
+                                    icon: Icons.light_mode_outlined,
+                                    isSelected: currentTheme == ThemeMode.light,
+                                    onTap: () => ref.read(appThemeModeProvider.notifier).setThemeMode(ThemeMode.light),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _buildThemeOption(
+                                    label: 'Hệ thống',
+                                    icon: Icons.brightness_auto_outlined,
+                                    isSelected: currentTheme == ThemeMode.system,
+                                    onTap: () => ref.read(appThemeModeProvider.notifier).setThemeMode(ThemeMode.system),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
 
                   // Horizontal Tabs
                   SingleChildScrollView(
@@ -887,6 +955,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       itemBuilder: (context, idx) {
         return StoryCard(story: stories[idx]);
       },
+    );
+  }
+
+  Widget _buildThemeOption({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.gold.withValues(alpha: 0.15) : Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.gold : Theme.of(context).dividerColor,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? AppColors.gold : AppColors.inkMuted,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected ? AppColors.gold : Theme.of(context).textTheme.bodySmall?.color,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
