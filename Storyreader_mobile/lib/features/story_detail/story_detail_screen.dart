@@ -1,16 +1,17 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../data/api/payment_api.dart';
+import '../../core/utils/chapter_grouping.dart';
+import '../../data/models/story_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/story_provider.dart';
 import '../../widgets/app_header.dart';
-import '../../widgets/app_footer.dart';
+import '../../widgets/loading_skeleton.dart';
+import '../../widgets/request_error.dart';
 
 class StoryDetailScreen extends ConsumerStatefulWidget {
   final String storyId;
@@ -22,12 +23,9 @@ class StoryDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
-  bool _isBuying = false;
-  String? _buyError;
   String _chapterSearch = '';
   bool _isAscending = true;
-
-  static const accessLabels = ["Miễn phí", "Trả phí", "Mixed"];
+  final Set<String> _expandedFolders = {};
 
   Future<void> _openChapter(String chapterId) async {
     await context.push(
@@ -39,79 +37,39 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     if (mounted) ref.invalidate(readingHistoryProvider);
   }
 
-  Future<void> _handleBuyStory() async {
-    setState(() {
-      _isBuying = true;
-      _buyError = null;
-    });
+  Future<void> _toggleFollow() async {
+    final auth = ref.read(authProvider);
+    if (!auth.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng đăng nhập để theo dõi truyện.')),
+      );
+      context.push('/login');
+      return;
+    }
 
     try {
-      final res = await PaymentApi.buyStory(widget.storyId);
+      final repo = ref.read(storyRepositoryProvider);
+      final isFollowing = await repo.toggleFollow(widget.storyId);
+      ref.invalidate(isFollowingProvider(widget.storyId));
+      ref.invalidate(bookmarksProvider);
+
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: AppColors.inkCard,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: AppColors.inkBorder),
-            ),
-            title: Text(
-              'Đã tạo giao dịch',
-              style: GoogleFonts.notoSerif(
-                color: AppColors.inkText,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
             content: Text(
-              'Trong thực tế bạn sẽ được chuyển tới:\n${res.paymentUrl}',
-              style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 14),
+              isFollowing
+                  ? 'Đã thêm vào truyện đang theo dõi.'
+                  : 'Đã bỏ theo dõi truyện.',
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(
-                  'Đóng',
-                  style: GoogleFonts.inter(color: AppColors.inkMuted),
-                ),
-              ),
-              if (res.paymentUrl.isNotEmpty)
-                ElevatedButton(
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    final uri = Uri.tryParse(res.paymentUrl);
-                    if (uri != null) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold,
-                    foregroundColor: AppColors.inkBg,
-                  ),
-                  child: Text(
-                    'Mở liên kết',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                  ),
-                ),
-            ],
+            duration: const Duration(seconds: 2),
           ),
         );
-        ref.invalidate(storyDetailFamily(widget.storyId));
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() {
-          _buyError = 'Không thể khởi tạo giao dịch. Vui lòng thử lại.';
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isBuying = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không thể cập nhật theo dõi: $e')),
+        );
       }
     }
   }
@@ -119,949 +77,716 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final storyAsync = ref.watch(storyDetailFamily(widget.storyId));
-    final auth = ref.watch(authProvider);
+    final isFollowingAsync = ref.watch(isFollowingProvider(widget.storyId));
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F6F9), // Slate sáng chuẩn Web
       appBar: const AppHeader(),
       body: storyAsync.when(
+        loading: () => const StoryDetailSkeleton(),
+        error: (err, _) => Center(
+          child: RequestError(
+            error: err,
+            onRetry: () => ref.invalidate(storyDetailFamily(widget.storyId)),
+          ),
+        ),
         data: (story) {
-          final accessLabel =
-              (story.accessPolicy >= 0 &&
-                  story.accessPolicy < accessLabels.length)
-              ? accessLabels[story.accessPolicy]
-              : 'N/A';
+          final isFollowing = isFollowingAsync.value ?? false;
 
-          String statusLabel = 'Đang ra';
-          if (story.status == 1) statusLabel = 'Hoàn thành';
-          if (story.status == 2) statusLabel = 'Tạm ngưng';
+          // Lọc danh sách chương theo từ khóa tìm kiếm
+          var filteredChapters = story.chapters.where((c) {
+            if (_chapterSearch.isEmpty) return true;
+            final query = _chapterSearch.toLowerCase();
+            return c.title.toLowerCase().contains(query) ||
+                c.chapterNumber.toString().contains(query) ||
+                (c.partName != null && c.partName!.toLowerCase().contains(query));
+          }).toList();
 
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 24,
+          // Sắp xếp thứ tự chương
+          filteredChapters.sort((a, b) => _isAscending
+              ? a.chapterNumber.compareTo(b.chapterNumber)
+              : b.chapterNumber.compareTo(a.chapterNumber));
+
+          // Nhóm chương thành các Phần / Tập (Folder cha - con)
+          final chapterGroups = groupChaptersByPart(filteredChapters);
+
+          // Mặc định mở rộng tất cả các folder khi tải lần đầu
+          if (_expandedFolders.isEmpty && chapterGroups.isNotEmpty) {
+            _expandedFolders.addAll(chapterGroups.map((g) => g.partName));
+          }
+
+          final coverUrl = story.fullCoverUrl.isNotEmpty
+              ? story.fullCoverUrl
+              : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80';
+
+          return RefreshIndicator(
+            color: AppColors.gold,
+            onRefresh: () async {
+              ref.invalidate(storyDetailFamily(widget.storyId));
+              ref.invalidate(isFollowingProvider(widget.storyId));
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Stack(
+                children: [
+                  // Ambient blur header giống Web
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 220,
+                    child: Opacity(
+                      opacity: 0.18,
+                      child: CachedNetworkImage(
+                        imageUrl: coverUrl,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Large Cover Image centered with 3D Spine and shadow
-                      Center(
-                        child: Container(
-                          width: 200,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.inkBorder),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.6),
-                                blurRadius: 24,
-                                offset: const Offset(0, 12),
-                              ),
-                              BoxShadow(
-                                color: AppColors.gold.withValues(alpha: 0.1),
-                                blurRadius: 20,
-                                spreadRadius: -2,
-                              ),
-                            ],
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: AspectRatio(
-                            aspectRatio: 2 / 3,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                CachedNetworkImage(
-                                  imageUrl: story.coverImageUrl.isNotEmpty
-                                      ? story.coverImageUrl
-                                      : 'https://placehold.co/400x600?text=No+Cover',
-                                  fit: BoxFit.cover,
-                                ),
-                                // 3D Book Spine Highlight
-                                Positioned(
-                                  top: 0,
-                                  bottom: 0,
-                                  left: 0,
-                                  width: 14,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.white.withValues(alpha: 0.2),
-                                          Colors.black.withValues(alpha: 0.4),
-                                          Colors.transparent,
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
 
-                      const SizedBox(height: 20),
-
-                      // Status & Policy Chips
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: story.status == 1
-                                  ? AppColors.green400.withValues(alpha: 0.15)
-                                  : AppColors.inkCard,
-                              border: Border.all(
-                                color: story.status == 1
-                                    ? AppColors.green400.withValues(alpha: 0.3)
-                                    : AppColors.inkBorder,
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              statusLabel,
-                              style: GoogleFonts.inter(
-                                color: story.status == 1
-                                    ? AppColors.green400
-                                    : AppColors.inkMuted,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.gold.withValues(alpha: 0.15),
-                              border: Border.all(
-                                color: AppColors.gold.withValues(alpha: 0.3),
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              accessLabel,
-                              style: GoogleFonts.inter(
-                                color: AppColors.gold,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Story Title
-                      Text(
-                        story.title,
-                        style: GoogleFonts.notoSerif(
-                          color: AppColors.inkText,
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          height: 1.25,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Author
-                      RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
-                          style: GoogleFonts.inter(
-                            color: AppColors.inkMuted,
-                            fontSize: 16,
-                          ),
-                          children: [
-                            const TextSpan(text: 'Tác giả: '),
-                            TextSpan(
-                              text: story.author,
-                              style: GoogleFonts.inter(
-                                color: AppColors.inkText,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Genre chips
-                      if (story.genres.isNotEmpty)
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: story.genres.map((g) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.gold.withValues(alpha: 0.1),
-                                border: Border.all(
-                                  color: AppColors.gold.withValues(alpha: 0.2),
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                g,
-                                style: GoogleFonts.inter(
-                                  color: AppColors.gold,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-
-                      const SizedBox(height: 24),
-
-                      // Description Box
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Giới thiệu',
-                            style: GoogleFonts.notoSerif(
-                              color: AppColors.inkText,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            story.description,
-                            style: GoogleFonts.inter(
-                              color: AppColors.inkText.withValues(alpha: 0.8),
-                              fontSize: 14,
-                              height: 1.6,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 24),
-                      Divider(
-                        color: AppColors.inkBorder.withValues(alpha: 0.5),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Pricing & CTA Box
-                      if (story.accessPolicy != 0) ...[
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.inkCard,
-                            border: Border.all(color: AppColors.inkBorder),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${story.price?.toInt() ?? 0}đ',
-                                        style: GoogleFonts.inter(
-                                          color: AppColors.inkText,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${story.freeChapterCount} chương đầu đọc miễn phí',
-                                        style: GoogleFonts.inter(
-                                          color: AppColors.inkMuted,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              if (auth.isAuthenticated)
-                                ElevatedButton(
-                                  onPressed: _isBuying ? null : _handleBuyStory,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.gold,
-                                    foregroundColor: AppColors.inkBg,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                  child: _isBuying
-                                      ? const Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            SizedBox(
-                                              width: 16,
-                                              height: 16,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: AppColors.inkBg,
-                                              ),
-                                            ),
-                                            SizedBox(width: 8),
-                                            Text('Đang xử lý...'),
-                                          ],
-                                        )
-                                      : Text(
-                                          'Mua ngay',
-                                          style: GoogleFonts.inter(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                )
-                              else
-                                OutlinedButton(
-                                  onPressed: () => context.push('/login'),
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(
-                                      color: AppColors.gold,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Đăng nhập để mua',
-                                    style: GoogleFonts.inter(
-                                      color: AppColors.gold,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        if (_buyError != null) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.red400.withValues(alpha: 0.1),
-                              border: Border.all(
-                                color: AppColors.red400.withValues(alpha: 0.2),
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.error_outline,
-                                  size: 18,
-                                  color: AppColors.red400,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _buyError!,
-                                    style: GoogleFonts.inter(
-                                      color: AppColors.red400,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                  // Nội dung chính
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildHeaderInfo(story, coverUrl),
                         const SizedBox(height: 16),
-                      ],
-
-                      // "Đọc từ đầu" Button
-                      if (story.chapters.isNotEmpty) ...[
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.gold.withValues(alpha: 0.25),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              _openChapter(story.chapters.first.id);
-                            },
-                            icon: const Icon(Icons.menu_book, size: 20),
-                            label: Text(
-                              'Đọc Từ Đầu (Chương 1)',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.gold,
-                              foregroundColor: AppColors.inkBg,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              elevation: 0,
-                            ),
-                          ),
-                        ),
+                        _buildActionButtons(story, isFollowing),
+                        const SizedBox(height: 20),
+                        _buildDescription(story),
+                        const SizedBox(height: 24),
+                        _buildChapterSection(story, chapterGroups),
                         const SizedBox(height: 32),
                       ],
-
-                      // Chapters Section Header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Danh sách chương',
-                                style: GoogleFonts.notoSerif(
-                                  color: AppColors.inkText,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.inkCard,
-                                  border: Border.all(
-                                    color: AppColors.inkBorder,
-                                  ),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  '${story.chapters.length}',
-                                  style: GoogleFonts.inter(
-                                    color: AppColors.inkMuted,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          // Sort toggle button
-                          InkWell(
-                            onTap: () {
-                              setState(() {
-                                _isAscending = !_isAscending;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 4,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    _isAscending
-                                        ? Icons.arrow_upward
-                                        : Icons.arrow_downward,
-                                    size: 14,
-                                    color: AppColors.gold,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _isAscending ? 'Cũ nhất' : 'Mới nhất',
-                                    style: GoogleFonts.inter(
-                                      color: AppColors.gold,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Chapter Search Input
-                      if (story.chapters.length > 5) ...[
-                        Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.inkCard,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.inkBorder),
-                          ),
-                          child: TextField(
-                            onChanged: (val) {
-                              setState(() {
-                                _chapterSearch = val;
-                              });
-                            },
-                            style: GoogleFonts.inter(
-                              color: AppColors.inkText,
-                              fontSize: 13,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Tìm theo số chương hoặc tiêu đề...',
-                              hintStyle: GoogleFonts.inter(
-                                color: AppColors.inkMuted.withValues(
-                                  alpha: 0.5,
-                                ),
-                                fontSize: 13,
-                              ),
-                              prefixIcon: const Icon(
-                                Icons.search,
-                                size: 18,
-                                color: AppColors.inkMuted,
-                              ),
-                              isDense: true,
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-
-                      // Chapter List
-                      () {
-                        var filtered = story.chapters.where((c) {
-                          if (_chapterSearch.trim().isEmpty) return true;
-                          final q = _chapterSearch.toLowerCase().trim();
-                          return c.title.toLowerCase().contains(q) ||
-                              'chương ${c.chapterNumber}'
-                                  .toLowerCase()
-                                  .contains(q);
-                        }).toList();
-
-                        if (!_isAscending) {
-                          filtered = filtered.reversed.toList();
-                        }
-
-                        if (story.chapters.isEmpty) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(vertical: 36),
-                            decoration: BoxDecoration(
-                              color: AppColors.inkCard,
-                              border: Border.all(color: AppColors.inkBorder),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'Truyện này chưa có chương nào.',
-                              style: GoogleFonts.inter(
-                                color: AppColors.inkMuted,
-                                fontSize: 14,
-                              ),
-                            ),
-                          );
-                        }
-
-                        if (filtered.isEmpty) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(vertical: 24),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'Không tìm thấy chương phù hợp.',
-                              style: GoogleFonts.inter(
-                                color: AppColors.inkMuted,
-                                fontSize: 13,
-                              ),
-                            ),
-                          );
-                        }
-
-                        return ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: filtered.length,
-                          separatorBuilder: (context, _) =>
-                              const SizedBox(height: 8),
-                          itemBuilder: (context, idx) {
-                            final c = filtered[idx];
-                            return InkWell(
-                              onTap: () {
-                                _openChapter(c.id);
-                              },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.inkCard,
-                                  border: Border.all(
-                                    color: AppColors.inkBorder,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.inkBg,
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: AppColors.inkBorder,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        'C.${c.chapterNumber}',
-                                        style: GoogleFonts.robotoMono(
-                                          color: AppColors.gold,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        c.title,
-                                        style: GoogleFonts.inter(
-                                          color: AppColors.inkText,
-                                          fontSize: 13.5,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    if (c.requiresAccess) ...[
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.gold.withValues(
-                                            alpha: 0.12,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                        ),
-                                        child: const Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.lock_rounded,
-                                              size: 13,
-                                              color: AppColors.gold,
-                                            ),
-                                            SizedBox(width: 3),
-                                            Text(
-                                              'VIP',
-                                              style: TextStyle(
-                                                color: AppColors.gold,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      }(),
-
-                      const SizedBox(height: 36),
-                      Divider(
-                        color: AppColors.inkBorder.withValues(alpha: 0.5),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Reviews & Comments Section
-                      _buildReviewsSection(),
-                    ],
-                  ),
-                ),
-                const AppFooter(),
-              ],
-            ),
-          );
-        },
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 80),
-            child: CircularProgressIndicator(color: AppColors.gold),
-          ),
-        ),
-        error: (_, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Không tìm thấy truyện',
-                  style: GoogleFonts.notoSerif(
-                    color: AppColors.inkMuted,
-                    fontSize: 18,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () => context.go('/'),
-                  child: Text(
-                    '← Quay lại trang chủ',
-                    style: GoogleFonts.inter(color: AppColors.gold),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReviewsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Đánh giá & Bình luận',
-          style: GoogleFonts.notoSerif(
-            color: AppColors.inkText,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Input comment card
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.inkCard,
-            border: Border.all(color: AppColors.inkBorder),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            children: [
-              TextField(
-                maxLines: 3,
-                style: GoogleFonts.inter(
-                  color: AppColors.inkText,
-                  fontSize: 13,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Viết đánh giá của bạn về truyện này...',
-                  hintStyle: GoogleFonts.inter(
-                    color: AppColors.inkMuted.withValues(alpha: 0.5),
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: List.generate(
-                      5,
-                      (index) => const Icon(
-                        Icons.star,
-                        color: AppColors.gold,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Đã gửi đánh giá thành công!'),
-                          backgroundColor: AppColors.inkCard,
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.gold,
-                      foregroundColor: AppColors.inkBg,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                    ),
-                    child: Text(
-                      'Gửi đánh giá',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
               ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeaderInfo(StoryDetail story, String coverUrl) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Ảnh bìa sách tỉ lệ 2/3 bo góc 14px, viền Slate-200, bóng đổ
+        Container(
+          width: 125,
+          height: 185,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+            color: Colors.white,
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x18000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
             ],
           ),
+          clipBehavior: Clip.antiAlias,
+          child: CachedNetworkImage(
+            imageUrl: coverUrl,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Container(color: const Color(0xFFF1F5F9)),
+            errorWidget: (context, url, error) => Container(
+              color: const Color(0xFFF1F5F9),
+              child: const Icon(Icons.book, size: 36, color: Color(0xFF94A3B8)),
+            ),
+          ),
         ),
+        const SizedBox(width: 14),
 
-        const SizedBox(height: 24),
+        // Cột thông tin chi tiết
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Hàng Badges: Loại truyện + Chính sách
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: story.isComic
+                          ? const Color(0xFFE0F2FE) // Sky-100
+                          : const Color(0xFFFFEDD5), // Orange-100
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: story.isComic
+                            ? const Color(0xFF7DD3FC)
+                            : const Color(0xFFFDBA74),
+                      ),
+                    ),
+                    child: Text(
+                      story.isComic ? 'Truyện tranh' : 'Truyện chữ',
+                      style: GoogleFonts.inter(
+                        color: story.isComic
+                            ? const Color(0xFF0369A1)
+                            : const Color(0xFFC2410C),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: story.accessPolicy == 0
+                          ? const Color(0xFFD1FAE5) // Emerald-100
+                          : const Color(0xFFFEF3C7), // Amber-100
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: story.accessPolicy == 0
+                            ? const Color(0xFF6EE7B7)
+                            : const Color(0xFFFCD34D),
+                      ),
+                    ),
+                    child: Text(
+                      story.accessPolicy == 0
+                          ? 'Miễn phí'
+                          : (story.accessPolicy == 1 ? 'VIP' : 'Hỗn hợp'),
+                      style: GoogleFonts.inter(
+                        color: story.accessPolicy == 0
+                            ? const Color(0xFF047857)
+                            : const Color(0xFFB45309),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
 
-        // Mock Comment 1: Anh Tuấn
-        _buildCommentItem(
-          initial: 'A',
-          name: 'Anh Tuấn',
-          time: '2 giờ trước',
-          rating: 5,
-          content: 'Truyện rất hay, mong tác giả ra nhanh chương mới. Plot twist đoạn cuối quá bất ngờ!',
-        ),
+              // Tiêu đề truyện: Font Lora đậm to chuẩn Web
+              Text(
+                story.title,
+                style: GoogleFonts.lora(
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF0F172A),
+                  height: 1.25,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 6),
 
-        const SizedBox(height: 16),
+              // Tác giả với icon bút cam
+              Row(
+                children: [
+                  const Icon(
+                    Icons.edit,
+                    size: 13,
+                    color: AppColors.gold,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Tác giả: ${story.author.isNotEmpty ? story.author : "Đang cập nhật"}',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF475569),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
 
-        // Mock Comment 2: Minh Phượng
-        _buildCommentItem(
-          initial: 'M',
-          name: 'Minh Phượng',
-          time: '1 ngày trước',
-          rating: 4,
-          content: 'Khá ổn, nhịp độ hơi chậm đoạn đầu nhưng về sau rất cuốn.',
+              // Số lượt đọc & số chương
+              Row(
+                children: [
+                  const Icon(
+                    Icons.visibility,
+                    size: 13,
+                    color: Color(0xFFF59E0B),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${story.viewCount} lượt đọc',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFF64748B),
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${story.chapters.length} chương',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFF64748B),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Thể loại Chips cam nhạt chuẩn Web (bg-orange-50 border-orange-200 text-orange-700)
+              if (story.genres.isNotEmpty)
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: story.genres.take(4).map((g) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF7ED), // Orange-50
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFFED7AA)), // Orange-200
+                      ),
+                      child: Text(
+                        g,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFC2410C), // Orange-700
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildCommentItem({
-    required String initial,
-    required String name,
-    required String time,
-    required int rating,
-    required String content,
-  }) {
+  Widget _buildActionButtons(StoryDetail story, bool isFollowing) {
+    final firstChapter = story.chapters.firstOrNull;
+
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.inkBg,
-            border: Border.all(color: AppColors.inkBorder),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            initial,
-            style: GoogleFonts.inter(
-              color: AppColors.inkMuted,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
+        // Nút "Đọc từ đầu" màu cam thương hiệu Web
+        Expanded(
+          flex: 3,
+          child: ElevatedButton.icon(
+            onPressed: firstChapter == null ? null : () => _openChapter(firstChapter.id),
+            icon: const Icon(Icons.play_arrow, size: 20, color: Colors.white),
+            label: Text(
+              'Đọc từ đầu',
+              style: GoogleFonts.inter(
+                fontSize: 13.5,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.gold,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
+
+        // Nút "Theo dõi"
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.inkCard,
-              border: Border.all(color: AppColors.inkBorder),
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(16),
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
+          flex: 2,
+          child: OutlinedButton.icon(
+            onPressed: _toggleFollow,
+            icon: Icon(
+              isFollowing ? Icons.bookmark : Icons.bookmark_border,
+              color: isFollowing ? AppColors.gold : const Color(0xFF475569),
+              size: 18,
+            ),
+            label: Text(
+              isFollowing ? 'Đang theo dõi' : 'Theo dõi',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isFollowing ? AppColors.gold : const Color(0xFF334155),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      name,
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkText,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      time,
-                      style: GoogleFonts.inter(
-                        color: AppColors.inkMuted,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: List.generate(
-                    5,
-                    (i) => Icon(
-                      Icons.star,
-                      size: 14,
-                      color: i < rating ? AppColors.gold : AppColors.inkBorder,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  content,
-                  style: GoogleFonts.inter(
-                    color: AppColors.inkText.withValues(alpha: 0.8),
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
-                ),
-              ],
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.white,
+              side: BorderSide(
+                color: isFollowing ? AppColors.gold : const Color(0xFFCBD5E1),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDescription(StoryDetail story) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.menu_book,
+                color: AppColors.gold,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Giới thiệu nội dung',
+                style: GoogleFonts.lora(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            story.description.isNotEmpty
+                ? story.description
+                : 'Chưa có thông tin tóm tắt cho tác phẩm này.',
+            style: GoogleFonts.inter(
+              height: 1.6,
+              fontSize: 13,
+              color: const Color(0xFF334155),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChapterSection(StoryDetail story, List<ChapterGroup> groups) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header Danh Sách Chương
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.format_list_bulleted,
+                    color: AppColors.gold,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'DANH SÁCH CHƯƠNG',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  // Đổi chiều Cũ/Mới
+                  IconButton(
+                    tooltip: _isAscending ? 'Cũ nhất trước' : 'Mới nhất trước',
+                    onPressed: () => setState(() => _isAscending = !_isAscending),
+                    icon: Icon(
+                      _isAscending ? Icons.arrow_downward : Icons.arrow_upward,
+                      size: 17,
+                      color: const Color(0xFF64748B),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  if (groups.any((g) => g.isFolder))
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          if (_expandedFolders.length == groups.length) {
+                            _expandedFolders.clear();
+                          } else {
+                            _expandedFolders.addAll(groups.map((g) => g.partName));
+                          }
+                        });
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      child: Text(
+                        _expandedFolders.length == groups.length ? 'Thu gọn' : 'Mở tất cả',
+                        style: GoogleFonts.inter(
+                          color: AppColors.gold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Ô tìm kiếm chương chuẩn Pill
+          Container(
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: TextField(
+              onChanged: (val) => setState(() => _chapterSearch = val.trim()),
+              style: GoogleFonts.inter(fontSize: 12.5),
+              decoration: const InputDecoration(
+                hintText: 'Nhập số hoặc tên chương để tìm...',
+                hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5),
+                prefixIcon: Icon(Icons.search, size: 18, color: Color(0xFF94A3B8)),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Hiển thị danh sách nhóm chương
+          if (groups.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'Không tìm thấy chương phù hợp',
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: groups.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 10),
+              itemBuilder: (context, gIndex) {
+                final group = groups[gIndex];
+
+                if (!group.isFolder) {
+                  return _buildChapterListCards(group.chapters);
+                }
+
+                final isExpanded = _expandedFolders.contains(group.partName);
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: [
+                      // Folder Header
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            if (isExpanded) {
+                              _expandedFolders.remove(group.partName);
+                            } else {
+                              _expandedFolders.add(group.partName);
+                            }
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isExpanded ? Icons.folder_open : Icons.folder,
+                                color: AppColors.gold,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  group.partName,
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13.5,
+                                    color: const Color(0xFF1E293B),
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                ),
+                                child: Text(
+                                  '${group.chapters.length} c.',
+                                  style: GoogleFonts.inter(
+                                    color: const Color(0xFF64748B),
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                isExpanded
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                color: const Color(0xFF94A3B8),
+                                size: 18,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (isExpanded) ...[
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: _buildChapterListCards(group.chapters),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Từng Chapter Card chuẩn ChapterCard trong StoryDetailPage.tsx
+  Widget _buildChapterListCards(List<ChapterListItem> chapters) {
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: chapters.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemBuilder: (context, cIndex) {
+        final chapter = chapters[cIndex];
+
+        return InkWell(
+          onTap: () => _openChapter(chapter.id),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x04000000),
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Chương ${chapter.chapterNumber}',
+                        style: GoogleFonts.spaceMono(
+                          color: AppColors.gold,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        chapter.title,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF0F172A),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (chapter.requiresAccess)
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFBEB), // Amber-50
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFFCD34D)), // Amber-300
+                    ),
+                    child: const Icon(
+                      Icons.lock,
+                      size: 14,
+                      color: Color(0xFFD97706), // Amber-600
+                    ),
+                  )
+                else
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: Color(0xFFCBD5E1),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

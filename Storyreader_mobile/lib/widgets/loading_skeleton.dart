@@ -106,3 +106,86 @@ class StoryGridSkeleton extends StatelessWidget {
     );
   }
 }
+
+class StoryDetailSkeleton extends StatelessWidget {
+  const StoryDetailSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SkeletonPulse(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 120,
+                  height: 175,
+                  decoration: BoxDecoration(
+                    color: AppColors.inkCard,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 20,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          color: AppColors.inkCard,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        height: 24,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: AppColors.inkCard,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 16,
+                        width: 120,
+                        decoration: BoxDecoration(
+                          color: AppColors.inkCard,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Container(
+              height: 48,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.inkCard,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              height: 120,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.inkCard,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -5,39 +5,70 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../data/api/chapter_api.dart';
-import '../../data/models/chapter_model.dart';
+import '../../core/utils/chapter_sequence.dart';
+import '../../data/local/reading_cache_service.dart';
 import '../../providers/reader_provider.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/story_provider.dart';
+import 'chapter_discussions_sheet.dart';
 import 'chapter_navigation.dart';
+import 'comic_reader_view.dart';
+import 'novel_reader_view.dart';
+import 'reader_settings_sheet.dart';
 
-final chapterContentFamily = FutureProvider.autoDispose
-    .family<ChapterContent, String>((ref, id) async {
-      ref.watch(authProvider.select((auth) => auth.accessToken));
-      return await ChapterApi.getChapterContent(id);
-    });
-
-class ChapterReadScreen extends ConsumerWidget {
+class ChapterReadScreen extends ConsumerStatefulWidget {
   final String chapterId;
   final String? storyId;
 
-  const ChapterReadScreen({super.key, required this.chapterId, this.storyId});
+  const ChapterReadScreen({
+    super.key,
+    required this.chapterId,
+    this.storyId,
+  });
+
+  @override
+  ConsumerState<ChapterReadScreen> createState() => _ChapterReadScreenState();
+}
+
+class _ChapterReadScreenState extends ConsumerState<ChapterReadScreen> {
+  bool _showControls = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Đồng bộ các tiến độ đọc offline còn tồn đọng khi vào màn hình đọc
+    ReadingCacheService.syncPendingProgress();
+  }
+
+  void _toggleControls() {
+    setState(() => _showControls = !_showControls);
+  }
 
   void _back(BuildContext context) {
     if (context.canPop()) {
       context.pop();
     } else {
-      context.go(storyId == null ? '/' : '/stories/$storyId');
+      context.go(widget.storyId == null ? '/' : '/stories/${widget.storyId}');
+    }
+  }
+
+  void _goToNextChapter(ChapterSequence? sequence) {
+    final next = sequence?.next;
+    if (next != null) {
+      context.replace(
+        Uri(
+          path: '/chapters/${next.id}',
+          queryParameters: widget.storyId != null ? {'storyId': widget.storyId} : null,
+        ).toString(),
+      );
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final chapterAsync = ref.watch(chapterContentFamily(chapterId));
+  Widget build(BuildContext context) {
+    final chapterAsync = ref.watch(chapterContentFamily(widget.chapterId));
     final theme = ref.watch(readerThemeProvider);
-    final fontSize = ref.watch(readerFontSizeProvider);
 
-    // Color configs
+    // Bảng màu cho 3 theme đọc
     Color bgColor;
     Color textColor;
     Color borderColor;
@@ -56,504 +87,302 @@ class ChapterReadScreen extends ConsumerWidget {
       borderColor = AppColors.readerDarkBorder;
     }
 
+    // Sequence của các chương trong truyện để chuyển tiếp
+    ChapterSequence? sequence;
+    if (widget.storyId != null) {
+      final storyDetail = ref.watch(storyDetailFamily(widget.storyId!)).value;
+      if (storyDetail != null) {
+        sequence = ChapterSequence(storyDetail.chapters, widget.chapterId);
+      }
+    }
+
     return Scaffold(
       backgroundColor: bgColor,
-      bottomNavigationBar: storyId == null
-          ? null
-          : ChapterNavigation(storyId: storyId!, chapterId: chapterId),
       body: SafeArea(
-        child: chapterAsync.when(
-          data: (chapter) {
-            final paragraphs = chapter.content.split('\n');
-
-            return Stack(
-              children: [
-                // Scrollable content
-                SingleChildScrollView(
-                  key: ValueKey(chapterId),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 80,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Header
-                      Column(
-                        children: [
-                          Text(
-                            'CHƯƠNG ${chapter.chapterNumber}',
-                            style: GoogleFonts.inter(
-                              color: AppColors.gold,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 2.0,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            chapter.title,
-                            style: GoogleFonts.notoSerif(
-                              color: textColor,
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                              height: 1.3,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 24),
-                          Divider(color: borderColor),
-                        ],
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Chapter body
-                      if (chapter.isComic)
-                        Column(
-                          children: chapter.imageUrls.map((url) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  url,
-                                  fit: BoxFit.fitWidth,
-                                  width: double.infinity,
-                                  loadingBuilder: (context, child, progress) {
-                                    if (progress == null) return child;
-                                    return Container(
-                                      height: 350,
-                                      color: Colors.black12,
-                                      alignment: Alignment.center,
-                                      child: CircularProgressIndicator(
-                                        color: AppColors.gold,
-                                        value: progress.expectedTotalBytes != null
-                                            ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
-                                            : null,
-                                      ),
-                                    );
-                                  },
-                                  errorBuilder: (context, error, stackTrace) => Container(
-                                    height: 200,
-                                    color: Colors.black12,
-                                    alignment: Alignment.center,
-                                    child: const Icon(Icons.broken_image, color: Colors.grey, size: 40),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        )
-                      else
-                        ...paragraphs.map((p) {
-                          final trimmed = p.trim();
-                          if (trimmed.isEmpty) {
-                            return const SizedBox(height: 16);
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 24),
-                            child: Text(
-                              '        $trimmed', // 32pt indent imitation
-                              style: GoogleFonts.notoSerif(
-                                color: textColor.withValues(alpha: 0.9),
-                                fontSize: fontSize,
-                                height: 1.8,
-                              ),
-                              textAlign: TextAlign.justify,
-                            ),
-                          );
-                        }),
-
-                      const SizedBox(height: 48),
-
-                      // Footer 3 dots
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.gold.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.gold.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.gold.withValues(alpha: 0.5),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 60),
-                    ],
-                  ),
-                ),
-
-                // Floating Toolbar
-                Positioned(
-                  top: 12,
-                  right: 16,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: theme == 'dark'
-                          ? AppColors.inkCard.withValues(alpha: 0.9)
-                          : Colors.white.withValues(alpha: 0.9),
-                      border: Border.all(color: borderColor),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Back button
-                        IconButton(
-                          onPressed: () => _back(context),
-                          icon: Icon(
-                            Icons.arrow_back,
-                            size: 18,
-                            color: textColor,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
-                          ),
-                        ),
-                        Container(width: 1, height: 18, color: borderColor),
-                        const SizedBox(width: 6),
-
-                        // Light theme toggle
-                        _buildThemeButton(
-                          ref: ref,
-                          currentTheme: theme,
-                          targetTheme: 'light',
-                          btnColor: AppColors.readerLightBg,
-                          borderColor: AppColors.readerLightBorder,
-                        ),
-                        const SizedBox(width: 4),
-
-                        // Sepia theme toggle
-                        _buildThemeButton(
-                          ref: ref,
-                          currentTheme: theme,
-                          targetTheme: 'sepia',
-                          btnColor: AppColors.readerSepiaBg,
-                          borderColor: AppColors.readerSepiaBorder,
-                        ),
-                        const SizedBox(width: 4),
-
-                        // Dark theme toggle
-                        _buildThemeButton(
-                          ref: ref,
-                          currentTheme: theme,
-                          targetTheme: 'dark',
-                          btnColor: AppColors.inkBg,
-                          borderColor: AppColors.inkBorder,
-                        ),
-
-                        const SizedBox(width: 6),
-                        Container(width: 1, height: 18, color: borderColor),
-                        const SizedBox(width: 6),
-
-                        // A- font size
-                        GestureDetector(
-                          onTap: () => ref
-                              .read(readerFontSizeProvider.notifier)
-                              .decrease(),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 4,
-                            ),
-                            child: Text(
-                              'A-',
-                              style: GoogleFonts.notoSerif(
-                                color: textColor,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            '${fontSize.toInt()}',
-                            style: GoogleFonts.robotoMono(
-                              color: textColor.withValues(alpha: 0.6),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        // A+ font size
-                        GestureDetector(
-                          onTap: () => ref
-                              .read(readerFontSizeProvider.notifier)
-                              .increase(),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 4,
-                            ),
-                            child: Text(
-                              'A+',
-                              style: GoogleFonts.notoSerif(
-                                color: textColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-          loading: () => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    height: 24,
-                    width: 180,
-                    decoration: BoxDecoration(
-                      color: AppColors.inkCard,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    height: 14,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppColors.inkCard,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    height: 14,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppColors.inkCard,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          error: (err, _) {
-            final is403 =
-                err is DioException && err.response?.statusCode == 403;
-
-            if (is403) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.gold.withValues(alpha: 0.1),
-                          border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.lock,
-                          size: 36,
-                          color: AppColors.gold,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Chương này đã bị khóa',
-                        style: GoogleFonts.notoSerif(
-                          color: textColor,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Bạn cần phải mua truyện hoặc đăng ký gói thành viên để tiếp tục đọc chương này.',
-                        style: GoogleFonts.inter(
-                          color: textColor.withValues(alpha: 0.7),
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 28),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () => _back(context),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: borderColor),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
-                            child: Text(
-                              '← Quay lại',
-                              style: GoogleFonts.inter(
-                                color: textColor,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => context.push('/pricing'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.gold,
-                              foregroundColor: AppColors.inkBg,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
-                              ),
-                              elevation: 2,
-                            ),
-                            child: Text(
-                              'Xem Gói VIP',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          OutlinedButton(
-                            onPressed: () => context.push('/login'),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.gold),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
-                            child: Text(
-                              'Đăng nhập',
-                              style: GoogleFonts.inter(
-                                color: AppColors.gold,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
+        child: Stack(
+          children: [
+            // Nội dung đọc chính
+            chapterAsync.when(
+              loading: () => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'Không thể tải nội dung chương. Vui lòng thử lại sau.',
-                      style: GoogleFonts.inter(color: AppColors.red400),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () => _back(context),
-                      child: Text(
-                        'Quay lại',
-                        style: GoogleFonts.inter(color: AppColors.gold),
+                    const SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(
+                        color: AppColors.gold,
+                        strokeWidth: 2.5,
                       ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Đang nạp nội dung chương...',
+                      style: GoogleFonts.inter(color: AppColors.inkMuted, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-            );
-          },
+              error: (err, _) => _buildErrorView(context, err, textColor, borderColor),
+              data: (chapter) {
+                // Tự động lưu cache nội dung chương vào local storage
+                ReadingCacheService.saveChapterContent(chapter);
+
+                final isComic = chapter.isComic || chapter.imageUrls.isNotEmpty;
+
+                if (isComic) {
+                  return ComicReaderView(
+                    chapter: chapter,
+                    storyId: widget.storyId,
+                    onToggleControls: _toggleControls,
+                    onNextChapter: sequence?.next != null
+                        ? () => _goToNextChapter(sequence)
+                        : null,
+                  );
+                }
+
+                return NovelReaderView(
+                  chapter: chapter,
+                  storyId: widget.storyId,
+                  onToggleControls: _toggleControls,
+                  onNextChapter: sequence?.next != null
+                      ? () => _goToNextChapter(sequence)
+                      : null,
+                  textColor: textColor,
+                  borderColor: borderColor,
+                );
+              },
+            ),
+
+            // Top Floating Toolbar (Ẩn hiện mượt mà khi chạm)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              top: _showControls ? 12 : -70,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: (theme == 'dark' ? AppColors.inkCard : Colors.white).withValues(alpha: 0.95),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: borderColor),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // Nút Quay lại
+                    IconButton(
+                      onPressed: () => _back(context),
+                      icon: const Icon(Icons.arrow_back, size: 20),
+                      color: textColor,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Tiêu đề chương rút gọn
+                    Expanded(
+                      child: chapterAsync.maybeWhen(
+                        data: (chap) => Text(
+                          'Chương ${chap.chapterNumber}: ${chap.title}',
+                          style: GoogleFonts.inter(
+                            color: textColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        orElse: () => const SizedBox.shrink(),
+                      ),
+                    ),
+
+                    // Nút Thảo luận
+                    IconButton(
+                      onPressed: () {
+                        final title = chapterAsync.value?.title ?? 'Chương hiện tại';
+                        ChapterDiscussionsSheet.show(
+                          context,
+                          chapterId: widget.chapterId,
+                          chapterTitle: title,
+                        );
+                      },
+                      icon: const Icon(Icons.chat_bubble_outline, size: 20),
+                      color: textColor,
+                      tooltip: 'Bình luận chương',
+                    ),
+
+                    // Nút Cài đặt đọc sách
+                    IconButton(
+                      onPressed: () => ReaderSettingsSheet.show(context),
+                      icon: const Icon(Icons.tune, size: 20),
+                      color: textColor,
+                      tooltip: 'Cài đặt hiển thị',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Bottom Navigation Toolbar (Ẩn hiện mượt mà)
+            if (widget.storyId != null)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                bottom: _showControls ? 0 : -80,
+                left: 0,
+                right: 0,
+                child: ChapterNavigation(
+                  storyId: widget.storyId!,
+                  chapterId: widget.chapterId,
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildThemeButton({
-    required WidgetRef ref,
-    required String currentTheme,
-    required String targetTheme,
-    required Color btnColor,
-    required Color borderColor,
-  }) {
-    final isSelected = currentTheme == targetTheme;
+  Widget _buildErrorView(
+    BuildContext context,
+    Object err,
+    Color textColor,
+    Color borderColor,
+  ) {
+    final is403 = err is DioException && err.response?.statusCode == 403;
 
-    return GestureDetector(
-      onTap: () => ref.read(readerThemeProvider.notifier).setTheme(targetTheme),
-      child: Container(
-        width: 22,
-        height: 22,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: btnColor,
-          border: Border.all(
-            color: isSelected ? AppColors.gold : borderColor,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.gold.withValues(alpha: 0.4),
-                    blurRadius: 4,
+    if (is403) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.gold.withValues(alpha: 0.1),
+                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(Icons.lock, size: 36, color: AppColors.gold),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Chương này đã bị khóa',
+                style: GoogleFonts.lora(
+                  color: textColor,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Bạn cần phải mua truyện hoặc đăng ký gói thành viên VIP để tiếp tục đọc chương này.',
+                style: GoogleFonts.inter(
+                  color: textColor.withValues(alpha: 0.7),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 28),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => _back(context),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: borderColor),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    child: Text(
+                      '← Quay lại',
+                      style: GoogleFonts.inter(color: textColor, fontSize: 13),
+                    ),
                   ),
-                ]
-              : null,
+                  ElevatedButton(
+                    onPressed: () => context.push('/pricing'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.gold,
+                      foregroundColor: AppColors.inkBg,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
+                    child: Text(
+                      'Xem Gói VIP',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => context.push('/login'),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.gold),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    child: Text(
+                      'Đăng nhập',
+                      style: GoogleFonts.inter(
+                        color: AppColors.gold,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 44, color: AppColors.red400),
+            const SizedBox(height: 12),
+            Text(
+              'Không thể tải nội dung chương.\nVui lòng kiểm tra kết nối mạng và thử lại.',
+              style: GoogleFonts.inter(color: AppColors.red400, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton(
+                  onPressed: () => _back(context),
+                  child: const Text('Quay lại'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () => ref.invalidate(chapterContentFamily(widget.chapterId)),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Thử lại'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: AppColors.inkBg,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

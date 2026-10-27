@@ -1,43 +1,52 @@
-import '../../core/constants/api_constants.dart';
-import '../../core/network/dio_client.dart';
 import '../models/story_model.dart';
+import '../repositories/story_repository.dart';
 
 class StoryApi {
-  static Future<List<StoryListItem>> searchStories({String? keyword}) async {
-    final res = await DioClient.instance.get(
-      ApiConstants.stories,
-      queryParameters: keyword != null && keyword.isNotEmpty ? {'keyword': keyword} : null,
+  static final _repository = StoryRepository();
+
+  static Future<List<StoryListItem>> searchStories({
+    String? keyword,
+    String? genreId,
+    int page = 1,
+    int pageSize = 100,
+  }) async {
+    return await _repository.getStories(
+      keyword: keyword,
+      genreId: genreId,
+      page: page,
+      pageSize: pageSize,
     );
-    final data = res.data;
-    if (data is List) {
-      return data
-          .map((item) => StoryListItem.fromJson(item as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
   }
 
   static Future<StoryDetail> getStoryDetail(String id) async {
-    final res = await DioClient.instance.get(ApiConstants.storyDetail(id));
-    return StoryDetail.fromJson(res.data as Map<String, dynamic>);
+    return await _repository.getStoryDetail(id);
   }
 
   static Future<String> createStory(CreateStoryInput input) async {
-    final res = await DioClient.instance.post(
-      ApiConstants.stories,
-      data: input.toJson(),
-    );
-    final data = res.data;
-    if (data is Map && data['id'] != null) {
-      return data['id'].toString();
-    }
-    return '';
+    return await _repository.createStory(input);
   }
 
   static Future<void> addChapter(String storyId, CreateChapterInput input) async {
-    await DioClient.instance.post(
-      ApiConstants.storyChapters(storyId),
-      data: input.toJson(),
-    );
+    await _repository.addChapter(storyId, input);
+  }
+
+  static Future<bool> toggleFollow(String id) async {
+    return await _repository.toggleFollow(id);
+  }
+
+  static Future<bool> getIsFollowing(String id) async {
+    return await _repository.getIsFollowing(id);
+  }
+
+  static Future<String> uploadCover(String filePath) async {
+    return await _repository.uploadCover(filePath);
+  }
+
+  static Future<void> updateStory(String id, UpdateStoryInput input) async {
+    await _repository.updateStory(id, input);
+  }
+
+  static Future<void> deleteStory(String id) async {
+    await _repository.deleteStory(id);
   }
 }
