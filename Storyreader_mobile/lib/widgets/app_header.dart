@@ -597,245 +597,255 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
+    final topPadding = MediaQuery.of(context).padding.top;
 
     return Container(
       color: Colors.white,
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // ==========================================
-            // TẦNG 1 (WHITE TOP BAR) - CAO 56PX
-            // ==========================================
+      width: double.infinity,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Phần bù status bar nếu có
+          if (topPadding > 0)
             Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(
-                    color: AppColors.inkBorder,
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Logo chuẩn Web StoryReader
-                  GestureDetector(
-                    onTap: () => context.go('/'),
-                    child: Row(
-                      children: [
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: 'Story',
-                                style: GoogleFonts.lora(
-                                  color: const Color(0xFF0F172A),
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              TextSpan(
-                                text: 'Reader',
-                                style: GoogleFonts.lora(
-                                  color: AppColors.brandOrange,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'ONLINE',
-                            style: GoogleFonts.inter(
-                              color: AppColors.inkMuted,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Nút phải: Đăng nhập hoặc Chuông Thông Báo + Avatar + Hamburger
-                  Row(
-                    children: [
-                      if (!auth.isAuthenticated) ...[
-                        ElevatedButton(
-                          onPressed: () => context.push('/login'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.brandBlue,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 7,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            'Đăng nhập',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ] else ...[
-                        // Chuông thông báo
-                        const NotificationBell(),
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: () => context.push('/profile'),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: AppColors.avatarGradient,
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              (auth.displayName?.isNotEmpty == true
-                                      ? auth.displayName![0]
-                                      : 'U')
-                                  .toUpperCase(),
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-
-                      const SizedBox(width: 6),
-                      IconButton(
-                        onPressed: _toggleMenu,
-                        icon: Icon(
-                          _menuOpen ? Icons.close : Icons.menu,
-                          color: const Color(0xFF334155),
-                          size: 24,
-                        ),
-                        visualDensity: VisualDensity.compact,
-                        splashRadius: 20,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              height: topPadding,
+              width: double.infinity,
+              color: Colors.white,
             ),
 
-            // ==========================================
-            // TẦNG 2 (THANH CAM TRUYENQQ SIGNATURE) - CAO 40PX
-            // ==========================================
-            Container(
-              height: 40,
-              decoration: const BoxDecoration(
-                color: AppColors.brandOrange,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
+          // ==========================================
+          // TẦNG 1 (WHITE TOP BAR) - CAO 56PX
+          // ==========================================
+          Container(
+            height: 56,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                bottom: BorderSide(
+                  color: AppColors.inkBorder,
+                  width: 1,
+                ),
               ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: [
-                    _buildNavButton(
-                      label: 'Trang Chủ',
-                      onTap: () => context.go('/'),
-                    ),
-                    _buildNavButton(
-                      label: 'Thể Loại',
-                      icon: Icons.keyboard_arrow_down,
-                      onTap: _showGenreBottomSheet,
-                    ),
-                    _buildNavButton(
-                      label: 'Xếp Hạng',
-                      icon: Icons.trending_up,
-                      onTap: () => context.push('/rankings'),
-                    ),
-                    _buildNavButton(
-                      label: 'Tủ Sách',
-                      onTap: () {
-                        if (auth.isAuthenticated) {
-                          context.push('/library');
-                        } else {
-                          context.push('/login');
-                        }
-                      },
-                    ),
-                    // Nút VIP nổi bật viền trắng mờ
-                    GestureDetector(
-                      onTap: () => context.push('/pricing'),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.22),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.45),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Logo chuẩn Web StoryReader
+                GestureDetector(
+                  onTap: () => context.go('/'),
+                  child: Row(
+                    children: [
+                      RichText(
+                        text: TextSpan(
                           children: [
-                            const Icon(
-                              Icons.workspace_premium,
-                              color: Color(0xFFFDE68A),
-                              size: 14,
+                            TextSpan(
+                              text: 'Story',
+                              style: GoogleFonts.lora(
+                                color: const Color(0xFF0F172A),
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.5,
+                              ),
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Gói VIP',
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                            TextSpan(
+                              text: 'Reader',
+                              style: GoogleFonts.lora(
+                                color: AppColors.brandOrange,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.5,
                               ),
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'ONLINE',
+                          style: GoogleFonts.inter(
+                            color: AppColors.inkMuted,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Nút phải: Đăng nhập hoặc Chuông Thông Báo + Avatar + Hamburger
+                Row(
+                  children: [
+                    if (!auth.isAuthenticated) ...[
+                      ElevatedButton(
+                        onPressed: () => context.push('/login'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.brandBlue,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          'Đăng nhập',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      // Chuông thông báo
+                      const NotificationBell(),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () => context.push('/profile'),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: AppColors.avatarGradient,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            (auth.displayName?.isNotEmpty == true
+                                    ? auth.displayName![0]
+                                    : 'U')
+                                .toUpperCase(),
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(width: 6),
+                    IconButton(
+                      onPressed: _toggleMenu,
+                      icon: Icon(
+                        _menuOpen ? Icons.close : Icons.menu,
+                        color: const Color(0xFF334155),
+                        size: 24,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      splashRadius: 20,
                     ),
                   ],
                 ),
+              ],
+            ),
+          ),
+
+          // ==========================================
+          // TẦNG 2 (THANH CAM TRUYENQQ SIGNATURE) - CAO 40PX TRÀN VIỀN 100%
+          // ==========================================
+          Container(
+            height: 40,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: AppColors.brandOrange,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: [
+                  _buildNavButton(
+                    label: 'Trang Chủ',
+                    onTap: () => context.go('/'),
+                  ),
+                  _buildNavButton(
+                    label: 'Thể Loại',
+                    icon: Icons.keyboard_arrow_down,
+                    onTap: _showGenreBottomSheet,
+                  ),
+                  _buildNavButton(
+                    label: 'Xếp Hạng',
+                    icon: Icons.trending_up,
+                    onTap: () => context.push('/rankings'),
+                  ),
+                  _buildNavButton(
+                    label: 'Tủ Sách',
+                    onTap: () {
+                      if (auth.isAuthenticated) {
+                        context.push('/library');
+                      } else {
+                        context.push('/login');
+                      }
+                    },
+                  ),
+                  // Nút VIP nổi bật viền trắng mờ
+                  GestureDetector(
+                    onTap: () => context.push('/pricing'),
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.45),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.workspace_premium,
+                            color: Color(0xFFFDE68A),
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Gói VIP',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

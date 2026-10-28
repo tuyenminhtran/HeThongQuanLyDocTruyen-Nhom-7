@@ -1,9 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
+﻿import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/chapter_grouping.dart';
 import '../../data/local/story_review_service.dart';
@@ -16,40 +15,33 @@ import '../../providers/subscription_provider.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/loading_skeleton.dart';
 import '../../widgets/request_error.dart';
-
+import '../../widgets/book_cover_fallback.dart';
 class StoryDetailScreen extends ConsumerStatefulWidget {
   final String storyId;
-
   const StoryDetailScreen({super.key, required this.storyId});
-
   @override
   ConsumerState<StoryDetailScreen> createState() => _StoryDetailScreenState();
 }
-
 class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
   String _chapterSearch = '';
   bool _isAscending = true;
   final Set<String> _expandedFolders = {};
-
   // Review & Rating state
   List<StoryReview> _reviews = [];
   int _selectedRating = 5;
   final TextEditingController _reviewController = TextEditingController();
   bool _isSubmittingReview = false;
   double _averageRating = 5.0;
-
   @override
   void initState() {
     super.initState();
     _loadReviews();
   }
-
   @override
   void dispose() {
     _reviewController.dispose();
     super.dispose();
   }
-
   Future<void> _loadReviews() async {
     final list = await StoryReviewService.getReviews(widget.storyId);
     final avg = await StoryReviewService.getAverageRating(widget.storyId);
@@ -60,7 +52,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       });
     }
   }
-
   Future<void> _openChapter(String chapterId) async {
     await context.push(
       Uri(
@@ -70,7 +61,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
     );
     if (mounted) ref.invalidate(readingHistoryProvider);
   }
-
   Future<void> _toggleFollow() async {
     final auth = ref.read(authProvider);
     if (!auth.isAuthenticated) {
@@ -80,13 +70,11 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       context.push('/login');
       return;
     }
-
     try {
       final repo = ref.read(storyRepositoryProvider);
       final isFollowing = await repo.toggleFollow(widget.storyId);
       ref.invalidate(isFollowingProvider(widget.storyId));
       ref.invalidate(bookmarksProvider);
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -107,7 +95,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       }
     }
   }
-
   Future<void> _submitReview(StoryDetail story) async {
     final auth = ref.read(authProvider);
     if (!auth.isAuthenticated) {
@@ -117,7 +104,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       context.push('/login');
       return;
     }
-
     final comment = _reviewController.text.trim();
     if (comment.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -125,7 +111,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       );
       return;
     }
-
     setState(() => _isSubmittingReview = true);
     try {
       final newRev = StoryReview(
@@ -137,10 +122,8 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
         content: comment,
         createdAt: DateTime.now(),
       );
-
       final updated = await StoryReviewService.addReview(widget.storyId, newRev);
       final avg = await StoryReviewService.getAverageRating(widget.storyId);
-
       // Nếu truyện có chapter, cũng đồng thời gửi discussion lên API
       if (story.chapters.isNotEmpty) {
         try {
@@ -151,7 +134,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
           );
         } catch (_) {}
       }
-
       if (mounted) {
         _reviewController.clear();
         setState(() {
@@ -176,7 +158,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       if (mounted) setState(() => _isSubmittingReview = false);
     }
   }
-
   Future<void> _deleteReview(String reviewId) async {
     final updated = await StoryReviewService.deleteReview(widget.storyId, reviewId);
     final avg = await StoryReviewService.getAverageRating(widget.storyId);
@@ -190,7 +171,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       );
     }
   }
-
   void _showBuyStoryDialog(StoryDetail story) {
     final auth = ref.read(authProvider);
     if (!auth.isAuthenticated) {
@@ -200,12 +180,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       context.push('/login');
       return;
     }
-
     showDialog(
       context: context,
       builder: (ctx) {
         bool isSimulating = false;
-
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
             return AlertDialog(
@@ -301,7 +279,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                           try {
                             final subRepo = ref.read(subscriptionRepositoryProvider);
                             final initRes = await subRepo.buyStory(story.id);
-
                             String refCode = initRes.transactionId;
                             try {
                               final uri = Uri.parse(initRes.paymentUrl);
@@ -310,11 +287,9 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                                 refCode = qRef;
                               }
                             } catch (_) {}
-
                             await subRepo.simulatePaymentCallback(refCode, success: true);
                             ref.invalidate(storyDetailFamily(story.id));
                             ref.invalidate(purchasedStoriesProvider);
-
                             if (!mounted) return;
                             if (ctx.mounted) Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -350,12 +325,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       },
     );
   }
-
   @override
   Widget build(BuildContext context) {
     final storyAsync = ref.watch(storyDetailFamily(widget.storyId));
     final isFollowingAsync = ref.watch(isFollowingProvider(widget.storyId));
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9), // Slate sáng chuẩn Web
       appBar: const AppHeader(),
@@ -369,7 +342,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
         ),
         data: (story) {
           final isFollowing = isFollowingAsync.value ?? false;
-
           // Lọc danh sách chương theo từ khóa tìm kiếm
           var filteredChapters = story.chapters.where((c) {
             if (_chapterSearch.isEmpty) return true;
@@ -378,24 +350,19 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                 c.chapterNumber.toString().contains(query) ||
                 (c.partName != null && c.partName!.toLowerCase().contains(query));
           }).toList();
-
           // Sắp xếp thứ tự chương
           filteredChapters.sort((a, b) => _isAscending
               ? a.chapterNumber.compareTo(b.chapterNumber)
               : b.chapterNumber.compareTo(a.chapterNumber));
-
           // Nhóm chương thành các Phần / Tập (Folder cha - con)
           final chapterGroups = groupChaptersByPart(filteredChapters);
-
           // Mặc định mở rộng tất cả các folder khi tải lần đầu
           if (_expandedFolders.isEmpty && chapterGroups.isNotEmpty) {
             _expandedFolders.addAll(chapterGroups.map((g) => g.partName));
           }
-
           final coverUrl = story.fullCoverUrl.isNotEmpty
               ? story.fullCoverUrl
               : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80';
-
           return RefreshIndicator(
             color: AppColors.gold,
             onRefresh: () async {
@@ -421,7 +388,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                       ),
                     ),
                   ),
-
                   // Nội dung chính
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
@@ -449,7 +415,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       ),
     );
   }
-
   Widget _buildHeaderInfo(StoryDetail story, String coverUrl) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,14 +440,10 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
             imageUrl: coverUrl,
             fit: BoxFit.cover,
             placeholder: (context, url) => Container(color: const Color(0xFFF1F5F9)),
-            errorWidget: (context, url, error) => Container(
-              color: const Color(0xFFF1F5F9),
-              child: const Icon(Icons.book, size: 36, color: Color(0xFF94A3B8)),
-            ),
+            errorWidget: (context, url, error) => BookCoverFallback(title: story.title, iconSize: 36),
           ),
         ),
         const SizedBox(width: 14),
-
         // Cột thông tin chi tiết
         Expanded(
           child: Column(
@@ -546,7 +507,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-
               // Tiêu đề truyện: Font Lora đậm to chuẩn Web
               Text(
                 story.title,
@@ -560,7 +520,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 6),
-
               // Tác giả với icon bút cam
               Row(
                 children: [
@@ -585,7 +544,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                 ],
               ),
               const SizedBox(height: 4),
-
               // Số lượt đọc, số chương & Đánh giá sao
               Row(
                 children: [
@@ -614,7 +572,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                 ],
               ),
               const SizedBox(height: 4),
-
               // Điểm đánh giá trung bình
               Row(
                 children: [
@@ -639,7 +596,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-
               // Thể loại Chips cam nhạt chuẩn Web
               if (story.genres.isNotEmpty)
                 Wrap(
@@ -670,11 +626,9 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       ],
     );
   }
-
   Widget _buildActionButtons(StoryDetail story, bool isFollowing) {
     final firstChapter = story.chapters.firstOrNull;
     final lastChapter = story.chapters.lastOrNull;
-
     return Column(
       children: [
         Row(
@@ -704,7 +658,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
               ),
             ),
             const SizedBox(width: 8),
-
             // Nút "Đọc mới nhất"
             Expanded(
               flex: 3,
@@ -732,7 +685,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
           ],
         ),
         const SizedBox(height: 8),
-
         Row(
           children: [
             // Nút "Theo dõi"
@@ -764,7 +716,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                 ),
               ),
             ),
-
             // Nút "Mua truyện" (nếu có phí)
             if (story.accessPolicy > 0) ...[
               const SizedBox(width: 8),
@@ -796,7 +747,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       ],
     );
   }
-
   Widget _buildDescription(StoryDetail story) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -849,7 +799,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       ),
     );
   }
-
   Widget _buildChapterSection(StoryDetail story, List<ChapterGroup> chapterGroups) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -903,7 +852,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
             ],
           ),
           const SizedBox(height: 10),
-
           // Search chương
           Container(
             height: 38,
@@ -925,7 +873,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
             ),
           ),
           const SizedBox(height: 14),
-
           // Danh sách các tập/phần
           if (chapterGroups.isEmpty)
             Padding(
@@ -946,11 +893,9 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
               itemBuilder: (context, gIndex) {
                 final group = chapterGroups[gIndex];
                 final isExpanded = _expandedFolders.contains(group.partName);
-
                 if (!group.isFolder) {
                   return _buildChapterListCards(group.chapters);
                 }
-
                 return Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
@@ -1024,7 +969,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       ),
     );
   }
-
   Widget _buildChapterListCards(List<ChapterListItem> chapters) {
     return ListView.separated(
       shrinkWrap: true,
@@ -1033,7 +977,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, cIndex) {
         final chapter = chapters[cIndex];
-
         return InkWell(
           onTap: () => _openChapter(chapter.id),
           borderRadius: BorderRadius.circular(10),
@@ -1108,13 +1051,11 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
       },
     );
   }
-
   // ============================================================
   // KHU VỰC ĐÁNH GIÁ & BÌNH LUẬN TRUYỆN (PARITY 100% VỚI WEB)
   // ============================================================
   Widget _buildReviewsSection(StoryDetail story) {
     final auth = ref.watch(authProvider);
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1169,7 +1110,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
             ],
           ),
           const Divider(height: 20, color: Color(0xFFF1F5F9)),
-
           // Form Đánh Giá
           Container(
             padding: const EdgeInsets.all(12),
@@ -1251,7 +1191,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
             ),
           ),
           const SizedBox(height: 16),
-
           // Danh Sách Đánh Giá
           if (_reviews.isEmpty)
             Padding(
@@ -1277,7 +1216,6 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                 final canDelete = auth.isAdmin ||
                     (auth.email != null && auth.email!.isNotEmpty && rev.userId == auth.email) ||
                     rev.userName == auth.displayName;
-
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
