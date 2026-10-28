@@ -9,6 +9,7 @@ abstract class ISubscriptionRepository {
   Future<List<MyPurchaseItem>> getMyPurchases();
   Future<InitiatePaymentResult> buyStory(String storyId);
   Future<InitiatePaymentResult> buySubscription(String planId);
+  Future<void> simulatePaymentCallback(String providerRef, {bool success = true});
 }
 
 class SubscriptionRepository implements ISubscriptionRepository {
@@ -79,6 +80,19 @@ class SubscriptionRepository implements ISubscriptionRepository {
       final res = await _dio.post(ApiConstants.buySubscription(planId));
       final data = Map<String, dynamic>.from(res.data as Map);
       return InitiatePaymentResult.fromJson(data);
+    });
+  }
+
+  @override
+  Future<void> simulatePaymentCallback(String providerRef, {bool success = true}) async {
+    return DioClient.safeRequest(() async {
+      await _dio.post(
+        ApiConstants.paymentCallback,
+        queryParameters: {
+          'providerRef': providerRef,
+          'success': success,
+        },
+      );
     });
   }
 }

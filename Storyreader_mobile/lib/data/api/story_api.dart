@@ -9,12 +9,14 @@ class StoryApi {
     String? genreId,
     int page = 1,
     int pageSize = 100,
+    String? sortBy,
   }) async {
     return await _repository.getStories(
       keyword: keyword,
       genreId: genreId,
       page: page,
       pageSize: pageSize,
+      sortBy: sortBy,
     );
   }
 

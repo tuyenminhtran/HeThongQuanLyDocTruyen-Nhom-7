@@ -9,6 +9,7 @@ abstract class IStoryRepository {
     String? genreId,
     int page = 1,
     int pageSize = 100,
+    String? sortBy,
     CancelToken? cancelToken,
   });
 
@@ -38,6 +39,7 @@ class StoryRepository implements IStoryRepository {
     String? genreId,
     int page = 1,
     int pageSize = 100,
+    String? sortBy,
     CancelToken? cancelToken,
   }) async {
     return DioClient.safeRequest(() async {
@@ -50,6 +52,9 @@ class StoryRepository implements IStoryRepository {
       }
       if (genreId != null && genreId.isNotEmpty) {
         query['genreId'] = genreId;
+      }
+      if (sortBy != null && sortBy.trim().isNotEmpty) {
+        query['sortBy'] = sortBy.trim();
       }
 
       final res = await _dio.get(
