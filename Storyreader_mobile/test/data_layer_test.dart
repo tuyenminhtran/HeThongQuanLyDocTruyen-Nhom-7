@@ -4,11 +4,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storyreader_mobile/core/network/api_error.dart';
 import 'package:storyreader_mobile/core/utils/chapter_grouping.dart';
 import 'package:storyreader_mobile/data/local/reading_cache_service.dart';
+import 'package:storyreader_mobile/data/local/story_review_service.dart';
+import 'package:storyreader_mobile/data/models/admin_model.dart';
 import 'package:storyreader_mobile/data/models/chapter_model.dart';
 import 'package:storyreader_mobile/data/models/discussion_model.dart';
 import 'package:storyreader_mobile/data/models/notification_model.dart';
 import 'package:storyreader_mobile/data/models/payment_model.dart';
 import 'package:storyreader_mobile/data/models/story_model.dart';
+import 'package:storyreader_mobile/data/models/story_review_model.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -125,6 +128,112 @@ void main() {
       });
       expect(initResult.transactionId, 'tx-123');
       expect(initResult.paymentUrl, contains('vnpay.vn'));
+    });
+
+    test('AdminTransactionItem & AdminTransactionsResponse parse correctly', () {
+      final json = {
+        'items': [
+          {
+            'id': 'tx-100',
+            'userId': 'user-1',
+            'userEmail': 'user1@example.com',
+            'userDisplayName': 'Độc Giả 1',
+            'type': 'Subscription',
+            'status': 'Completed',
+            'targetId': 'plan-1',
+            'amount': 50000,
+            'createdAt': '2026-10-25T10:00:00Z',
+            'provider': 'VNPay',
+            'providerTransactionRef': 'VNP-999',
+          }
+        ],
+        'total': 1,
+        'page': 1,
+        'pageSize': 20,
+      };
+
+      final response = AdminTransactionsResponse.fromJson(json);
+      expect(response.total, 1);
+      expect(response.page, 1);
+      expect(response.items.length, 1);
+      final item = response.items.first;
+      expect(item.id, 'tx-100');
+      expect(item.userEmail, 'user1@example.com');
+      expect(item.userDisplayName, 'Độc Giả 1');
+      expect(item.amount, 50000.0);
+      expect(item.status, 'Completed');
+      expect(item.provider, 'VNPay');
+      expect(item.isCompleted, isTrue);
+      expect(item.isPending, isFalse);
+
+      final empty = AdminTransactionsResponse.fromJson(null);
+      expect(empty.items, isEmpty);
+      expect(empty.total, 0);
+    });
+  });
+
+  group('StoryReview Model & StoryReviewService (SharedPreferences)', () {
+    test('StoryReview serialization and copyWith works properly', () {
+      final review = StoryReview(
+        id: 'rev-1',
+        storyId: 'story-1',
+        userId: 'user-1',
+        userName: 'Độc Giả Thân Thiết',
+        rating: 5,
+        content: 'Truyện quá xuất sắc!',
+        createdAt: DateTime(2026, 10, 20),
+      );
+
+      final json = review.toJson();
+      final parsed = StoryReview.fromJson(json);
+      expect(parsed.id, 'rev-1');
+      expect(parsed.storyId, 'story-1');
+      expect(parsed.userName, 'Độc Giả Thân Thiết');
+      expect(parsed.rating, 5);
+      expect(parsed.content, 'Truyện quá xuất sắc!');
+
+      final updated = parsed.copyWith(rating: 4, content: 'Đã sửa');
+      expect(updated.rating, 4);
+      expect(updated.content, 'Đã sửa');
+      expect(updated.id, 'rev-1');
+    });
+
+    test('StoryReviewService saves, reads, computes averages and deletes', () async {
+      SharedPreferences.setMockInitialValues({});
+
+      final r1 = StoryReview(
+        id: 'rev-1',
+        storyId: 'story-1',
+        userId: 'user-1',
+        userName: 'Người dùng 1',
+        rating: 5,
+        content: 'Hay tuyệt!',
+        createdAt: DateTime.now(),
+      );
+
+      final r2 = StoryReview(
+        id: 'rev-2',
+        storyId: 'story-1',
+        userId: 'user-2',
+        userName: 'Người dùng 2',
+        rating: 3,
+        content: 'Tạm ổn',
+        createdAt: DateTime.now(),
+      );
+
+      await StoryReviewService.saveReview(r1);
+      await StoryReviewService.saveReview(r2);
+
+      final list = await StoryReviewService.getReviews('story-1');
+      expect(list.length, 2);
+
+      final avg = await StoryReviewService.getAverageRating('story-1');
+      expect(avg, 4.0); // (5 + 3) / 2
+
+      await StoryReviewService.deleteReview('story-1', 'rev-1');
+      final afterDelete = await StoryReviewService.getReviews('story-1');
+      expect(afterDelete.length, 1);
+      expect(afterDelete.first.id, 'rev-2');
     });
   });
 

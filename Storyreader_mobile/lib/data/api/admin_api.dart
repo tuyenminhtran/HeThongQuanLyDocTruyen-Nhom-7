@@ -85,4 +85,29 @@ class AdminApi {
       activities: result[2] as List<RecentActivity>,
     );
   }
+
+  // Quản lý giao dịch cho Admin (PB28)
+  Future<AdminTransactionsResponse> getAdminTransactions({
+    String? status,
+    String? keyword,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final res = await _client.get(
+      '/admin/transactions',
+      queryParameters: {
+        if (status != null && status.isNotEmpty) 'status': status,
+        if (keyword != null && keyword.trim().isNotEmpty) 'keyword': keyword.trim(),
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
+    return AdminTransactionsResponse.fromJson(Map<String, dynamic>.from(res.data as Map));
+  }
+
+  Future<void> forceActivateTransaction(String id) async =>
+      _client.post('/admin/transactions/$id/force-activate');
+
+  Future<void> markTransactionFailed(String id) async =>
+      _client.post('/admin/transactions/$id/mark-failed');
 }

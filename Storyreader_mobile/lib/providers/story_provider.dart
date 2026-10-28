@@ -27,12 +27,14 @@ class StoryFilterQuery {
   final String? genreId;
   final int page;
   final int pageSize;
+  final String? sortBy;
 
   const StoryFilterQuery({
     this.keyword,
     this.genreId,
     this.page = 1,
     this.pageSize = 100,
+    this.sortBy,
   });
 
   @override
@@ -43,11 +45,16 @@ class StoryFilterQuery {
           keyword == other.keyword &&
           genreId == other.genreId &&
           page == other.page &&
-          pageSize == other.pageSize;
+          pageSize == other.pageSize &&
+          sortBy == other.sortBy;
 
   @override
   int get hashCode =>
-      keyword.hashCode ^ genreId.hashCode ^ page.hashCode ^ pageSize.hashCode;
+      keyword.hashCode ^
+      genreId.hashCode ^
+      page.hashCode ^
+      pageSize.hashCode ^
+      (sortBy?.hashCode ?? 0);
 }
 
 // Provider lấy danh sách truyện theo bộ lọc
@@ -62,6 +69,7 @@ final storiesFilterFamily = FutureProvider.autoDispose
     genreId: query.genreId,
     page: query.page,
     pageSize: query.pageSize,
+    sortBy: query.sortBy,
     cancelToken: cancelToken,
   );
 });
