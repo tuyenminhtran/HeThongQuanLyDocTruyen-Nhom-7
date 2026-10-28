@@ -62,7 +62,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.red400),
-            child: const Text('Bỏ theo dõi', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Bỏ theo dõi',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -82,9 +85,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi khi bỏ theo dõi: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Lỗi khi bỏ theo dõi: $e')));
         }
       }
     }
@@ -184,9 +187,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               onPressed: () => context.push('/login'),
               icon: const Icon(Icons.login),
               label: const Text(AppStrings.loginTitle),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(200, 48),
-              ),
+              style: ElevatedButton.styleFrom(minimumSize: const Size(200, 48)),
             ),
           ],
         ),
@@ -216,7 +217,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 child: EmptyState(
                   icon: Icons.bookmark_border,
                   title: 'Chưa có truyện theo dõi',
-                  subtitle: 'Nhấn "Theo dõi" ở trang chi tiết truyện để nhận thông báo chương mới.',
+                  subtitle:
+                      'Nhấn "Theo dõi" ở trang chi tiết truyện để nhận thông báo chương mới.',
                 ),
               ),
             );
@@ -227,9 +229,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           if (_keyword.trim().isNotEmpty) {
             final q = _keyword.trim().toLowerCase();
             filtered = filtered
-                .where((s) =>
-                    s.title.toLowerCase().contains(q) ||
-                    s.author.toLowerCase().contains(q))
+                .where(
+                  (s) =>
+                      s.title.toLowerCase().contains(q) ||
+                      s.author.toLowerCase().contains(q),
+                )
                 .toList();
           }
 
@@ -247,10 +251,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             children: [
               // Thanh công cụ lọc & tìm kiếm
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  border: Border(bottom: BorderSide(color: AppColors.inkBorder)),
+                  border: Border(
+                    bottom: BorderSide(color: AppColors.inkBorder),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -262,13 +271,24 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                         style: GoogleFonts.inter(fontSize: 12.5),
                         decoration: InputDecoration(
                           hintText: 'Tìm kiếm trong tủ sách...',
-                          hintStyle: GoogleFonts.inter(fontSize: 12, color: AppColors.inkMuted),
-                          prefixIcon: const Icon(Icons.search, size: 16, color: AppColors.inkMuted),
+                          hintStyle: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.inkMuted,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            size: 16,
+                            color: AppColors.inkMuted,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: AppColors.inkBorder),
+                            borderSide: const BorderSide(
+                              color: AppColors.inkBorder,
+                            ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                          ),
                           filled: true,
                           fillColor: const Color(0xFFF8FAFC),
                         ),
@@ -295,11 +315,23 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                         DropdownButton<String>(
                           value: _sortBy,
                           underline: const SizedBox.shrink(),
-                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.inkText),
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.inkText,
+                          ),
                           items: const [
-                            DropdownMenuItem(value: 'newest', child: Text('Mới nhất')),
-                            DropdownMenuItem(value: 'views', child: Text('Lượt đọc')),
-                            DropdownMenuItem(value: 'title', child: Text('Tên A-Z')),
+                            DropdownMenuItem(
+                              value: 'newest',
+                              child: Text('Mới nhất'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'views',
+                              child: Text('Lượt đọc'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'title',
+                              child: Text('Tên A-Z'),
+                            ),
                           ],
                           onChanged: (val) {
                             if (val != null) setState(() => _sortBy = val);
@@ -320,15 +352,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                     : ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: filtered.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final story = filtered[index];
                           return Stack(
                             children: [
-                              StoryCard(
-                                story: story,
-                                isHorizontal: true,
-                              ),
+                              StoryCard(story: story, isHorizontal: true),
                               Positioned(
                                 top: 6,
                                 right: 6,
@@ -398,7 +428,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 child: EmptyState(
                   icon: Icons.history,
                   title: 'Chưa có lịch sử đọc',
-                  subtitle: 'Những bộ truyện bạn đã đọc sẽ tự động xuất hiện tại đây.',
+                  subtitle:
+                      'Những bộ truyện bạn đã đọc sẽ tự động xuất hiện tại đây.',
                 ),
               ),
             );
@@ -409,10 +440,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             itemCount: stories.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              return StoryCard(
-                story: stories[index],
-                isHorizontal: true,
-              );
+              return StoryCard(story: stories[index], isHorizontal: true);
             },
           );
         },
@@ -442,7 +470,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 child: EmptyState(
                   icon: Icons.shopping_bag_outlined,
                   title: 'Chưa có truyện mua bản quyền',
-                  subtitle: 'Các bộ truyện bạn mua trọn gói sẽ được lưu vĩnh viễn tại đây.',
+                  subtitle:
+                      'Các bộ truyện bạn mua trọn gói sẽ được lưu vĩnh viễn tại đây.',
                 ),
               ),
             );
@@ -453,10 +482,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             itemCount: stories.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              return StoryCard(
-                story: stories[index],
-                isHorizontal: true,
-              );
+              return StoryCard(story: stories[index], isHorizontal: true);
             },
           );
         },
