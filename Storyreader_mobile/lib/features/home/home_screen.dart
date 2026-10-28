@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +12,7 @@ import '../../widgets/app_header.dart';
 import '../../widgets/loading_skeleton.dart';
 import '../../widgets/request_error.dart';
 import '../../widgets/story_card.dart';
+import '../../widgets/book_cover_fallback.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -326,7 +327,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 3,
-                            childAspectRatio: 0.52,
+                            childAspectRatio: 0.50,
                             crossAxisSpacing: 10,
                             mainAxisSpacing: 12,
                           ),
@@ -743,7 +744,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 48),
                     ],
                   );
                 },
@@ -786,10 +787,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     imageUrl: coverUrl,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(color: const Color(0xFFF1F5F9)),
-                    errorWidget: (context, url, error) => Container(
-                      color: const Color(0xFFF1F5F9),
-                      child: const Icon(Icons.book, size: 24, color: Color(0xFF94A3B8)),
-                    ),
+                    errorWidget: (context, url, error) => BookCoverFallback(title: story.title, iconSize: 20),
                   ),
 
                   // Badge HOT hoặc Mới

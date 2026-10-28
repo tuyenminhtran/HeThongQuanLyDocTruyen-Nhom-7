@@ -23,4 +23,8 @@ class PaymentApi {
   static Future<List<MyPurchaseItem>> getMyPurchases() async {
     return await _repository.getMyPurchases();
   }
+
+  static Future<void> simulatePaymentCallback(String providerRef, {bool success = true}) async {
+    await _repository.simulatePaymentCallback(providerRef, success: success);
+  }
 }

@@ -49,6 +49,7 @@ class ApiConstants {
   static const String subscriptionPlans = '/subscriptions/plans';
   static const String mySubscriptions = '/subscriptions/me';
   static const String myPurchases = '/subscriptions/me/purchases';
+  static const String paymentCallback = '/payments/callback';
 
   // Profile endpoints
   static const String profile = '/profile';

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../data/models/story_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/story_provider.dart';
 import '../../widgets/app_header.dart';
@@ -26,6 +27,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  // Bookmarks filter state
+  String _keyword = '';
+  StoryType? _typeFilter;
+  String _sortBy = 'newest'; // 'newest' | 'views' | 'title'
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +46,51 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _unfollowStory(StoryListItem story) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Bỏ theo dõi?'),
+        content: Text('Bạn có chắc chắn muốn bỏ theo dõi "${story.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.red400),
+            child: const Text(
+              'Bỏ theo dõi',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final repo = ref.read(storyRepositoryProvider);
+        await repo.toggleFollow(story.id);
+        ref.invalidate(bookmarksProvider);
+        ref.invalidate(isFollowingProvider(story.id));
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Đã bỏ theo dõi "${story.title}".')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Lỗi khi bỏ theo dõi: $e')));
+        }
+      }
+    }
   }
 
   @override
@@ -136,9 +187,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               onPressed: () => context.push('/login'),
               icon: const Icon(Icons.login),
               label: const Text(AppStrings.loginTitle),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(200, 48),
-              ),
+              style: ElevatedButton.styleFrom(minimumSize: const Size(200, 48)),
             ),
           ],
         ),
@@ -162,30 +211,197 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         ),
         data: (stories) {
           if (stories.isEmpty) {
-            return Center(
+            return const Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24),
                 child: EmptyState(
                   icon: Icons.bookmark_border,
                   title: 'Chưa có truyện theo dõi',
-                  subtitle: 'Nhấn "Theo dõi" ở trang chi tiết truyện để nhận thông báo chương mới.',
+                  subtitle:
+                      'Nhấn "Theo dõi" ở trang chi tiết truyện để nhận thông báo chương mới.',
                 ),
               ),
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: stories.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              return StoryCard(
-                story: stories[index],
-                isHorizontal: true,
-              );
-            },
+          // Lọc & sắp xếp
+          var filtered = List<StoryListItem>.from(stories);
+          if (_keyword.trim().isNotEmpty) {
+            final q = _keyword.trim().toLowerCase();
+            filtered = filtered
+                .where(
+                  (s) =>
+                      s.title.toLowerCase().contains(q) ||
+                      s.author.toLowerCase().contains(q),
+                )
+                .toList();
+          }
+
+          if (_typeFilter != null) {
+            filtered = filtered.where((s) => s.type == _typeFilter).toList();
+          }
+
+          if (_sortBy == 'views') {
+            filtered.sort((a, b) => b.viewCount.compareTo(a.viewCount));
+          } else if (_sortBy == 'title') {
+            filtered.sort((a, b) => a.title.compareTo(b.title));
+          }
+
+          return Column(
+            children: [
+              // Thanh công cụ lọc & tìm kiếm
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(
+                    bottom: BorderSide(color: AppColors.inkBorder),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Ô tìm kiếm
+                    SizedBox(
+                      height: 38,
+                      child: TextField(
+                        onChanged: (val) => setState(() => _keyword = val),
+                        style: GoogleFonts.inter(fontSize: 12.5),
+                        decoration: InputDecoration(
+                          hintText: 'Tìm kiếm trong tủ sách...',
+                          hintStyle: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.inkMuted,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            size: 16,
+                            color: AppColors.inkMuted,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: AppColors.inkBorder,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Lọc loại truyện & Sắp xếp
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Type filter
+                        Row(
+                          children: [
+                            _buildFilterChip('Tất cả', null),
+                            const SizedBox(width: 6),
+                            _buildFilterChip('Chữ', StoryType.novel),
+                            const SizedBox(width: 6),
+                            _buildFilterChip('Tranh', StoryType.comic),
+                          ],
+                        ),
+
+                        // Sort dropdown
+                        DropdownButton<String>(
+                          value: _sortBy,
+                          underline: const SizedBox.shrink(),
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.inkText,
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'newest',
+                              child: Text('Mới nhất'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'views',
+                              child: Text('Lượt đọc'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'title',
+                              child: Text('Tên A-Z'),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) setState(() => _sortBy = val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Danh sách
+              Expanded(
+                child: filtered.isEmpty
+                    ? const Center(
+                        child: Text('Không tìm thấy truyện phù hợp bộ lọc.'),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filtered.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final story = filtered[index];
+                          return Stack(
+                            children: [
+                              StoryCard(story: story, isHorizontal: true),
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.bookmark_remove_outlined,
+                                    color: AppColors.red400,
+                                    size: 20,
+                                  ),
+                                  tooltip: 'Bỏ theo dõi',
+                                  onPressed: () => _unfollowStory(story),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+              ),
+            ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, StoryType? type) {
+    final isSelected = _typeFilter == type;
+    return GestureDetector(
+      onTap: () => setState(() => _typeFilter = type),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.gold : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? Colors.white : AppColors.inkText,
+          ),
+        ),
       ),
     );
   }
@@ -206,13 +422,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         ),
         data: (stories) {
           if (stories.isEmpty) {
-            return Center(
+            return const Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24),
                 child: EmptyState(
                   icon: Icons.history,
                   title: 'Chưa có lịch sử đọc',
-                  subtitle: 'Những bộ truyện bạn đã đọc sẽ tự động xuất hiện tại đây.',
+                  subtitle:
+                      'Những bộ truyện bạn đã đọc sẽ tự động xuất hiện tại đây.',
                 ),
               ),
             );
@@ -223,10 +440,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             itemCount: stories.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              return StoryCard(
-                story: stories[index],
-                isHorizontal: true,
-              );
+              return StoryCard(story: stories[index], isHorizontal: true);
             },
           );
         },
@@ -250,13 +464,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         ),
         data: (stories) {
           if (stories.isEmpty) {
-            return Center(
+            return const Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24),
                 child: EmptyState(
                   icon: Icons.shopping_bag_outlined,
                   title: 'Chưa có truyện mua bản quyền',
-                  subtitle: 'Các bộ truyện bạn mua trọn gói sẽ được lưu vĩnh viễn tại đây.',
+                  subtitle:
+                      'Các bộ truyện bạn mua trọn gói sẽ được lưu vĩnh viễn tại đây.',
                 ),
               ),
             );
@@ -267,10 +482,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             itemCount: stories.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              return StoryCard(
-                story: stories[index],
-                isHorizontal: true,
-              );
+              return StoryCard(story: stories[index], isHorizontal: true);
             },
           );
         },

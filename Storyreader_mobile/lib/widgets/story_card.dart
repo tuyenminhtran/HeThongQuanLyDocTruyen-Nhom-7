@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/constants/app_colors.dart';
 import '../data/models/story_model.dart';
+import 'book_cover_fallback.dart';
 
 class StoryCard extends StatelessWidget {
   final StoryListItem story;
@@ -104,9 +105,9 @@ class StoryCard extends StatelessWidget {
                     imageUrl: coverUrl,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(color: const Color(0xFFF1F5F9)),
-                    errorWidget: (context, url, error) => Container(
-                      color: const Color(0xFFF1F5F9),
-                      child: const Icon(Icons.book, size: 28, color: Color(0xFF94A3B8)),
+                    errorWidget: (context, url, error) => BookCoverFallback(
+                      title: story.title,
+                      iconSize: 22,
                     ),
                   ),
                 ),
@@ -263,11 +264,8 @@ class StoryCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    errorWidget: (context, url, error) => Container(
-                      color: const Color(0xFFF1F5F9),
-                      child: const Center(
-                        child: Icon(Icons.book, color: Color(0xFF94A3B8), size: 28),
-                      ),
+                    errorWidget: (context, url, error) => BookCoverFallback(
+                      title: story.title,
                     ),
                   ),
 
