@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/constants/app_colors.dart';
 import '../providers/auth_provider.dart';
 import '../providers/story_provider.dart';
+import 'notification_bell.dart';
 
 class AppHeader extends ConsumerStatefulWidget implements PreferredSizeWidget {
   const AppHeader({super.key});
@@ -85,7 +86,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'TẤT CẢ THỂ LOẠI',
+                        'Táº¤T Cáº¢ THá»‚ LOáº I',
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -109,7 +110,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                           runSpacing: 8,
                           children: [
                             ActionChip(
-                              label: const Text('Tất cả'),
+                              label: const Text('Táº¥t cáº£'),
                               backgroundColor: AppColors.inkElevated,
                               labelStyle: GoogleFonts.inter(
                                 fontSize: 12,
@@ -148,7 +149,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                       ),
                       error: (error, stack) => Center(
                         child: Text(
-                          'Không thể tải thể loại',
+                          'KhÃ´ng thá»ƒ táº£i thá»ƒ loáº¡i',
                           style: GoogleFonts.inter(color: AppColors.red400),
                         ),
                       ),
@@ -207,7 +208,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Thanh tìm kiếm Pill bo tròn chuẩn Web
+                            // Thanh tÃ¬m kiáº¿m Pill bo trÃ²n chuáº©n Web
                             Container(
                               height: 42,
                               decoration: BoxDecoration(
@@ -224,7 +225,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                                   color: AppColors.inkText,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: 'Bạn muốn tìm truyện gì...',
+                                  hintText: 'Báº¡n muá»‘n tÃ¬m truyá»‡n gÃ¬...',
                                   hintStyle: GoogleFonts.inter(
                                     fontSize: 13,
                                     color: AppColors.inkMuted,
@@ -247,17 +248,26 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                             ),
                             const SizedBox(height: 12),
 
-                            // Các liên kết
+                            // CÃ¡c liÃªn káº¿t
                             _buildMenuItem(
-                              title: 'Trang chủ',
+                              title: 'Trang chá»§',
                               icon: Icons.home_outlined,
                               onTap: () {
                                 _closeMenu();
                                 context.go('/');
                               },
                             ),
+                            _buildMenuItem(
+                              title: 'Báº£ng xáº¿p háº¡ng',
+                              icon: Icons.trending_up,
+                              iconColor: AppColors.gold,
+                              onTap: () {
+                                _closeMenu();
+                                context.push('/rankings');
+                              },
+                            ),
 
-                            // Accordion Thể loại
+                            // Accordion Thá»ƒ loáº¡i
                             InkWell(
                               onTap: () {
                                 setState(() {
@@ -283,7 +293,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                                         ),
                                         const SizedBox(width: 10),
                                         Text(
-                                          'Thể loại',
+                                          'Thá»ƒ loáº¡i',
                                           style: GoogleFonts.inter(
                                             color: AppColors.inkText,
                                             fontSize: 14,
@@ -319,7 +329,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                                     runSpacing: 6,
                                     children: [
                                       ActionChip(
-                                        label: const Text('Tất cả'),
+                                        label: const Text('Táº¥t cáº£'),
                                         backgroundColor: Colors.white,
                                         labelStyle: GoogleFonts.inter(
                                           fontSize: 11,
@@ -364,7 +374,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                               ),
 
                             _buildMenuItem(
-                              title: 'Gói VIP',
+                              title: 'GÃ³i VIP',
                               icon: Icons.workspace_premium,
                               iconColor: const Color(0xFFD97706),
                               textColor: const Color(0xFFB45309),
@@ -374,7 +384,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                               },
                             ),
                             _buildMenuItem(
-                              title: 'Tủ sách của tôi',
+                              title: 'Tá»§ sÃ¡ch cá»§a tÃ´i',
                               icon: Icons.bookmarks_outlined,
                               onTap: () {
                                 _closeMenu();
@@ -383,7 +393,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                             ),
                             if (auth.isAdmin)
                               _buildMenuItem(
-                                title: 'Trang quản trị',
+                                title: 'Trang quáº£n trá»‹',
                                 icon: Icons.admin_panel_settings_outlined,
                                 onTap: () {
                                   _closeMenu();
@@ -441,7 +451,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              auth.displayName ?? 'Người dùng',
+                                              auth.displayName ?? 'NgÆ°á»i dÃ¹ng',
                                               style: GoogleFonts.inter(
                                                 color: AppColors.inkText,
                                                 fontSize: 14,
@@ -451,7 +461,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                             Text(
-                                              'Xem hồ sơ & tài khoản',
+                                              'Xem há»“ sÆ¡ & tÃ i khoáº£n',
                                               style: GoogleFonts.inter(
                                                 color: AppColors.inkMuted,
                                                 fontSize: 11,
@@ -471,7 +481,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                               ),
                               const SizedBox(height: 8),
                               _buildMenuItem(
-                                title: 'Đăng xuất',
+                                title: 'ÄÄƒng xuáº¥t',
                                 icon: Icons.logout,
                                 textColor: AppColors.red400,
                                 iconColor: AppColors.red400,
@@ -502,7 +512,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                                         padding: const EdgeInsets.symmetric(vertical: 12),
                                       ),
                                       child: Text(
-                                        'Đăng ký',
+                                        'ÄÄƒng kÃ½',
                                         style: GoogleFonts.inter(
                                           fontSize: 13,
                                           fontWeight: FontWeight.bold,
@@ -527,7 +537,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                                         padding: const EdgeInsets.symmetric(vertical: 12),
                                       ),
                                       child: Text(
-                                        'Đăng nhập',
+                                        'ÄÄƒng nháº­p',
                                         style: GoogleFonts.inter(
                                           fontSize: 13,
                                           fontWeight: FontWeight.bold,
@@ -587,242 +597,255 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
+    final topPadding = MediaQuery.of(context).padding.top;
 
     return Container(
       color: Colors.white,
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // ==========================================
-            // TẦNG 1 (WHITE TOP BAR) - CAO 56PX
-            // ==========================================
+      width: double.infinity,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Pháº§n bÃ¹ status bar náº¿u cÃ³
+          if (topPadding > 0)
             Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(
-                    color: AppColors.inkBorder,
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Logo chuẩn Web StoryReader
-                  GestureDetector(
-                    onTap: () => context.go('/'),
-                    child: Row(
-                      children: [
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: 'Story',
-                                style: GoogleFonts.lora(
-                                  color: const Color(0xFF0F172A),
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              TextSpan(
-                                text: 'Reader',
-                                style: GoogleFonts.lora(
-                                  color: AppColors.brandOrange,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'ONLINE',
-                            style: GoogleFonts.inter(
-                              color: AppColors.inkMuted,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Nút phải: Đăng nhập hoặc Avatar & Hamburger
-                  Row(
-                    children: [
-                      if (!auth.isAuthenticated) ...[
-                        ElevatedButton(
-                          onPressed: () => context.push('/login'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.brandBlue,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 7,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            'Đăng nhập',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ] else ...[
-                        GestureDetector(
-                          onTap: () => context.push('/profile'),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: AppColors.avatarGradient,
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              (auth.displayName?.isNotEmpty == true
-                                      ? auth.displayName![0]
-                                      : 'U')
-                                  .toUpperCase(),
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-
-                      const SizedBox(width: 6),
-                      IconButton(
-                        onPressed: _toggleMenu,
-                        icon: Icon(
-                          _menuOpen ? Icons.close : Icons.menu,
-                          color: const Color(0xFF334155),
-                          size: 24,
-                        ),
-                        visualDensity: VisualDensity.compact,
-                        splashRadius: 20,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              height: topPadding,
+              width: double.infinity,
+              color: Colors.white,
             ),
 
-            // ==========================================
-            // TẦNG 2 (THANH CAM TRUYENQQ SIGNATURE) - CAO 40PX
-            // ==========================================
-            Container(
-              height: 40,
-              decoration: const BoxDecoration(
-                color: AppColors.brandOrange,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
+          // ==========================================
+          // Táº¦NG 1 (WHITE TOP BAR) - CAO 56PX
+          // ==========================================
+          Container(
+            height: 56,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                bottom: BorderSide(
+                  color: AppColors.inkBorder,
+                  width: 1,
+                ),
               ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: [
-                    _buildNavButton(
-                      label: 'Trang Chủ',
-                      onTap: () => context.go('/'),
-                    ),
-                    _buildNavButton(
-                      label: 'Thể Loại',
-                      icon: Icons.keyboard_arrow_down,
-                      onTap: _showGenreBottomSheet,
-                    ),
-                    _buildNavButton(
-                      label: 'Xếp Hạng',
-                      icon: Icons.trending_up,
-                      onTap: () => context.go('/?sort=top'),
-                    ),
-                    _buildNavButton(
-                      label: 'Tủ Sách',
-                      onTap: () {
-                        if (auth.isAuthenticated) {
-                          context.push('/library');
-                        } else {
-                          context.push('/login');
-                        }
-                      },
-                    ),
-                    // Nút VIP nổi bật viền trắng mờ
-                    GestureDetector(
-                      onTap: () => context.push('/pricing'),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.22),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.45),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Logo chuáº©n Web StoryReader
+                GestureDetector(
+                  onTap: () => context.go('/'),
+                  child: Row(
+                    children: [
+                      RichText(
+                        text: TextSpan(
                           children: [
-                            const Icon(
-                              Icons.workspace_premium,
-                              color: Color(0xFFFDE68A),
-                              size: 14,
+                            TextSpan(
+                              text: 'Story',
+                              style: GoogleFonts.lora(
+                                color: const Color(0xFF0F172A),
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.5,
+                              ),
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Gói VIP',
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                            TextSpan(
+                              text: 'Reader',
+                              style: GoogleFonts.lora(
+                                color: AppColors.brandOrange,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.5,
                               ),
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'ONLINE',
+                          style: GoogleFonts.inter(
+                            color: AppColors.inkMuted,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // NÃºt pháº£i: ÄÄƒng nháº­p hoáº·c ChuÃ´ng ThÃ´ng BÃ¡o + Avatar + Hamburger
+                Row(
+                  children: [
+                    if (!auth.isAuthenticated) ...[
+                      ElevatedButton(
+                        onPressed: () => context.push('/login'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.brandBlue,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          'ÄÄƒng nháº­p',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      // ChuÃ´ng thÃ´ng bÃ¡o
+                      const NotificationBell(),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () => context.push('/profile'),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: AppColors.avatarGradient,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            (auth.displayName?.isNotEmpty == true
+                                    ? auth.displayName![0]
+                                    : 'U')
+                                .toUpperCase(),
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(width: 6),
+                    IconButton(
+                      onPressed: _toggleMenu,
+                      icon: Icon(
+                        _menuOpen ? Icons.close : Icons.menu,
+                        color: const Color(0xFF334155),
+                        size: 24,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      splashRadius: 20,
                     ),
                   ],
                 ),
+              ],
+            ),
+          ),
+
+          // ==========================================
+          // Táº¦NG 2 (THANH CAM TRUYENQQ SIGNATURE) - CAO 40PX TRÃ€N VIá»€N 100%
+          // ==========================================
+          Container(
+            height: 40,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: AppColors.brandOrange,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: [
+                  _buildNavButton(
+                    label: 'Trang Chá»§',
+                    onTap: () => context.go('/'),
+                  ),
+                  _buildNavButton(
+                    label: 'Thá»ƒ Loáº¡i',
+                    icon: Icons.keyboard_arrow_down,
+                    onTap: _showGenreBottomSheet,
+                  ),
+                  _buildNavButton(
+                    label: 'Xáº¿p Háº¡ng',
+                    icon: Icons.trending_up,
+                    onTap: () => context.push('/rankings'),
+                  ),
+                  _buildNavButton(
+                    label: 'Tá»§ SÃ¡ch',
+                    onTap: () {
+                      if (auth.isAuthenticated) {
+                        context.push('/library');
+                      } else {
+                        context.push('/login');
+                      }
+                    },
+                  ),
+                  // NÃºt VIP ná»•i báº­t viá»n tráº¯ng má»
+                  GestureDetector(
+                    onTap: () => context.push('/pricing'),
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.45),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.workspace_premium,
+                            color: Color(0xFFFDE68A),
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'GÃ³i VIP',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -858,3 +881,4 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
     );
   }
 }
+
