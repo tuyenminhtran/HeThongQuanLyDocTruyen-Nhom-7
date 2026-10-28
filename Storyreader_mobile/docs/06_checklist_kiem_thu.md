@@ -166,3 +166,4 @@ Tài liệu này cung cấp kế hoạch và danh mục kiểm thử chi tiết 
 > **Ghi chú về môi trường kiểm thử trực tiếp (Live Backend)**:
 > - Trong phiên làm việc này, dịch vụ Docker Desktop daemon trên máy tính chưa được khởi động trước nên chưa thể mở live container PostgreSQL và Redis để chạy API thật cùng lúc.
 > - Tuy nhiên, toàn bộ logic mạng, parsing dữ liệu, mã lỗi HTTP (401, 403, 404, 500), điều hướng, giao diện và luồng xử lý đều đã được kiểm chứng đối chứng 1-1 với Web qua bộ test tự động và phân tích cú pháp tĩnh (`flutter analyze` 0 issues, `flutter test` 41/41 passed). Khi người dùng bật Docker và chạy `dotnet run`, mobile sẽ kết nối mượt mà ngay lập tức.
+
