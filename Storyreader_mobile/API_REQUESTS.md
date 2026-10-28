@@ -15,20 +15,22 @@
 
 ---
 
-### 2. Mua Bản Quyền Trọn Bộ Truyện (Story Purchase)
-- **Vấn đề hiện tại**: Backend đã định nghĩa enum `TransactionType.StoryPurchase = 1`, nhưng Controller `PaymentController` / `SubscriptionsController` hiện chủ yếu phục vụ thanh toán các gói VIP theo tháng/năm (`SubscriptionPlan`).
+### 2. Quên Mật Khẩu & Đặt Lại Mật Khẩu (Password Recovery & Reset)
+- **Vấn đề hiện tại**: Hệ thống hiện chưa có endpoint gửi mã OTP xác nhận qua email để khôi phục mật khẩu khi người dùng quên (Chức năng TC-05 hiện đang bị đánh dấu `BLOCKED - cần API` trong bảng đối chiếu Parity).
 - **Đề xuất endpoint**:
-  - `POST /api/stories/{id}/purchase`
-  - **Header**: `Authorization: Bearer <Token>`
-  - **Response 200 OK**: `{ "success": true, "transactionId": Guid, "message": "Mua truyện thành công" }`
-  - **Lợi ích**: Giúp người đọc có thể mua vĩnh viễn bộ truyện mình yêu thích mà không bắt buộc phải duy trì gói VIP hàng tháng.
+  - `POST /api/auth/forgot-password`
+    - **Body**: `{ "email": string }`
+    - **Response 200 OK**: `{ "message": "Mã xác thực đã được gửi tới email của bạn." }`
+  - `POST /api/auth/reset-password`
+    - **Body**: `{ "email": string, "otp": string, "newPassword": string }`
+    - **Response 200 OK**: `{ "message": "Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại." }`
 
 ---
 
-### 3. Đánh giá & Xếp hạng Truyện (Story Rating & Review)
-- **Vấn đề hiện tại**: Truyện chỉ có số lượt xem (`viewCount`) và lượt theo dõi (`isFollowing`), chưa có điểm đánh giá trung bình (1 - 5 sao).
+### 3. Đánh giá & Xếp hạng Truyện Tập trung (Story Rating & Review API)
+- **Vấn đề hiện tại**: Truyện hiện chỉ có lượt xem (`viewCount`) và lượt theo dõi (`isFollowing`). Mobile hiện đang lưu đánh giá sao kết hợp thảo luận chương và bộ nhớ cục bộ (`StoryReviewService`). Cần có bảng riêng trong database để lưu review cấp độ truyện.
 - **Đề xuất endpoint**:
-  - `GET /api/stories/{id}/reviews`: Lấy danh sách đánh giá và điểm số trung bình (ví dụ: 4.8/5.0).
+  - `GET /api/stories/{id}/reviews`: Lấy danh sách đánh giá kèm điểm sao trung bình (ví dụ: 4.8/5.0).
   - `POST /api/stories/{id}/reviews`: Gửi đánh giá sao (1 - 5) kèm cảm nhận ngắn.
 
 ---
