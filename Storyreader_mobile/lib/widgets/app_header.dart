@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../core/constants/app_colors.dart';
 import '../providers/auth_provider.dart';
 import '../providers/story_provider.dart';
+import 'notification_bell.dart';
 
 class AppHeader extends ConsumerStatefulWidget implements PreferredSizeWidget {
   const AppHeader({super.key});
@@ -254,6 +255,15 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                               onTap: () {
                                 _closeMenu();
                                 context.go('/');
+                              },
+                            ),
+                            _buildMenuItem(
+                              title: 'Bảng xếp hạng',
+                              icon: Icons.trending_up,
+                              iconColor: AppColors.gold,
+                              onTap: () {
+                                _closeMenu();
+                                context.push('/rankings');
                               },
                             ),
 
@@ -665,7 +675,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                     ),
                   ),
 
-                  // Nút phải: Đăng nhập hoặc Avatar & Hamburger
+                  // Nút phải: Đăng nhập hoặc Chuông Thông Báo + Avatar + Hamburger
                   Row(
                     children: [
                       if (!auth.isAuthenticated) ...[
@@ -694,6 +704,9 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                           ),
                         ),
                       ] else ...[
+                        // Chuông thông báo
+                        const NotificationBell(),
+                        const SizedBox(width: 4),
                         GestureDetector(
                           onTap: () => context.push('/profile'),
                           child: Container(
@@ -768,7 +781,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                     _buildNavButton(
                       label: 'Xếp Hạng',
                       icon: Icons.trending_up,
-                      onTap: () => context.go('/?sort=top'),
+                      onTap: () => context.push('/rankings'),
                     ),
                     _buildNavButton(
                       label: 'Tủ Sách',

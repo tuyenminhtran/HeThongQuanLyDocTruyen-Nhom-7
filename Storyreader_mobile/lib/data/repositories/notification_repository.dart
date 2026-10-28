@@ -70,3 +70,4 @@ class NotificationRepository implements INotificationRepository {
     });
   }
 }
+

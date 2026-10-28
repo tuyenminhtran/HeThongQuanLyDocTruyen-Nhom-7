@@ -21,6 +21,8 @@ class AppColors {
   // Status & accent colors
   static const Color red400 = Color(0xFFEF4444);           // Đỏ cảnh báo / HOT badge
   static const Color green400 = Color(0xFF10B981);         // Xanh lá Miễn phí (Emerald)
+  static const Color emerald = Color(0xFF10B981);          // Xanh lá thành công (Emerald)
+  static const Color amber400 = Color(0xFFF59E0B);         // Vàng cảnh báo / Chờ xử lý
   static const Color sky400 = Color(0xFF0284C7);           // Xanh tranh (Sky)
   static const Color blue400 = Color(0xFF2563EB);          // Xanh dương
   static const Color purple400 = Color(0xFF8B5CF6);        // Tím Comic

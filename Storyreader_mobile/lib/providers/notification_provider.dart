@@ -77,3 +77,4 @@ final notificationNotifierProvider =
     StateNotifierProvider<NotificationNotifier, AsyncValue<void>>((ref) {
   return NotificationNotifier(ref);
 });
+

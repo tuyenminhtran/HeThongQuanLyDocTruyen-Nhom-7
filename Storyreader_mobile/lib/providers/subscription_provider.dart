@@ -28,3 +28,4 @@ final myPurchasesProvider = FutureProvider.autoDispose<List<MyPurchaseItem>>((re
   final repo = ref.watch(subscriptionRepositoryProvider);
   return await repo.getMyPurchases();
 });
+
