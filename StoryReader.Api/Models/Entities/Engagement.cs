@@ -22,5 +22,7 @@ public class Discussion
     public AppUser User { get; set; } = null!;
     public string Content { get; set; } = string.Empty;
     public DiscussionStatus Status { get; set; } = DiscussionStatus.Visible;
+    public string? ReportReason { get; set; }
+    public int ReportCount { get; set; } = 0;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

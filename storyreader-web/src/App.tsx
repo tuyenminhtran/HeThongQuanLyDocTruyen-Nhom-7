@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
+
 import HomePage from "./pages/HomePage";
 import StoryDetailPage from "./pages/StoryDetailPage";
 import ChapterReadPage from "./pages/ChapterReadPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-
 import RankingsPage from "./pages/RankingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import FollowingPage from "./pages/FollowingPage";
@@ -18,6 +18,8 @@ import PricingPage from "./pages/PricingPage";
 import AdminLayout from "./pages/admin/AdminLayout";
 import DashboardPage from "./pages/admin/DashboardPage";
 import AdminStoriesPage from "./pages/AdminStoriesPage";
+import AdminSchedulesPage from "./pages/admin/AdminSchedulesPage";
+import AdminReportedCommentsPage from "./pages/admin/AdminReportedCommentsPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import AdminTransactionsPage from "./pages/admin/AdminTransactionsPage";
@@ -75,6 +77,8 @@ export default function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<DashboardPage />} />
             <Route path="stories" element={<AdminStoriesPage />} />
+            <Route path="schedules" element={<AdminSchedulesPage />} />
+            <Route path="reports" element={<AdminReportedCommentsPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="categories" element={<AdminCategoriesPage />} />
             <Route path="transactions" element={<AdminTransactionsPage />} />

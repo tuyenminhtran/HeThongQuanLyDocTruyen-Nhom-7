@@ -5,6 +5,7 @@ export interface DiscussionItem {
   content: string;
   createdAt: string;
   user: string;
+  userId?: string;
 }
 
 export async function getChapterDiscussions(chapterId: string) {
@@ -18,4 +19,12 @@ export async function postChapterDiscussion(chapterId: string, content: string) 
 
 export async function hideDiscussion(chapterId: string, discussionId: string) {
   await apiClient.put(`/chapters/${chapterId}/discussions/${discussionId}/hide`);
+}
+
+export async function reportChapterDiscussion(chapterId: string, discussionId: string, reason?: string) {
+  const res = await apiClient.post<{ message: string }>(
+    `/chapters/${chapterId}/discussions/${discussionId}/report`,
+    { reason }
+  );
+  return res.data;
 }

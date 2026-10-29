@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChapterContent } from "../api/chapters";
 import { groupChaptersByPart, type ChapterGroup } from "../utils/chapterGrouping";
 import { getStoryDetail, type ChapterListItem } from "../api/stories";
-import { getChapterDiscussions, postChapterDiscussion, hideDiscussion } from "../api/discussions";
+import { getChapterDiscussions, postChapterDiscussion, hideDiscussion, reportChapterDiscussion } from "../api/discussions";
 import { useAuthStore, useIsAdmin } from "../store/authStore";
 import { AxiosError } from "axios";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -109,6 +109,15 @@ export default function ChapterReadPage() {
   const hideCommentMutation = useMutation({
     mutationFn: (discussionId: string) => hideDiscussion(id!, discussionId),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["discussions", id] });
+    },
+  });
+
+  const reportCommentMutation = useMutation({
+    mutationFn: ({ discussionId, reason }: { discussionId: string; reason: string }) =>
+      reportChapterDiscussion(id!, discussionId, reason),
+    onSuccess: (data) => {
+      alert(data?.message || "Báo cáo bình luận thành công! Ban quản trị sẽ kiểm duyệt sớm nhất.");
       queryClient.invalidateQueries({ queryKey: ["discussions", id] });
     },
   });
@@ -799,19 +808,35 @@ export default function ChapterReadPage() {
                         </span>
                       </div>
                     </div>
-                    {isAdmin && (
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
-                          if (confirm("Admin: Bạn có chắc muốn ẩn bình luận này không?")) {
-                            hideCommentMutation.mutate(d.id);
+                          const reason = prompt("Nhập lý do báo cáo bình luận này (Spam, Xúc phạm, Spoil nội dung...):");
+                          if (reason && reason.trim()) {
+                            reportCommentMutation.mutate({ discussionId: d.id, reason: reason.trim() });
                           }
                         }}
-                        className="text-xs text-rose-400 hover:text-rose-300 opacity-60 hover:opacity-100 p-1"
-                        title="Ẩn bình luận vi phạm"
+                        className="text-xs text-ink-muted hover:text-rose-400 opacity-60 hover:opacity-100 px-2 py-0.5 rounded-lg border border-transparent hover:border-rose-500/30 flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Báo cáo bình luận vi phạm"
                       >
-                        <i className="fa-solid fa-eye-slash" />
+                        <i className="fa-solid fa-flag text-[10px]" />
+                        <span className="text-[11px]">Báo cáo</span>
                       </button>
-                    )}
+
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            if (confirm("Admin: Bạn có chắc muốn ẩn bình luận này không?")) {
+                              hideCommentMutation.mutate(d.id);
+                            }
+                          }}
+                          className="text-xs text-rose-400 hover:text-rose-300 opacity-60 hover:opacity-100 p-1 cursor-pointer"
+                          title="Ẩn bình luận vi phạm"
+                        >
+                          <i className="fa-solid fa-eye-slash" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm opacity-90 leading-relaxed whitespace-pre-line pl-10">
                     {d.content}

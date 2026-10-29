@@ -22,6 +22,18 @@ export default function AdminLayout() {
       icon: <i className="fa-solid fa-book-open text-base w-5 text-center" />
     },
     {
+      name: "Lịch Đăng Truyện",
+      path: "/admin/schedules",
+      exact: false,
+      icon: <i className="fa-solid fa-calendar-days text-base w-5 text-center text-amber-500" />
+    },
+    {
+      name: "Bình luận Báo cáo",
+      path: "/admin/reports",
+      exact: false,
+      icon: <i className="fa-solid fa-flag text-base w-5 text-center text-rose-500" />
+    },
+    {
       name: "Quản lý Thể Loại",
       path: "/admin/categories",
       exact: false,
