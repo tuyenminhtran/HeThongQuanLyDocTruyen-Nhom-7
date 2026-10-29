@@ -528,24 +528,7 @@ export default function ChapterReadPage() {
                 >
                   A+
                 </button>
-
-                {/* Shield badge */}
-                <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-medium border border-emerald-500/20 ml-1">
-                  <i className="fa-solid fa-shield-halved text-[10px]" />
-                  <span>Đã bảo vệ</span>
-                </div>
               </>
-            )}
-
-            {/* Chế độ Ảnh bảo vệ bản quyền */}
-            {isProtectedNovel && (
-              <div
-                className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full text-xs font-medium border border-amber-500/20 ml-2"
-                title="Nội dung được bảo vệ chống sao chép"
-              >
-                <i className="fa-solid fa-shield-halved text-[11px]" />
-                <span>Bảo vệ bản quyền</span>
-              </div>
             )}
 
             {/* Chế độ Truyện tranh Manga / Comic */}
