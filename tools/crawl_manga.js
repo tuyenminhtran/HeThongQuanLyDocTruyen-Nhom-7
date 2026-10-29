@@ -92,10 +92,62 @@ async function crawlManga(title, maxChapters = 5) {
     chapters
   };
 
-  const outFile = `comic_${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.json`;
-  fs.writeFileSync(outFile, JSON.stringify(result, null, 2), 'utf-8');
-  console.log(`\n🎉 Đã xuất thành công ra file: ${outFile}`);
+  const shouldImport = process.argv.includes('--import');
+
+  if (shouldImport) {
+    const { execSync } = require('child_process');
+    const crypto = require('crypto');
+    const storyId = crypto.randomUUID();
+
+    const safeTitle = mangaTitle.replace(/'/g, "''");
+    const safeDesc = desc.replace(/'/g, "''");
+    const safeCover = coverUrl.replace(/'/g, "''");
+
+    let sql = `
+INSERT INTO "Stories" (
+  "Id", "Title", "CoverImageUrl", "Description", "Author", "Status", "AccessPolicy", 
+  "Price", "FreeChapterCount", "ViewCount", "CreatedAt", "UpdatedAt", "Type"
+) VALUES (
+  '${storyId}', '${safeTitle}', '${safeCover}', '${safeDesc}', 'MangaDex',
+  0, 0, NULL, 0, 1000, NOW(), NOW(), 1
+);
+
+INSERT INTO "StoryGenres" ("StoryId", "GenreId") VALUES
+  ('${storyId}', 'a1000000-0000-0000-0000-000000000024'); -- Manga
+`;
+
+    for (const chap of chapters) {
+      const safeChapTitle = chap.title.replace(/'/g, "''");
+      const safeContent = chap.content.replace(/'/g, "''");
+      sql += `
+INSERT INTO "Chapters" (
+  "Id", "StoryId", "ChapterNumber", "Title", "Content", "ViewCount", "PublishAt", "CreatedAt", "UpdatedAt"
+) VALUES (
+  gen_random_uuid(), '${storyId}', ${chap.chapterNumber}, '${safeChapTitle}', '${safeContent}', 500, NOW(), NOW(), NOW()
+);
+`;
+    }
+
+    const tmpSql = `scratch_import_${Date.now()}.sql`;
+    fs.writeFileSync(tmpSql, sql, 'utf-8');
+
+    try {
+      execSync(`docker exec -i hethongquanlydoctruyen-nhom-7-postgres-1 psql -U storynest -d storyreader < "${tmpSql}"`, { stdio: 'pipe', shell: true });
+      console.log(`\n🚀 ĐÃ TỰ ĐỘNG CẬP NHẬT TRUYỆN VÀO DATABASE POSTGRESQL!`);
+      console.log(`🔗 Link đọc trực tiếp: http://localhost:5173/stories/${storyId}`);
+    } catch (err) {
+      console.error("Lỗi khi nạp vào database:", err.message);
+    } finally {
+      if (fs.existsSync(tmpSql)) fs.unlinkSync(tmpSql);
+    }
+  } else {
+    const outFile = `comic_${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.json`;
+    fs.writeFileSync(outFile, JSON.stringify(result, null, 2), 'utf-8');
+    console.log(`\n🎉 Đã xuất thành công ra file: ${outFile}`);
+    console.log(`💡 Mẹo: Thêm cờ --import để tự động nạp thẳng vào Database (VD: node tools/crawl_manga.js "${title}" --import)`);
+  }
 }
 
-const inputTitle = process.argv[2] || "Dragon Ball";
+const args = process.argv.slice(2).filter(a => !a.startsWith('--'));
+const inputTitle = args[0] || "Dragon Ball";
 crawlManga(inputTitle, 5).catch(console.error);
