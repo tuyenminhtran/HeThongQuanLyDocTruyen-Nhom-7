@@ -96,8 +96,7 @@ export default function AdminReportedCommentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-serif text-ink-text flex items-center gap-2.5">
-            <i className="fa-solid fa-flag text-rose-500" />
+          <h1 className="font-serif text-2xl text-ink-text font-bold">
             Quản lý Bình luận bị Báo cáo
           </h1>
           <p className="text-sm text-ink-muted mt-1">

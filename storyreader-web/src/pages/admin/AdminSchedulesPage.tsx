@@ -150,8 +150,7 @@ export default function AdminSchedulesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-serif text-ink-text flex items-center gap-2.5">
-            <i className="fa-solid fa-calendar-days text-amber-500" />
+          <h1 className="font-serif text-2xl text-ink-text font-bold">
             Quản lý Đăng Truyện Theo Lịch
           </h1>
           <p className="text-sm text-ink-muted mt-1">
