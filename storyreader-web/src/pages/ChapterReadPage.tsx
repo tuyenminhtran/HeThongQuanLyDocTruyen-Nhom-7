@@ -835,11 +835,11 @@ export default function ChapterReadPage() {
         </div>
       )}
 
-      {/* Nút Cuộn Lên Đầu Trang */}
+      {/* Nút Cuộn Lên Đầu Trang (Đặt lệch sang trái để không bị trùng vị trí với chú mèo Jiji) */}
       {showScrollTop && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 cursor-pointer"
+          className="fixed bottom-4 right-20 sm:bottom-5 sm:right-24 z-40 w-11 h-11 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 cursor-pointer"
           title="Cuộn lên đầu trang"
         >
           <i className="fa-solid fa-arrow-up text-sm" />
