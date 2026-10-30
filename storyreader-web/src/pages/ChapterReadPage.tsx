@@ -120,6 +120,9 @@ export default function ChapterReadPage() {
       alert(data?.message || "Báo cáo bình luận thành công! Ban quản trị sẽ kiểm duyệt sớm nhất.");
       queryClient.invalidateQueries({ queryKey: ["discussions", id] });
     },
+    onError: () => {
+      alert("Không thể gửi báo cáo. Vui lòng đảm bảo bạn đã đăng nhập và tài khoản không bị hạn chế.");
+    },
   });
 
   const handlePostComment = (e: React.FormEvent) => {
@@ -746,12 +749,15 @@ export default function ChapterReadPage() {
                 <textarea
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Chia sẻ cảm nghĩ của bạn về chương này..."
+                  maxLength={1000}
+                  placeholder="Chia sẻ cảm nghĩ của bạn về chương này (tối đa 1000 ký tự)..."
                   rows={3}
                   className="w-full bg-transparent resize-none text-sm placeholder:opacity-50 focus:outline-none"
                 />
                 <div className="flex items-center justify-between pt-2 border-t border-current/10 mt-2">
-                  <span className="text-xs opacity-50">Tôn trọng cộng đồng khi bình luận</span>
+                  <span className="text-xs opacity-50">
+                    Tôn trọng cộng đồng khi bình luận ({commentText.length}/1000)
+                  </span>
                   <button
                     type="submit"
                     disabled={postCommentMutation.isPending || !commentText.trim()}
@@ -811,6 +817,11 @@ export default function ChapterReadPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
+                          if (!isLoggedIn) {
+                            alert("Vui lòng đăng nhập để báo cáo bình luận vi phạm.");
+                            navigate("/login");
+                            return;
+                          }
                           const reason = prompt("Nhập lý do báo cáo bình luận này (Spam, Xúc phạm, Spoil nội dung...):");
                           if (reason && reason.trim()) {
                             reportCommentMutation.mutate({ discussionId: d.id, reason: reason.trim() });

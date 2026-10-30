@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using StoryReader.Api.Models.Dtos;
 using StoryReader.Api.Services.Interfaces;
 
@@ -8,6 +9,7 @@ namespace StoryReader.Api.Controllers;
 [ApiController]
 [Route("api/auth")]
 [AllowAnonymous]
+[EnableRateLimiting("auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StoryReader.Api.Data;
@@ -12,10 +13,12 @@ namespace StoryReader.Api.Controllers;
 public class AdminReportedCommentsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly UserManager<AppUser> _userManager;
 
-    public AdminReportedCommentsController(AppDbContext db)
+    public AdminReportedCommentsController(AppDbContext db, UserManager<AppUser> userManager)
     {
         _db = db;
+        _userManager = userManager;
     }
 
     [HttpGet]
@@ -25,6 +28,9 @@ public class AdminReportedCommentsController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
         var query = _db.Discussions
             .Include(d => d.User)
             .Include(d => d.Chapter)
@@ -50,8 +56,8 @@ public class AdminReportedCommentsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim().ToLower();
-            query = query.Where(d => 
-                d.Content.ToLower().Contains(s) || 
+            query = query.Where(d =>
+                d.Content.ToLower().Contains(s) ||
                 (d.ReportReason != null && d.ReportReason.ToLower().Contains(s)) ||
                 d.User.DisplayName.ToLower().Contains(s) ||
                 (d.User.Email != null && d.User.Email.ToLower().Contains(s)) ||
@@ -154,6 +160,9 @@ public class AdminReportedCommentsController : ControllerBase
     {
         var d = await _db.Discussions.Include(x => x.User).FirstOrDefaultAsync(x => x.Id == id);
         if (d is null || d.User is null) return NotFound(new { message = "Không tìm thấy bình luận hoặc người dùng" });
+
+        if (await _userManager.IsInRoleAsync(d.User, "Admin"))
+            return BadRequest(new { message = "Không thể khóa tài khoản Quản trị viên (Admin)." });
 
         d.User.IsRestricted = true;
         d.Status = DiscussionStatus.Hidden; // Ẩn luôn bình luận vi phạm

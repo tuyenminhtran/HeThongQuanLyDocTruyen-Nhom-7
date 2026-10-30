@@ -28,6 +28,9 @@ public class AdminSchedulesController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
         var now = DateTime.UtcNow;
         var query = _db.Chapters
             .Include(c => c.Story)

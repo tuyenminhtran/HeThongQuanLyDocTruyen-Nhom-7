@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -21,6 +22,9 @@ public class AdminUsersController : ControllerBase
         _userManager = userManager;
         _db = db;
     }
+
+    private Guid? CurrentUserId =>
+        Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
 
     [HttpGet]
     public async Task<IActionResult> GetUsers([FromQuery] string? keyword)
@@ -79,9 +83,15 @@ public class AdminUsersController : ControllerBase
     [HttpPut("{id:guid}/toggle-restriction")]
     public async Task<IActionResult> ToggleRestriction(Guid id)
     {
+        if (CurrentUserId == id)
+            return BadRequest(new { message = "Bạn không thể tự khóa tài khoản của chính mình." });
+
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)
             return NotFound(new { message = "Không tìm thấy người dùng." });
+
+        if (await _userManager.IsInRoleAsync(user, "Admin"))
+            return BadRequest(new { message = "Không thể khóa tài khoản Quản trị viên (Admin)." });
 
         user.IsRestricted = !user.IsRestricted;
         var result = await _userManager.UpdateAsync(user);

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SkiaSharp;
 using StoryReader.Api.Models.Dtos;
 using StoryReader.Api.Services.Interfaces;
 
@@ -25,6 +26,8 @@ public class StoriesController : ControllerBase
     public async Task<IActionResult> Search([FromQuery] string? keyword, [FromQuery] Guid? genreId,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 100, [FromQuery] string? sortBy = null)
     {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
         var result = await _stories.SearchAsync(keyword, genreId, page, pageSize, sortBy);
         return Ok(result);
     }
@@ -60,6 +63,19 @@ public class StoriesController : ControllerBase
         if (!allowedExtensions.Contains(ext))
             return BadRequest(new { message = "Định dạng file không hỗ trợ. Vui lòng chọn .jpg, .jpeg, .png, .webp hoặc .gif." });
 
+        await using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+
+        // Xác thực nội dung thực sự của file ảnh bằng SkiaSharp (chống giả mạo đuôi file)
+        using (var codec = SKCodec.Create(memoryStream))
+        {
+            if (codec == null || codec.Info.Width <= 0 || codec.Info.Height <= 0 || codec.Info.Width > 8000 || codec.Info.Height > 8000)
+            {
+                return BadRequest(new { message = "Tệp tải lên không phải là hình ảnh hợp lệ hoặc kích thước ảnh không được hỗ trợ." });
+            }
+        }
+
         var webRoot = env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
         var folder = Path.Combine(webRoot, "uploads", "covers");
         Directory.CreateDirectory(folder);
@@ -67,10 +83,7 @@ public class StoriesController : ControllerBase
         var fileName = $"{Guid.NewGuid():N}{ext}";
         var filePath = Path.Combine(folder, fileName);
 
-        using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream);
-        }
+        await System.IO.File.WriteAllBytesAsync(filePath, memoryStream.ToArray());
 
         var url = $"/uploads/covers/{fileName}";
         return Ok(new { url });

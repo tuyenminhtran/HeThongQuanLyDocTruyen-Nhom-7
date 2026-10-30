@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using SkiaSharp;
 using StoryReader.Api.Services.Interfaces;
 
@@ -7,6 +8,7 @@ public class TextToImageService : ITextToImageService
 {
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<TextToImageService> _logger;
+    private const int MaxPagesPerChapter = 60;
 
     public TextToImageService(IWebHostEnvironment env, ILogger<TextToImageService> logger)
     {
@@ -115,7 +117,7 @@ public class TextToImageService : ITextToImageService
                 wrappedLines.Add(currentLine);
         }
 
-        // Chia các dòng vào từng trang
+        // Chia các dòng vào từng trang (giới hạn số trang tối đa để chống quá tải bộ nhớ)
         var pages = new List<List<string>>();
         var currentPage = new List<string>();
         float currentY = paddingTop;
@@ -128,6 +130,11 @@ public class TextToImageService : ITextToImageService
             if (currentY + addedHeight > usableHeight && currentPage.Count > 0)
             {
                 pages.Add(currentPage);
+                if (pages.Count >= MaxPagesPerChapter)
+                {
+                    currentPage = new List<string>();
+                    break;
+                }
                 currentPage = new List<string>();
                 currentY = paddingTop;
             }
@@ -136,12 +143,12 @@ public class TextToImageService : ITextToImageService
             currentY += addedHeight;
         }
 
-        if (currentPage.Count > 0)
+        if (currentPage.Count > 0 && pages.Count < MaxPagesPerChapter)
         {
             pages.Add(currentPage);
         }
 
-        // Vẽ từng trang và xuất ra file PNG
+        // Vẽ từng trang và xuất ra file PNG với hậu tố ngẫu nhiên chống đoán URL trực tiếp
         var totalPages = pages.Count;
         for (var pageIdx = 0; pageIdx < totalPages; pageIdx++)
         {
@@ -151,7 +158,7 @@ public class TextToImageService : ITextToImageService
             using var surface = SKSurface.Create(new SKImageInfo(canvasWidth, canvasHeight, SKColorType.Rgba8888, SKAlphaType.Premul));
             var canvas = surface.Canvas;
 
-            // Nền tối chuẩn StoryNest (khi đọc ở theme sáng hoặc sepia, giao diện web sẽ áp bộ lọc thích ứng để đồng bộ màu sắc mượt mà)
+            // Nền tối chuẩn StoryNest
             canvas.Clear(new SKColor(18, 22, 31)); // #12161f
 
             // Watermark chìm giữa trang
@@ -181,8 +188,9 @@ public class TextToImageService : ITextToImageService
             var footerWidth = footerPaint.MeasureText(footerText);
             canvas.DrawText(footerText, (canvasWidth - footerWidth) / 2f, canvasHeight - 35f, footerPaint);
 
-            // Lưu ảnh PNG
-            var fileName = $"page_{pageNum:D3}.png";
+            // Lưu ảnh PNG kèm token ngẫu nhiên để người chưa mua chương không thể đoán đường dẫn tĩnh
+            var randomToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(8)).ToLowerInvariant();
+            var fileName = $"page_{pageNum:D3}_{randomToken}.png";
             var filePath = Path.Combine(chapterFolder, fileName);
 
             using (var image = surface.Snapshot())
