@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { getRoleFromToken, getDisplayNameFromToken } from "../utils/jwt";
+import { getRoleFromToken, getDisplayNameFromToken, isTokenExpired } from "../utils/jwt";
 
 interface AuthState {
   accessToken: string | null;
@@ -20,6 +20,10 @@ export const useAuthStore = create<AuthState>()(
       displayName: null,
       roles: [],
       setAuth: (accessToken, email, displayName) => {
+        if (isTokenExpired(accessToken)) {
+          set({ accessToken: null, email: null, displayName: null, roles: [] });
+          return;
+        }
         const resolvedName = getDisplayNameFromToken(accessToken) || displayName || email.split("@")[0];
         set({
           accessToken,
@@ -31,8 +35,16 @@ export const useAuthStore = create<AuthState>()(
       setDisplayName: (displayName) => set({ displayName }),
       logout: () => set({ accessToken: null, email: null, displayName: null, roles: [] }),
     }),
-    { name: "storyreader-auth" }
+    {
+      name: "storyreader-auth",
+      onRehydrateStorage: () => (state) => {
+        if (state?.accessToken && isTokenExpired(state.accessToken)) {
+          state.logout();
+        }
+      },
+    }
   )
 );
 
-export const useIsAdmin = () => useAuthStore((s) => s.roles.includes("Admin"));
+export const useIsAdmin = () =>
+  useAuthStore((s) => !!s.accessToken && !isTokenExpired(s.accessToken) && s.roles.includes("Admin"));

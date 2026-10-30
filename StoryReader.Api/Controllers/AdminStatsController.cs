@@ -71,6 +71,8 @@ public class AdminStatsController : ControllerBase
     [HttpGet("recent-transactions")]
     public async Task<IActionResult> GetRecentTransactions([FromQuery] int limit = 10)
     {
+        limit = Math.Clamp(limit, 1, 50);
+
         var raw = await _db.Transactions
             .AsNoTracking()
             .Include(t => t.User)
@@ -97,6 +99,7 @@ public class AdminStatsController : ControllerBase
     [HttpGet("recent-activities")]
     public async Task<IActionResult> GetRecentActivities([FromQuery] int limit = 10)
     {
+        limit = Math.Clamp(limit, 1, 50);
         var activities = new List<RecentActivityDto>();
 
         // 1. Recent chapters added
@@ -153,7 +156,7 @@ public class AdminStatsController : ControllerBase
                 Id: $"tx_{tx.Id}",
                 Type: "subscription_created",
                 Title: $"Giao dịch thành công {tx.Amount:N0}đ",
-                Description: $"{name} thanh toán { (tx.Type == TransactionType.Subscription ? "gói đọc VIP" : "truyện") } qua {tx.Provider}",
+                Description: $"{name} thanh toán {(tx.Type == TransactionType.Subscription ? "gói đọc VIP" : "truyện")} qua {tx.Provider}",
                 Timestamp: tx.CompletedAt ?? tx.CreatedAt
             ));
         }

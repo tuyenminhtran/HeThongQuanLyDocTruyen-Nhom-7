@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -23,7 +24,19 @@ public class AuthService : IAuthService
 
     public async Task<AuthResultDto> RegisterAsync(RegisterDto dto)
     {
-        var user = new AppUser { UserName = dto.Email, Email = dto.Email, DisplayName = dto.DisplayName };
+        var email = dto.Email?.Trim() ?? string.Empty;
+        var displayName = dto.DisplayName?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(email) || !new EmailAddressAttribute().IsValid(email) || email.Length > 100)
+            throw new InvalidOperationException("Địa chỉ email không hợp lệ.");
+
+        if (string.IsNullOrWhiteSpace(displayName) || displayName.Length > 50)
+            throw new InvalidOperationException("Tên hiển thị không được để trống và tối đa 50 ký tự.");
+
+        if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 6 || dto.Password.Length > 128)
+            throw new InvalidOperationException("Mật khẩu phải từ 6 đến 128 ký tự.");
+
+        var user = new AppUser { UserName = email, Email = email, DisplayName = displayName };
         var result = await _users.CreateAsync(user, dto.Password);
         if (!result.Succeeded)
             throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
@@ -34,16 +47,27 @@ public class AuthService : IAuthService
 
     public async Task<AuthResultDto> LoginAsync(LoginDto dto)
     {
-        var user = await _users.FindByEmailAsync(dto.Email)
+        var email = dto.Email?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(dto.Password))
+            throw new InvalidOperationException("Email hoặc mật khẩu không đúng.");
+
+        var user = await _users.FindByEmailAsync(email)
             ?? throw new InvalidOperationException("Email hoặc mật khẩu không đúng.");
 
         if (user.IsRestricted)
             throw new InvalidOperationException("Tài khoản đang bị hạn chế.");
 
+        if (await _users.IsLockedOutAsync(user))
+            throw new InvalidOperationException("Tài khoản tạm thời bị khóa do nhập sai mật khẩu nhiều lần. Vui lòng thử lại sau 15 phút.");
+
         var valid = await _users.CheckPasswordAsync(user, dto.Password);
         if (!valid)
+        {
+            await _users.AccessFailedAsync(user);
             throw new InvalidOperationException("Email hoặc mật khẩu không đúng.");
+        }
 
+        await _users.ResetAccessFailedCountAsync(user);
         return await IssueTokenAsync(user);
     }
 

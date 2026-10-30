@@ -37,6 +37,10 @@ public class ChaptersController : ControllerBase
         if (chapter is null || !chapter.IsPublished) return NotFound();
 
         chapter.ViewCount++;
+        if (chapter.Story is not null)
+        {
+            chapter.Story.ViewCount++;
+        }
         await _db.SaveChangesAsync();
 
         if (CurrentUserId is Guid userId && await _db.Users.AnyAsync(u => u.Id == userId))
@@ -68,14 +72,14 @@ public class ChaptersController : ControllerBase
             : new List<string>();
 
         var isImageChapter = isComic || (contentLines.Count > 0 && contentLines.All(line =>
-            line.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+            line.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
             line.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
             line.StartsWith("/", StringComparison.OrdinalIgnoreCase)));
 
         var imageUrls = isImageChapter
             ? contentLines
                 .Where(line =>
-                    line.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+                    line.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                     line.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
                     line.StartsWith("/", StringComparison.OrdinalIgnoreCase))
                 .Select(line => line.StartsWith("/") ? $"{baseUrl}{line}" : line)

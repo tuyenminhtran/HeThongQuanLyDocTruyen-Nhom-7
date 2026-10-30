@@ -65,7 +65,8 @@ export default function NotificationBell() {
       markReadMutation.mutate(item.id);
     }
     setIsOpen(false);
-    if (item.linkUrl) {
+    // Chỉ cho phép điều hướng tới đường dẫn nội bộ hợp lệ (chống Open Redirect & javascript: URI)
+    if (item.linkUrl && item.linkUrl.startsWith("/") && !item.linkUrl.startsWith("//")) {
       navigate(item.linkUrl);
     }
   };
