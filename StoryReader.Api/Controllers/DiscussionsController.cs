@@ -90,6 +90,9 @@ public class DiscussionsController : ControllerBase
         var d = await _db.Discussions.FirstOrDefaultAsync(x => x.Id == discussionId && x.ChapterId == chapterId);
         if (d is null) return NotFound(new { message = "Không tìm thấy bình luận." });
 
+        if (d.UserId == CurrentUserId.Value)
+            return BadRequest(new { message = "Bạn không thể tự báo cáo bình luận của chính mình." });
+
         var reason = dto?.Reason?.Trim();
         if (!string.IsNullOrEmpty(reason) && reason.Length > 300)
         {
