@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
@@ -28,6 +28,9 @@ import AtmosphericOverlay, { type AtmosphereType } from "./components/Atmospheri
 import InteractiveMascot from "./components/InteractiveMascot";
 
 export default function App() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
   const [atmosphere, setAtmosphere] = useState<AtmosphereType>(() => {
     return (localStorage.getItem("storyreader-atmosphere") as AtmosphereType) || "none";
   });
@@ -52,8 +55,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col relative">
-      {/* Easter Egg #1: Hiệu ứng bối cảnh canvas toàn màn hình */}
-      <AtmosphericOverlay type={atmosphere} />
+      {/* Easter Egg #1: Hiệu ứng bối cảnh canvas toàn màn hình (chỉ hiển thị ở giao diện người đọc) */}
+      {!isAdminRoute && <AtmosphericOverlay type={atmosphere} />}
 
       <ScrollToTop />
       <Header />
@@ -87,11 +90,13 @@ export default function App() {
       </main>
       <Footer />
 
-      {/* Easter Egg #3: Linh vật tương tác Mèo Jiji & Biến hình Totoro */}
-      <InteractiveMascot
-        currentAtmosphere={atmosphere}
-        onAtmosphereChange={handleAtmosphereChange}
-      />
+      {/* Easter Egg #3: Linh vật tương tác Mèo Jiji & Biến hình Totoro (chỉ hiển thị ở giao diện người đọc, ẩn trong Admin) */}
+      {!isAdminRoute && (
+        <InteractiveMascot
+          currentAtmosphere={atmosphere}
+          onAtmosphereChange={handleAtmosphereChange}
+        />
+      )}
     </div>
   );
 }
