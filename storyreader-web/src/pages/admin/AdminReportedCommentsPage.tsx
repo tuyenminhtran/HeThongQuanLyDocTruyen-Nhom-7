@@ -95,12 +95,12 @@ export default function AdminReportedCommentsPage() {
     <div className="space-y-6">
       {/* Toast Notification (Floating) */}
       {notificationMsg && (
-        <div className="fixed top-6 right-6 z-50 px-4 py-3 rounded-xl bg-slate-900/95 border border-ink-border text-ink-text shadow-2xl flex items-center gap-3 backdrop-blur-md animate-fadeIn">
+        <div className="fixed top-6 right-6 z-50 px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white shadow-2xl flex items-center gap-3 backdrop-blur-md animate-fadeIn">
           <i className="fa-solid fa-circle-check text-emerald-400 text-sm" />
           <span className="text-xs font-medium">{notificationMsg}</span>
           <button
             onClick={() => setNotificationMsg(null)}
-            className="text-ink-muted hover:text-ink-text ml-2 text-xs cursor-pointer"
+            className="text-slate-400 hover:text-white ml-2 text-xs cursor-pointer"
           >
             <i className="fa-solid fa-xmark" />
           </button>
@@ -110,72 +110,72 @@ export default function AdminReportedCommentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl text-ink-text font-bold">
+          <h1 className="font-serif text-2xl text-slate-900 font-bold">
             Kiểm duyệt Bình luận
           </h1>
           <p className="text-sm text-ink-muted mt-1">
-            Xử lý và kiểm duyệt các bình luận do người dùng báo cáo vi phạm.
+            Xử lý và kiểm duyệt các bình luận do người dùng báo cáo vi phạm tiêu chuẩn cộng đồng.
           </p>
         </div>
       </div>
 
       {/* Metrics Row - Clean, Professional SaaS Style */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-ink-card border border-ink-border rounded-xl p-4 transition-colors hover:border-ink-border-light">
+        <div className="bg-ink-card border border-ink-border rounded-xl p-4 transition-colors hover:border-slate-300 shadow-xs">
           <div className="flex items-center justify-between text-ink-muted mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">Chờ xử lý</span>
-            <div className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-xs">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Chờ xử lý</span>
+            <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs border border-rose-100">
               <i className="fa-solid fa-flag" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-ink-text tracking-tight">
+          <div className="text-2xl font-bold text-slate-900 tracking-tight">
             {stats?.reportedCount ?? 0}
           </div>
-          <div className="text-[11px] text-ink-muted mt-1">Báo cáo chưa duyệt</div>
+          <div className="text-[11px] text-slate-500 mt-1">Báo cáo chưa duyệt</div>
         </div>
 
-        <div className="bg-ink-card border border-ink-border rounded-xl p-4 transition-colors hover:border-ink-border-light">
+        <div className="bg-ink-card border border-ink-border rounded-xl p-4 transition-colors hover:border-slate-300 shadow-xs">
           <div className="flex items-center justify-between text-ink-muted mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">Đã ẩn</span>
-            <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Đã ẩn</span>
+            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs border border-amber-100">
               <i className="fa-solid fa-eye-slash" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-ink-text tracking-tight">
+          <div className="text-2xl font-bold text-slate-900 tracking-tight">
             {stats?.hiddenCount ?? 0}
           </div>
-          <div className="text-[11px] text-ink-muted mt-1">Bình luận tạm ẩn</div>
+          <div className="text-[11px] text-slate-500 mt-1">Bình luận tạm ẩn</div>
         </div>
 
-        <div className="bg-ink-card border border-ink-border rounded-xl p-4 transition-colors hover:border-ink-border-light">
+        <div className="bg-ink-card border border-ink-border rounded-xl p-4 transition-colors hover:border-slate-300 shadow-xs">
           <div className="flex items-center justify-between text-ink-muted mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">Tài khoản bị khóa</span>
-            <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Tài khoản bị khóa</span>
+            <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-xs border border-purple-100">
               <i className="fa-solid fa-user-slash" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-ink-text tracking-tight">
+          <div className="text-2xl font-bold text-slate-900 tracking-tight">
             {stats?.restrictedUsersCount ?? 0}
           </div>
-          <div className="text-[11px] text-ink-muted mt-1">Vi phạm tiêu chuẩn</div>
+          <div className="text-[11px] text-slate-500 mt-1">Vi phạm tiêu chuẩn</div>
         </div>
 
-        <div className="bg-ink-card border border-ink-border rounded-xl p-4 transition-colors hover:border-ink-border-light">
+        <div className="bg-ink-card border border-ink-border rounded-xl p-4 transition-colors hover:border-slate-300 shadow-xs">
           <div className="flex items-center justify-between text-ink-muted mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">Hợp lệ</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Hợp lệ</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs border border-emerald-100">
               <i className="fa-solid fa-check" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-ink-text tracking-tight">
+          <div className="text-2xl font-bold text-slate-900 tracking-tight">
             {stats?.visibleCount ?? 0}
           </div>
-          <div className="text-[11px] text-ink-muted mt-1">Bình luận giữ lại</div>
+          <div className="text-[11px] text-slate-500 mt-1">Bình luận giữ lại</div>
         </div>
       </div>
 
       {/* Main Container */}
-      <div className="bg-ink-card border border-ink-border rounded-xl p-4 sm:p-5 space-y-4">
+      <div className="bg-ink-card border border-ink-border rounded-xl p-4 sm:p-5 space-y-4 shadow-xs">
         {/* Navigation Tabs & Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-ink-border pb-3">
           <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
@@ -183,13 +183,13 @@ export default function AdminReportedCommentsPage() {
               onClick={() => { setStatusFilter("reported"); setPage(1); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === "reported"
-                  ? "bg-ink-border text-ink-text font-semibold shadow-xs"
-                  : "text-ink-muted hover:text-ink-text hover:bg-ink-bg"
+                  ? "bg-slate-100 text-slate-900 font-semibold border border-slate-200 shadow-xs"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
               Chờ xử lý
               {(stats?.reportedCount ?? 0) > 0 && (
-                <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-rose-500/20 text-rose-400 font-bold">
+                <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-rose-100 text-rose-700 font-bold border border-rose-200">
                   {stats?.reportedCount}
                 </span>
               )}
@@ -198,13 +198,13 @@ export default function AdminReportedCommentsPage() {
               onClick={() => { setStatusFilter("hidden"); setPage(1); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === "hidden"
-                  ? "bg-ink-border text-ink-text font-semibold shadow-xs"
-                  : "text-ink-muted hover:text-ink-text hover:bg-ink-bg"
+                  ? "bg-slate-100 text-slate-900 font-semibold border border-slate-200 shadow-xs"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
               Đã ẩn
               {(stats?.hiddenCount ?? 0) > 0 && (
-                <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-amber-500/20 text-amber-400 font-bold">
+                <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-700 font-bold border border-amber-200">
                   {stats?.hiddenCount}
                 </span>
               )}
@@ -213,8 +213,8 @@ export default function AdminReportedCommentsPage() {
               onClick={() => { setStatusFilter("visible"); setPage(1); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === "visible"
-                  ? "bg-ink-border text-ink-text font-semibold shadow-xs"
-                  : "text-ink-muted hover:text-ink-text hover:bg-ink-bg"
+                  ? "bg-slate-100 text-slate-900 font-semibold border border-slate-200 shadow-xs"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
               Hợp lệ
@@ -223,8 +223,8 @@ export default function AdminReportedCommentsPage() {
               onClick={() => { setStatusFilter("all"); setPage(1); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === "all"
-                  ? "bg-ink-border text-ink-text font-semibold shadow-xs"
-                  : "text-ink-muted hover:text-ink-text hover:bg-ink-bg"
+                  ? "bg-slate-100 text-slate-900 font-semibold border border-slate-200 shadow-xs"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
               Tất cả
@@ -238,54 +238,54 @@ export default function AdminReportedCommentsPage() {
               placeholder="Tìm kiếm nội dung, người gửi..."
               value={keyword}
               onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
-              className="w-full px-3 py-1.5 pl-8 rounded-lg bg-ink-bg border border-ink-border text-ink-text text-xs placeholder:text-ink-muted/50 focus:outline-none focus:border-gold/50"
+              className="w-full px-3 py-1.5 pl-8 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs placeholder:text-slate-400 focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
             />
-            <i className="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-muted text-xs" />
+            <i className="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
           </div>
         </div>
 
         {/* Content List */}
         {isLoading ? (
-          <div className="p-12 text-center text-ink-muted">
-            <i className="fa-solid fa-circle-notch fa-spin text-xl text-gold mb-2" />
+          <div className="p-12 text-center text-slate-400">
+            <i className="fa-solid fa-circle-notch fa-spin text-xl text-orange-600 mb-2" />
             <p className="text-xs">Đang tải danh sách bình luận...</p>
           </div>
         ) : error ? (
-          <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-6 text-center text-rose-400">
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-center text-rose-600">
             <i className="fa-solid fa-circle-exclamation text-xl mb-1.5" />
             <p className="text-xs">Không thể tải dữ liệu. Vui lòng thử lại sau.</p>
           </div>
         ) : items.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-ink-border p-12 text-center text-ink-muted">
-            <div className="w-10 h-10 rounded-full bg-ink-bg border border-ink-border flex items-center justify-center mx-auto mb-3 text-ink-muted/60">
+          <div className="rounded-xl border border-dashed border-slate-200 p-12 text-center text-slate-400">
+            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto mb-3 text-slate-400">
               <i className="fa-regular fa-folder-open text-base" />
             </div>
-            <p className="text-sm font-semibold text-ink-text">Không có bình luận nào</p>
-            <p className="text-xs text-ink-muted mt-1">Chưa có bình luận hoặc báo cáo vi phạm cần xử lý trong mục này.</p>
+            <p className="text-sm font-semibold text-slate-800">Không có bình luận nào</p>
+            <p className="text-xs text-slate-500 mt-1">Chưa có bình luận hoặc báo cáo vi phạm cần xử lý trong mục này.</p>
           </div>
         ) : (
           <div className="space-y-3">
             {items.map((comment: ReportedCommentItem) => (
               <div
                 key={comment.id}
-                className="bg-ink-bg border border-ink-border rounded-xl p-4 transition-all space-y-3 hover:border-ink-border-light"
+                className="bg-white border border-slate-200 rounded-xl p-4 transition-all space-y-3 hover:border-slate-300 shadow-xs"
               >
                 {/* Header: User Info & Story Location */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-ink-border/50 pb-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-2.5">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-slate-800 border border-ink-border flex items-center justify-center font-bold text-amber-400 text-xs shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 text-xs shrink-0">
                       {comment.userName ? comment.userName.charAt(0).toUpperCase() : "U"}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-ink-text text-xs">{comment.userName || "Độc giả"}</span>
+                        <span className="font-semibold text-slate-900 text-xs">{comment.userName || "Độc giả"}</span>
                         {comment.isUserRestricted && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 font-medium">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 font-medium">
                             Đã khóa
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-ink-muted">{comment.userEmail || "Không có email"}</div>
+                      <div className="text-[11px] text-slate-500">{comment.userEmail || "Không có email"}</div>
                     </div>
                   </div>
 
@@ -296,7 +296,7 @@ export default function AdminReportedCommentsPage() {
                         href={`/stories/${comment.storyId}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="font-medium text-ink-text hover:text-gold transition-colors line-clamp-1 max-w-[200px]"
+                        className="font-medium text-slate-900 hover:text-orange-600 transition-colors line-clamp-1 max-w-[200px]"
                       >
                         {comment.storyTitle}
                       </a>
@@ -304,7 +304,7 @@ export default function AdminReportedCommentsPage() {
                         href={`/chapters/${comment.chapterId}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-ink-muted hover:text-amber-400 transition-colors flex items-center justify-end gap-1 text-[11px] mt-0.5"
+                        className="text-slate-500 hover:text-orange-600 transition-colors flex items-center justify-end gap-1 text-[11px] mt-0.5"
                       >
                         <span>Chương {comment.chapterNumber}: {comment.chapterTitle}</span>
                         <i className="fa-solid fa-arrow-up-right-from-square text-[9px]" />
@@ -313,17 +313,17 @@ export default function AdminReportedCommentsPage() {
 
                     <div className="shrink-0">
                       {comment.status === 2 && (
-                        <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 font-semibold">
+                        <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-semibold">
                           Bị báo cáo ({comment.reportCount || 1})
                         </span>
                       )}
                       {comment.status === 1 && (
-                        <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-medium">
+                        <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-medium">
                           Đã ẩn
                         </span>
                       )}
                       {comment.status === 0 && (
-                        <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium">
+                        <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
                           Hợp lệ
                         </span>
                       )}
@@ -332,20 +332,20 @@ export default function AdminReportedCommentsPage() {
                 </div>
 
                 {/* Comment Content */}
-                <div className="p-3 rounded-lg bg-ink-card border border-ink-border">
-                  <div className="text-[11px] text-ink-muted mb-1 flex items-center justify-between">
-                    <span className="font-medium text-ink-muted">Nội dung bình luận</span>
-                    <span className="font-mono text-[10px]">{formatDate(comment.createdAt)}</span>
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
+                  <div className="text-[11px] text-slate-500 mb-1 flex items-center justify-between">
+                    <span className="font-medium text-slate-600">Nội dung bình luận</span>
+                    <span className="font-mono text-[10px] text-slate-400">{formatDate(comment.createdAt)}</span>
                   </div>
-                  <p className="text-xs text-ink-text font-normal leading-relaxed break-words">
+                  <p className="text-xs text-slate-800 font-normal leading-relaxed break-words">
                     "{comment.content}"
                   </p>
                 </div>
 
                 {/* Report Reason (if any) */}
                 {comment.reportReason && (
-                  <div className="flex items-start gap-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-lg">
-                    <i className="fa-solid fa-circle-exclamation text-xs mt-0.5 shrink-0" />
+                  <div className="flex items-start gap-2 text-xs text-rose-700 bg-rose-50 border border-rose-200 px-3 py-2 rounded-lg">
+                    <i className="fa-solid fa-circle-exclamation text-xs mt-0.5 shrink-0 text-rose-600" />
                     <div>
                       <span className="font-semibold">Lý do báo cáo: </span>
                       <span>{comment.reportReason}</span>
@@ -385,7 +385,7 @@ export default function AdminReportedCommentsPage() {
                         }
                       }}
                       disabled={restrictMutation.isPending}
-                      className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
                     >
                       <i className="fa-solid fa-user-slash text-xs" />
                       Khóa tài khoản
@@ -399,7 +399,7 @@ export default function AdminReportedCommentsPage() {
                       }
                     }}
                     disabled={deleteMutation.isPending}
-                    className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
                   >
                     <i className="fa-solid fa-trash text-xs" />
                     Xóa
