@@ -14,6 +14,8 @@ interface AudioReaderPlayerProps {
 
 type TtsEngine = "google" | "webspeech";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5066/api";
+
 // Tách nội dung thành các câu ngắn hợp lý (< 180 ký tự) cho TTS
 function splitTextIntoSentences(text: string, maxLength: number = 180): string[] {
   if (!text) return [];
@@ -141,7 +143,7 @@ export default function AudioReaderPlayer({
       const text = chunks[index];
 
       if (activeEngine === "google") {
-        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(text)}`;
+        const url = `${API_BASE_URL}/tts?text=${encodeURIComponent(text)}&lang=vi`;
         const audio = new Audio(url);
         audio.playbackRate = rate;
         audioRef.current = audio;
@@ -172,7 +174,7 @@ export default function AudioReaderPlayer({
 
         // Preload đoạn kế tiếp để không bị trễ giữa các câu
         if (index + 1 < chunks.length) {
-          const nextUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(chunks[index + 1])}`;
+          const nextUrl = `${API_BASE_URL}/tts?text=${encodeURIComponent(chunks[index + 1])}&lang=vi`;
           const preloadAudio = new Audio(nextUrl);
           preloadAudio.preload = "auto";
         }
