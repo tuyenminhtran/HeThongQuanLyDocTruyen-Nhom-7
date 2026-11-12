@@ -42,7 +42,7 @@ class _StoryReaderAppState extends ConsumerState<StoryReaderApp> {
     return MaterialApp.router(
       title: 'StoryReader',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       routerConfig: router,
     );
   }

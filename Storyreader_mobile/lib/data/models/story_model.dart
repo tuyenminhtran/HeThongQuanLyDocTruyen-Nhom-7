@@ -6,6 +6,9 @@ class StoryListItem {
   final int status;
   final int accessPolicy;
   final int viewCount;
+  final int type;
+  final int totalChapters;
+  final int latestChapterNumber;
 
   StoryListItem({
     required this.id,
@@ -15,6 +18,9 @@ class StoryListItem {
     required this.status,
     required this.accessPolicy,
     required this.viewCount,
+    this.type = 0,
+    this.totalChapters = 0,
+    this.latestChapterNumber = 0,
   });
 
   factory StoryListItem.fromJson(Map<String, dynamic> json) {
@@ -26,6 +32,9 @@ class StoryListItem {
       status: json['status'] as int? ?? 0,
       accessPolicy: json['accessPolicy'] as int? ?? 0,
       viewCount: json['viewCount'] as int? ?? 0,
+      type: json['type'] as int? ?? 0,
+      totalChapters: json['totalChapters'] as int? ?? 0,
+      latestChapterNumber: json['latestChapterNumber'] as int? ?? 0,
     );
   }
 
@@ -37,6 +46,9 @@ class StoryListItem {
     'status': status,
     'accessPolicy': accessPolicy,
     'viewCount': viewCount,
+    'type': type,
+    'totalChapters': totalChapters,
+    'latestChapterNumber': latestChapterNumber,
   };
 }
 

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/image_utils.dart';
 import '../../data/api/payment_api.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/story_provider.dart';
@@ -173,11 +173,19 @@ class _StoryDetailScreenState extends ConsumerState<StoryDetailScreen> {
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                CachedNetworkImage(
-                                  imageUrl: story.coverImageUrl.isNotEmpty
-                                      ? story.coverImageUrl
-                                      : 'https://placehold.co/400x600?text=No+Cover',
+                                Image.network(
+                                  ImageUtils.resolveUrl(story.coverImageUrl),
                                   fit: BoxFit.cover,
+                                  errorBuilder: (ctx, err, stack) => Container(
+                                    color: const Color(0xFFF1F5F9),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.auto_stories,
+                                        color: Color(0xFF94A3B8),
+                                        size: 40,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                                 // 3D Book Spine Highlight
                                 Positioned(
