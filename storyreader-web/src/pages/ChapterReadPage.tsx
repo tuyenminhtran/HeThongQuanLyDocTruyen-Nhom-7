@@ -8,6 +8,7 @@ import { useAuthStore, useIsAdmin, useCurrentUserId } from "../store/authStore";
 import { AxiosError } from "axios";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { AtmosphereType } from "../components/AtmosphericOverlay";
+import AudioReaderPlayer from "../components/AudioReaderPlayer";
 
 type Theme = "dark" | "light" | "sepia";
 type FontFamily = "serif" | "sans";
@@ -42,6 +43,7 @@ export default function ChapterReadPage() {
   const [reportingComment, setReportingComment] = useState<DiscussionItem | null>(null);
   const [selectedReason, setSelectedReason] = useState<string>("Spam, quảng cáo, cờ bạc");
   const [customReason, setCustomReason] = useState<string>("");
+  const [showAudioPlayer, setShowAudioPlayer] = useState<boolean>(false);
 
   // Hiệu ứng bối cảnh Atmospheric Reader (Easter Egg #1)
   const ATMOSPHERE_MODES: { type: AtmosphereType; label: string }[] = useMemo(
@@ -198,6 +200,12 @@ export default function ChapterReadPage() {
         e.preventDefault();
         cycleAtmosphere();
       }
+
+      // Phím tắt 'A' để bật/tắt Audio Reader (Nghe truyện bằng giọng đọc)
+      if (!isInput && (e.key === "a" || e.key === "A") && !e.ctrlKey && !e.metaKey && !e.altKey && !isComic) {
+        e.preventDefault();
+        setShowAudioPlayer((prev) => !prev);
+      }
     };
 
     document.addEventListener("copy", handleCopy);
@@ -263,7 +271,12 @@ export default function ChapterReadPage() {
     [navigate, activeStoryId]
   );
 
-  // Keyboard navigation: ArrowLeft -> Prev, ArrowRight -> Next
+  // Phân loại hình thức nội dung
+  const isComic = chapter?.storyType === 1;
+  const isProtectedNovel = !isComic && !!(chapter?.imageUrls && chapter.imageUrls.length > 0);
+  const hasImages = isComic || isProtectedNovel;
+
+  // Keyboard navigation: ArrowLeft -> Prev, ArrowRight -> Next, A -> Audio Player
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -273,12 +286,14 @@ export default function ChapterReadPage() {
         goToChapter(prevChapter.id);
       } else if (e.key === "ArrowRight" && nextChapter) {
         goToChapter(nextChapter.id);
+      } else if ((e.key === "a" || e.key === "A") && !isComic && chapter?.content) {
+        setShowAudioPlayer((prev) => !prev);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [prevChapter, nextChapter, goToChapter]);
+  }, [prevChapter, nextChapter, goToChapter, isComic, chapter?.content]);
 
   // Theme styling
   const themeClasses: Record<Theme, string> = {
@@ -298,11 +313,6 @@ export default function ChapterReadPage() {
     light: "bg-white border-gray-200 text-[#1A1D20] shadow-xs",
     sepia: "bg-[#EFE5CD] border-[#D6C5A5] text-[#433422]",
   };
-
-  // Phân loại hình thức nội dung
-  const isComic = chapter?.storyType === 1;
-  const isProtectedNovel = !isComic && !!(chapter?.imageUrls && chapter.imageUrls.length > 0);
-  const hasImages = isComic || isProtectedNovel;
 
   // Bộ lọc triệt tiêu nền đen và viền, chuyển thành chữ đen hòa tan hoàn toàn vào trang đọc
   const getProtectedImageStyle = () => {
@@ -418,20 +428,44 @@ export default function ChapterReadPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative">
         {/* Floating Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
-          <button
-            onClick={() => {
-              if (activeStoryId) {
-                navigate(`/stories/${activeStoryId}`);
-              } else {
-                navigate(-1);
-              }
-            }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold border ${borderClasses[theme]} ${cardClasses[theme]} hover:border-orange-500 hover:text-orange-600 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs`}
-            title="Quay lại trang truyện"
-          >
-            <i className="fa-solid fa-arrow-left text-xs" />
-            <span>Quay lại truyện</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (activeStoryId) {
+                  navigate(`/stories/${activeStoryId}`);
+                } else {
+                  navigate(-1);
+                }
+              }}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold border ${borderClasses[theme]} ${cardClasses[theme]} hover:border-orange-500 hover:text-orange-600 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs`}
+              title="Quay lại trang truyện"
+            >
+              <i className="fa-solid fa-arrow-left text-xs" />
+              <span>Quay lại</span>
+            </button>
+
+            {/* Nút Nghe Truyện Audio Player */}
+            {!isComic && chapter?.content && (
+              <button
+                onClick={() => setShowAudioPlayer(!showAudioPlayer)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                  showAudioPlayer
+                    ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-400 shadow-orange-500/25 scale-105"
+                    : `${borderClasses[theme]} ${cardClasses[theme]} hover:border-orange-500 hover:text-orange-600`
+                }`}
+                title="Nghe truyện bằng giọng đọc tự động Audio (Phím tắt: A)"
+              >
+                <i
+                  className={`fa-solid ${
+                    showAudioPlayer
+                      ? "fa-headphones-simple text-amber-200 animate-pulse"
+                      : "fa-headphones text-orange-500"
+                  } text-xs`}
+                />
+                <span>{showAudioPlayer ? "Đang phát Audio" : "Nghe Audio"}</span>
+              </button>
+            )}
+          </div>
 
           <div className={`backdrop-blur-md border ${borderClasses[theme]} rounded-full flex items-center p-1.5 shadow-xs ${
             theme === 'dark'
@@ -1101,6 +1135,21 @@ export default function ChapterReadPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Audio Reader Floating Player */}
+      {showAudioPlayer && !isComic && chapter?.content && (
+        <AudioReaderPlayer
+          content={chapter.content}
+          chapterTitle={chapter.title}
+          chapterNumber={chapter.chapterNumber}
+          theme={theme}
+          onClose={() => setShowAudioPlayer(false)}
+          onNextChapter={nextChapter ? () => goToChapter(nextChapter.id) : undefined}
+          onPrevChapter={prevChapter ? () => goToChapter(prevChapter.id) : undefined}
+          hasNextChapter={!!nextChapter}
+          hasPrevChapter={!!prevChapter}
+        />
       )}
     </div>
   );
