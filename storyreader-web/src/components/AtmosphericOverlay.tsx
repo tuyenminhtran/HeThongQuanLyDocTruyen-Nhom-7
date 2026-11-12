@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 
 export type AtmosphereType = "none" | "sakura" | "fireflies" | "rain" | "stars";
 
@@ -7,10 +8,12 @@ interface AtmosphericOverlayProps {
 }
 
 export default function AtmosphericOverlay({ type }: AtmosphericOverlayProps) {
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith("/admin");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    if (type === "none") return;
+    if (type === "none" || isAdmin) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -292,6 +295,8 @@ export default function AtmosphericOverlay({ type }: AtmosphericOverlayProps) {
   }, [type]);
 
   if (type === "none") return null;
+
+  if (isAdmin) return null;
 
   return (
     <canvas

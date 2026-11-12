@@ -27,6 +27,7 @@ export function isTokenExpired(token: string | null | undefined): boolean {
 
 const ROLE_CLAIM = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
 const NAME_CLAIM = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name";
+const ID_CLAIM = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
 
 export function getRoleFromToken(token: string): string[] {
   if (isTokenExpired(token)) return [];
@@ -42,4 +43,12 @@ export function getDisplayNameFromToken(token: string): string | null {
   if (!payload) return null;
   const name = payload[NAME_CLAIM] ?? payload["unique_name"] ?? payload["name"];
   return typeof name === "string" && name ? name : null;
+}
+
+export function getUserIdFromToken(token: string): string | null {
+  if (isTokenExpired(token)) return null;
+  const payload = decodeJwt(token);
+  if (!payload) return null;
+  const id = payload[ID_CLAIM] ?? payload["nameid"] ?? payload["sub"];
+  return typeof id === "string" && id ? id : null;
 }

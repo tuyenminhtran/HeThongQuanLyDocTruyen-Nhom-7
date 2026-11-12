@@ -2,7 +2,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getStoryDetail, getIsFollowing, toggleFollowStory } from "../api/stories";
 import { buyStory, simulatePaymentCallback } from "../api/payments";
-import { postChapterDiscussion } from "../api/discussions";
+import { postChapterDiscussion, reportChapterDiscussion } from "../api/discussions";
 import { useAuthStore, useIsAdmin } from "../store/authStore";
 import { resolveImageUrl } from "../utils/imageUrl";
 import { useState, useMemo, useEffect } from "react";
@@ -84,6 +84,11 @@ export default function StoryDetailPage() {
       return [];
     }
   });
+
+  const [reportingReview, setReportingReview] = useState<StoryReview | null>(null);
+  const [reportReason, setReportReason] = useState<string>("Spam, quảng cáo, cờ bạc");
+  const [customReportReason, setCustomReportReason] = useState<string>("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   const { data: apiStory, isLoading } = useQuery({
     queryKey: ["story", id],
@@ -223,6 +228,28 @@ export default function StoryDetailPage() {
       localStorage.setItem(`story_reviews_${id}`, JSON.stringify(updated));
     } catch {
       // ignore
+    }
+  };
+
+  const handleReportReviewSubmit = async () => {
+    if (!reportingReview) return;
+    const finalReason = reportReason === "Lý do khác"
+      ? (customReportReason.trim() || "Bị độc giả báo cáo vi phạm")
+      : reportReason;
+
+    setIsSubmittingReport(true);
+    try {
+      if (story?.chapters && story.chapters.length > 0) {
+        await reportChapterDiscussion(story.chapters[0].id, reportingReview.id, finalReason);
+      }
+      setCommentNotice({ type: "success", text: "Đã gửi báo cáo vi phạm thành công! Ban quản trị sẽ kiểm duyệt." });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Đã ghi nhận báo cáo bình luận. Cảm ơn bạn đã đóng góp!";
+      setCommentNotice({ type: "success", text: msg });
+    } finally {
+      setIsSubmittingReport(false);
+      setReportingReview(null);
+      setTimeout(() => setCommentNotice(null), 4000);
     }
   };
 
@@ -703,13 +730,30 @@ export default function StoryDetailPage() {
                         <span className="font-bold text-slate-900 text-sm">{rev.userName}</span>
                         <span className="text-xs text-slate-400">• {formatCommentTime(rev.createdAt)}</span>
                       </div>
-                      {displayName === rev.userName && (
+                      {displayName === rev.userName ? (
                         <button
                           onClick={() => handleDeleteReview(rev.id)}
                           className="text-xs text-slate-400 hover:text-rose-600 transition-colors cursor-pointer p-1"
                           title="Xóa bình luận này"
                         >
                           <i className="fa-regular fa-trash-can" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            if (!isLoggedIn) {
+                              navigate("/login");
+                              return;
+                            }
+                            setReportReason("Spam, quảng cáo, cờ bạc");
+                            setCustomReportReason("");
+                            setReportingReview(rev);
+                          }}
+                          className="text-xs text-slate-500 hover:text-rose-600 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-rose-300 bg-slate-50 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                          title="Báo cáo bình luận vi phạm"
+                        >
+                          <i className="fa-solid fa-flag text-[10px] text-rose-500" />
+                          <span className="text-[11px] font-medium">Báo cáo</span>
                         </button>
                       )}
                     </div>
@@ -842,6 +886,101 @@ export default function StoryDetailPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Báo cáo bình luận / đánh giá vi phạm */}
+      {reportingReview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+                <i className="fa-solid fa-flag text-rose-500" />
+                Báo cáo bình luận vi phạm
+              </h3>
+              <button
+                onClick={() => setReportingReview(null)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-base" />
+              </button>
+            </div>
+
+            {/* Trích dẫn bình luận */}
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+              <div className="font-semibold text-slate-800 mb-1">
+                {reportingReview.userName}:
+              </div>
+              <p className="text-slate-600 italic line-clamp-3">
+                "{reportingReview.content}"
+              </p>
+            </div>
+
+            {/* Chọn lý do */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-slate-700">
+                Chọn lý do báo cáo:
+              </label>
+              <div className="space-y-1.5">
+                {[
+                  "Spam, quảng cáo, cờ bạc",
+                  "Ngôn từ xúc phạm, đả kích, thù ghét",
+                  "Tiết lộ trước nội dung (Spoil tình tiết)",
+                  "Nội dung phản cảm, đồi trụy",
+                  "Lý do khác",
+                ].map((reason) => (
+                  <label
+                    key={reason}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer transition-colors ${
+                      reportReason === reason
+                        ? "border-orange-500 bg-orange-500/10 text-orange-600 font-semibold"
+                        : "border-slate-200 hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="detailReportReason"
+                      checked={reportReason === reason}
+                      onChange={() => setReportReason(reason)}
+                      className="text-orange-600 focus:ring-orange-500"
+                    />
+                    <span>{reason}</span>
+                  </label>
+                ))}
+              </div>
+
+              {reportReason === "Lý do khác" && (
+                <textarea
+                  value={customReportReason}
+                  onChange={(e) => setCustomReportReason(e.target.value)}
+                  placeholder="Mô tả cụ thể vi phạm của bình luận này..."
+                  rows={3}
+                  className="w-full mt-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-800 focus:outline-none focus:border-orange-500"
+                />
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setReportingReview(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleReportReviewSubmit}
+                disabled={isSubmittingReport}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {isSubmittingReport && (
+                  <i className="fa-solid fa-spinner fa-spin text-xs" />
+                )}
+                Gửi báo cáo
+              </button>
+            </div>
           </div>
         </div>
       )}

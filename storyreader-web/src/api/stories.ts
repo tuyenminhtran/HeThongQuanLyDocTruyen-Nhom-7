@@ -19,6 +19,7 @@ export interface ChapterListItem {
   title: string;
   requiresAccess: boolean;
   partName?: string | null;
+  publishAt?: string | null;
 }
 
 export interface StoryDetail {

@@ -155,6 +155,16 @@ public class StoryService : IStoryService
         await _db.SaveChangesAsync();
     }
 
+    private static bool IsAlreadyImageUrlList(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+        var lines = content.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        return lines.Length > 0 && lines.All(line =>
+            line.Trim().StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase) ||
+            line.Trim().StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            line.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+    }
+
     public async Task AddChapterAsync(Guid storyId, CreateChapterDto dto)
     {
         var story = await _db.Stories.FindAsync(storyId)
@@ -163,7 +173,7 @@ public class StoryService : IStoryService
         var chapterId = Guid.NewGuid();
         var content = dto.Content;
 
-        if (dto.RenderAsImages && !string.IsNullOrWhiteSpace(dto.Content))
+        if (story.Type != StoryType.Comic && dto.RenderAsImages && !string.IsNullOrWhiteSpace(dto.Content) && !IsAlreadyImageUrlList(dto.Content))
         {
             var imageUrls = await _textToImageService.RenderTextToImagesAsync(dto.Content, chapterId);
             if (imageUrls.Count > 0)
@@ -212,8 +222,10 @@ public class StoryService : IStoryService
         var chapter = await _db.Chapters.FirstOrDefaultAsync(c => c.Id == chapterId && c.StoryId == storyId)
             ?? throw new InvalidOperationException("Không tìm thấy chương truyện.");
 
+        var story = await _db.Stories.FindAsync(storyId);
+
         var content = dto.Content;
-        if (dto.RenderAsImages && !string.IsNullOrWhiteSpace(dto.Content))
+        if (story?.Type != StoryType.Comic && dto.RenderAsImages && !string.IsNullOrWhiteSpace(dto.Content) && !IsAlreadyImageUrlList(dto.Content))
         {
             var imageUrls = await _textToImageService.RenderTextToImagesAsync(dto.Content, chapterId);
             if (imageUrls.Count > 0)
@@ -229,7 +241,6 @@ public class StoryService : IStoryService
         chapter.PublishAt = dto.PublishAt;
         chapter.UpdatedAt = DateTime.UtcNow;
 
-        var story = await _db.Stories.FindAsync(storyId);
         if (story != null) story.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();

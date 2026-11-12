@@ -10,7 +10,7 @@ import {
 import { searchStories, type StoryListItem } from "../../api/stories";
 
 function formatDateTime(dateStr: string | null): string {
-  if (!dateStr) return "Chưa đặt lịch";
+  if (!dateStr) return "Chưa hẹn giờ";
   try {
     const d = new Date(dateStr);
     return d.toLocaleString("vi-VN", {
@@ -25,27 +25,39 @@ function formatDateTime(dateStr: string | null): string {
   }
 }
 
-function getTimeRemaining(targetDateStr: string | null): { text: string; isPast: boolean; color: string } {
-  if (!targetDateStr) return { text: "Không có lịch", isPast: false, color: "text-ink-muted" };
-  const target = new Date(targetDateStr).getTime();
+function getTimeRemaining(publishAt: string | null): { text: string; color: string } {
+  if (!publishAt) return { text: "Không có lịch", color: "text-slate-400" };
+  const target = new Date(publishAt).getTime();
   const now = Date.now();
-  const diff = target - now;
+  const diffMs = target - now;
 
-  if (diff <= 0) {
-    return { text: "Đã đến giờ xuất bản", isPast: true, color: "text-emerald-400" };
+  if (diffMs <= 0) {
+    return { text: "Đến giờ xuất bản", color: "text-emerald-600 font-medium" };
   }
 
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const days = Math.floor(hours / 24);
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHours = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHours / 24);
 
-  if (days > 0) {
-    return { text: `Còn ${days} ngày ${hours % 24} giờ`, isPast: false, color: "text-amber-400" };
+  if (diffDays > 0) {
+    const hours = diffHours % 24;
+    return {
+      text: `Còn ${diffDays} ngày ${hours > 0 ? `${hours} giờ` : ""}`,
+      color: "text-slate-700",
+    };
   }
-  if (hours > 0) {
-    return { text: `Còn ${hours} giờ ${mins} phút`, isPast: false, color: "text-amber-400" };
+  if (diffHours > 0) {
+    const mins = diffMin % 60;
+    return {
+      text: `Còn ${diffHours} giờ ${mins > 0 ? `${mins} phút` : ""}`,
+      color: "text-amber-600 font-medium",
+    };
   }
-  return { text: `Còn ${mins} phút`, isPast: false, color: "text-orange-400" };
+  return {
+    text: `Còn ${diffMin} phút`,
+    color: "text-rose-600 font-semibold",
+  };
 }
 
 export default function AdminSchedulesPage() {
@@ -56,18 +68,11 @@ export default function AdminSchedulesPage() {
   const [page, setPage] = useState<number>(1);
   const pageSize = 15;
 
-  // State Modal Đổi Lịch Hẹn
   const [selectedChapter, setSelectedChapter] = useState<ScheduledChapterItem | null>(null);
   const [newPublishAt, setNewPublishAt] = useState<string>("");
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
 
-  // Lấy danh sách truyện để làm bộ lọc
-  const { data: storiesData } = useQuery({
-    queryKey: ["allStoriesForFilter"],
-    queryFn: () => searchStories(undefined, undefined, 100),
-  });
-
-  // Lấy danh sách chương theo lịch
+  // Lấy danh sách lịch đăng
   const { data, isLoading, error } = useQuery({
     queryKey: ["adminSchedules", statusFilter, storyFilter, keyword, page],
     queryFn: () =>
@@ -80,12 +85,18 @@ export default function AdminSchedulesPage() {
       }),
   });
 
-  // Mutation: Xuất bản ngay
+  // Lấy danh mục truyện để hiển thị bộ lọc dropdown
+  const { data: storiesData } = useQuery({
+    queryKey: ["storiesDropdown"],
+    queryFn: () => searchStories(),
+  });
+
+  // Mutation: Đăng ngay
   const publishNowMutation = useMutation({
-    mutationFn: publishChapterNow,
+    mutationFn: (chapterId: string) => publishChapterNow(chapterId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminSchedules"] });
-      showNotification("Đã xuất bản chương truyện thành công!");
+      showNotification("Đã xuất bản chương thành công");
     },
   });
 
@@ -96,7 +107,7 @@ export default function AdminSchedulesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminSchedules"] });
       setSelectedChapter(null);
-      showNotification("Đã cập nhật lịch đăng chương thành công!");
+      showNotification("Đã cập nhật lịch đăng chương thành công");
     },
   });
 
@@ -105,19 +116,18 @@ export default function AdminSchedulesPage() {
     mutationFn: (chapterId: string) => cancelSchedule(chapterId, false),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminSchedules"] });
-      showNotification("Đã hủy lịch hẹn và xuất bản chương ngay!");
+      showNotification("Đã hủy lịch hẹn và xuất bản chương");
     },
   });
 
   const showNotification = (msg: string) => {
     setActionSuccessMsg(msg);
-    setTimeout(() => setActionSuccessMsg(null), 4000);
+    setTimeout(() => setActionSuccessMsg(null), 3500);
   };
 
   const handleOpenRescheduleModal = (chap: ScheduledChapterItem) => {
     setSelectedChapter(chap);
     if (chap.publishAt) {
-      // Chuyển sang format YYYY-MM-DDTHH:mm cho input datetime-local
       const d = new Date(chap.publishAt);
       const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
         .toISOString()
@@ -147,149 +157,169 @@ export default function AdminSchedulesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Toast Notification (Floating) */}
+      {actionSuccessMsg && (
+        <div className="fixed top-6 right-6 z-50 px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white shadow-2xl flex items-center gap-3 backdrop-blur-md animate-fadeIn">
+          <i className="fa-solid fa-circle-check text-emerald-400 text-sm" />
+          <span className="text-xs font-medium">{actionSuccessMsg}</span>
+          <button
+            onClick={() => setActionSuccessMsg(null)}
+            className="text-slate-400 hover:text-white ml-2 text-xs cursor-pointer"
+          >
+            <i className="fa-solid fa-xmark" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl text-ink-text font-bold">
-            Quản lý Đăng Truyện Theo Lịch
+          <h1 className="font-serif text-2xl text-slate-900 font-bold">
+            Lịch Đăng Truyện
           </h1>
           <p className="text-sm text-ink-muted mt-1">
-            Xếp lịch xuất bản trước cho các chương truyện chữ và truyện tranh, hệ thống sẽ tự động mở khóa theo đúng giờ hẹn.
+            Lập lịch và tự động xuất bản các chương truyện theo thời gian hẹn.
           </p>
         </div>
       </div>
 
-      {/* Thông báo thành công */}
-      {actionSuccessMsg && (
-        <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center gap-3 animate-fadeIn">
-          <i className="fa-solid fa-circle-check text-lg" />
-          <span className="font-medium">{actionSuccessMsg}</span>
-        </div>
-      )}
-
-      {/* Stats Cards */}
+      {/* Metrics Row - Clean, Professional SaaS Style */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-ink-card p-4 rounded-2xl border border-ink-border flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl shrink-0">
-            <i className="fa-solid fa-hourglass-half animate-pulse" />
+        <div className="bg-ink-card border border-ink-border rounded-xl p-4 transition-colors hover:border-slate-300 shadow-xs">
+          <div className="flex items-center justify-between text-ink-muted mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Chờ xuất bản</span>
+            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs border border-amber-100">
+              <i className="fa-regular fa-clock" />
+            </div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-ink-text">{stats?.pendingCount ?? 0}</div>
-            <div className="text-xs text-ink-muted">Chương đang chờ đăng</div>
+          <div className="text-2xl font-bold text-slate-900 tracking-tight">
+            {stats?.pendingCount ?? 0}
           </div>
+          <div className="text-[11px] text-slate-500 mt-1">Chương đang đếm ngược</div>
         </div>
 
-        <div className="bg-ink-card p-4 rounded-2xl border border-ink-border flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xl shrink-0">
-            <i className="fa-solid fa-cloud-arrow-up" />
+        <div className="bg-ink-card border border-ink-border rounded-xl p-4 transition-colors hover:border-slate-300 shadow-xs">
+          <div className="flex items-center justify-between text-ink-muted mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Đã xuất bản hôm nay</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs border border-emerald-100">
+              <i className="fa-solid fa-cloud-arrow-up" />
+            </div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-ink-text">{stats?.publishedTodayCount ?? 0}</div>
-            <div className="text-xs text-ink-muted">Chương lên sóng hôm nay</div>
+          <div className="text-2xl font-bold text-slate-900 tracking-tight">
+            {stats?.publishedTodayCount ?? 0}
           </div>
+          <div className="text-[11px] text-slate-500 mt-1">Chương hoàn tất xuất bản</div>
         </div>
 
-        <div className="bg-ink-card p-4 rounded-2xl border border-ink-border flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 text-xl shrink-0">
-            <i className="fa-solid fa-book-bookmark" />
+        <div className="bg-ink-card border border-ink-border rounded-xl p-4 transition-colors hover:border-slate-300 shadow-xs">
+          <div className="flex items-center justify-between text-ink-muted mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Bộ truyện có lịch</span>
+            <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center text-xs border border-sky-100">
+              <i className="fa-solid fa-book-bookmark" />
+            </div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-ink-text">{stats?.storiesCount ?? 0}</div>
-            <div className="text-xs text-ink-muted">Bộ truyện có lịch hẹn</div>
+          <div className="text-2xl font-bold text-slate-900 tracking-tight">
+            {stats?.storiesCount ?? 0}
           </div>
+          <div className="text-[11px] text-slate-500 mt-1">Tác phẩm có chương hẹn giờ</div>
         </div>
       </div>
 
-      {/* Filters & Search */}
-      <div className="bg-ink-card p-4 rounded-2xl border border-ink-border space-y-3">
-        <div className="flex flex-col sm:flex-row gap-3">
-          {/* Status Tabs */}
-          <div className="flex items-center gap-1 bg-ink-bg p-1 rounded-xl border border-ink-border text-xs font-medium">
+      {/* Main Container */}
+      <div className="bg-ink-card border border-ink-border rounded-xl p-4 sm:p-5 space-y-4 shadow-xs">
+        {/* Navigation Tabs, Dropdown & Search */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-ink-border pb-3">
+          {/* Tabs */}
+          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
             <button
               onClick={() => { setStatusFilter("pending"); setPage(1); }}
-              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === "pending"
-                  ? "bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30"
-                  : "text-ink-muted hover:text-ink-text"
+                  ? "bg-slate-100 text-slate-900 font-semibold border border-slate-200 shadow-xs"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
-              <i className="fa-regular fa-clock" />
-              Chờ đăng ({stats?.pendingCount ?? 0})
+              Chờ đăng
+              {(stats?.pendingCount ?? 0) > 0 && (
+                <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-700 font-bold border border-amber-200">
+                  {stats?.pendingCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => { setStatusFilter("published"); setPage(1); }}
-              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === "published"
-                  ? "bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30"
-                  : "text-ink-muted hover:text-ink-text"
+                  ? "bg-slate-100 text-slate-900 font-semibold border border-slate-200 shadow-xs"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
-              <i className="fa-solid fa-check" />
               Đã xuất bản
             </button>
             <button
               onClick={() => { setStatusFilter("all"); setPage(1); }}
-              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === "all"
-                  ? "bg-gold/20 text-gold font-bold border border-gold/30"
-                  : "text-ink-muted hover:text-ink-text"
+                  ? "bg-slate-100 text-slate-900 font-semibold border border-slate-200 shadow-xs"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
               Tất cả
             </button>
           </div>
 
-          {/* Chọn theo truyện */}
-          <select
-            value={storyFilter}
-            onChange={(e) => { setStoryFilter(e.target.value); setPage(1); }}
-            aria-label="Chọn truyện để lọc lịch đăng"
-            className="px-3 py-1.5 rounded-xl bg-ink-bg border border-ink-border text-ink-text text-xs focus:outline-none focus:border-gold/50"
-          >
-            <option value="">-- Tất cả các truyện --</option>
-            {storiesData?.map((s: StoryListItem) => (
-              <option key={s.id} value={s.id}>
-                {s.title}
-              </option>
-            ))}
-          </select>
+          {/* Filter Controls */}
+          <div className="flex flex-col sm:flex-row items-center gap-2.5">
+            <select
+              value={storyFilter}
+              onChange={(e) => { setStoryFilter(e.target.value); setPage(1); }}
+              aria-label="Chọn truyện để lọc lịch đăng"
+              className="w-full sm:w-56 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
+            >
+              <option value="">-- Tất cả các truyện --</option>
+              {storiesData?.map((s: StoryListItem) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}
+                </option>
+              ))}
+            </select>
 
-          {/* Tìm kiếm */}
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              placeholder="Tìm kiếm theo tiêu đề chương hoặc truyện..."
-              value={keyword}
-              onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
-              className="w-full px-3 py-1.5 pl-8 rounded-xl bg-ink-bg border border-ink-border text-ink-text text-xs focus:outline-none focus:border-gold/50"
-            />
-            <i className="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-muted text-xs" />
+            <div className="relative w-full sm:w-64">
+              <input
+                type="text"
+                placeholder="Tìm tiêu đề chương, truyện..."
+                value={keyword}
+                onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
+                className="w-full px-3 py-1.5 pl-8 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs placeholder:text-slate-400 focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
+              />
+              <i className="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Table */}
-      <div className="bg-ink-card rounded-2xl border border-ink-border overflow-hidden shadow-xs">
+        {/* Table Content */}
         {isLoading ? (
-          <div className="p-12 text-center text-ink-muted">
-            <i className="fa-solid fa-spinner fa-spin text-2xl mb-3 text-gold" />
-            <p className="text-sm">Đang tải danh sách lịch đăng truyện...</p>
+          <div className="p-12 text-center text-slate-400">
+            <i className="fa-solid fa-circle-notch fa-spin text-xl text-orange-600 mb-2" />
+            <p className="text-xs">Đang tải danh sách lịch đăng...</p>
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-rose-400">
-            <i className="fa-solid fa-triangle-exclamation text-2xl mb-2" />
-            <p className="text-sm">Không thể tải dữ liệu. Vui lòng thử lại sau.</p>
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-center text-rose-600">
+            <i className="fa-solid fa-circle-exclamation text-xl mb-1.5" />
+            <p className="text-xs">Không thể tải dữ liệu. Vui lòng thử lại sau.</p>
           </div>
         ) : items.length === 0 ? (
-          <div className="p-12 text-center text-ink-muted">
-            <i className="fa-solid fa-calendar-xmark text-3xl mb-3 opacity-40" />
-            <p className="text-sm font-medium">Không tìm thấy chương nào theo bộ lọc này.</p>
-            <p className="text-xs opacity-75 mt-1">Khi bạn thêm chương mới và chọn ngày giờ hẹn, chương sẽ xuất hiện tại đây.</p>
+          <div className="rounded-xl border border-dashed border-slate-200 p-12 text-center text-slate-400">
+            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto mb-3 text-slate-400">
+              <i className="fa-regular fa-calendar-xmark text-base" />
+            </div>
+            <p className="text-sm font-semibold text-slate-800">Không có chương nào trong danh sách</p>
+            <p className="text-xs text-slate-500 mt-1">Chưa có chương truyện nào được lên lịch hẹn trong mục này.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-ink-bg border-b border-ink-border text-xs uppercase text-ink-muted font-semibold tracking-wider">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-[11px] uppercase text-slate-500 font-semibold tracking-wider">
                 <tr>
                   <th className="py-3 px-4">Truyện</th>
                   <th className="py-3 px-4">Chương</th>
@@ -299,35 +329,29 @@ export default function AdminSchedulesPage() {
                   <th className="py-3 px-4 text-right">Thao Tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink-border/50">
+              <tbody className="divide-y divide-slate-100">
                 {items.map((chap) => {
                   const remaining = getTimeRemaining(chap.publishAt);
                   return (
-                    <tr key={chap.id} className="hover:bg-ink-bg/50 transition-colors">
+                    <tr key={chap.id} className="hover:bg-slate-50/70 transition-colors">
                       {/* Cột Truyện */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2.5">
                           <img
                             src={chap.storyCoverImageUrl || "https://placehold.co/40x55?text=Cover"}
                             alt={chap.storyTitle}
-                            className="w-9 h-12 rounded object-cover border border-ink-border shrink-0"
+                            className="w-8 h-10 rounded object-cover border border-slate-200 shrink-0"
                           />
                           <div className="min-w-0">
                             <a
                               href={`/stories/${chap.storyId}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="font-medium text-ink-text hover:text-gold transition-colors line-clamp-1 text-xs sm:text-sm"
+                              className="font-medium text-slate-900 hover:text-orange-600 transition-colors line-clamp-1"
                             >
                               {chap.storyTitle}
                             </a>
-                            <span
-                              className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                                chap.storyType === 1
-                                  ? "bg-sky-500/15 text-sky-400 border border-sky-500/30"
-                                  : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                              }`}
-                            >
+                            <span className="inline-block text-[10px] text-slate-500">
                               {chap.storyType === 1 ? "Truyện tranh" : "Truyện chữ"}
                             </span>
                           </div>
@@ -335,45 +359,44 @@ export default function AdminSchedulesPage() {
                       </td>
 
                       {/* Cột Chương */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-semibold text-ink-text text-xs sm:text-sm">
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-slate-900">
                           Chương {chap.chapterNumber}
                         </div>
-                        <div className="text-xs text-ink-muted line-clamp-1">{chap.title}</div>
+                        <div className="text-[11px] text-slate-500 line-clamp-1">{chap.title}</div>
                       </td>
 
                       {/* Cột Thời Gian Hẹn */}
-                      <td className="py-3.5 px-4 text-xs font-mono">
-                        <div className="text-ink-text font-medium">{formatDateTime(chap.publishAt)}</div>
+                      <td className="py-3 px-4 font-mono text-slate-800">
+                        {formatDateTime(chap.publishAt)}
                       </td>
 
                       {/* Cột Đếm Ngược */}
-                      <td className="py-3.5 px-4">
-                        <span className={`text-xs font-medium flex items-center gap-1.5 ${remaining.color}`}>
+                      <td className="py-3 px-4">
+                        <span className={`flex items-center gap-1.5 ${remaining.color}`}>
                           <i className="fa-regular fa-clock text-[10px]" />
                           {remaining.text}
                         </span>
                       </td>
 
                       {/* Cột Trạng Thái */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         {chap.isPublished ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium">
-                            <i className="fa-solid fa-circle-check text-[10px]" />
-                            Đã lên sóng
+                          <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
+                            <i className="fa-solid fa-check text-[9px]" />
+                            Đã xuất bản
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-medium animate-pulse">
-                            <i className="fa-solid fa-hourglass-half text-[10px]" />
-                            Đang chờ đến giờ
+                          <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-medium">
+                            <i className="fa-regular fa-clock text-[9px]" />
+                            Chờ đến giờ
                           </span>
                         )}
                       </td>
 
                       {/* Cột Thao Tác */}
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {/* Nút Đăng Ngay */}
                           {!chap.isPublished && (
                             <button
                               onClick={() => {
@@ -382,7 +405,7 @@ export default function AdminSchedulesPage() {
                                 }
                               }}
                               disabled={publishNowMutation.isPending}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
                               title="Xuất bản ngay lập tức"
                             >
                               <i className="fa-solid fa-bolt text-[10px]" />
@@ -390,17 +413,15 @@ export default function AdminSchedulesPage() {
                             </button>
                           )}
 
-                          {/* Nút Đổi Lịch */}
                           <button
                             onClick={() => handleOpenRescheduleModal(chap)}
-                            className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
+                            className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
                             title="Đổi ngày giờ xuất bản"
                           >
-                            <i className="fa-solid fa-calendar-pen text-[10px]" />
+                            <i className="fa-regular fa-calendar text-[10px]" />
                             Đổi lịch
                           </button>
 
-                          {/* Nút Hủy Lịch */}
                           {!chap.isPublished && (
                             <button
                               onClick={() => {
@@ -408,10 +429,10 @@ export default function AdminSchedulesPage() {
                                   cancelMutation.mutate(chap.id);
                                 }
                               }}
-                              className="p-1.5 rounded-lg bg-ink-bg hover:bg-rose-500/20 text-ink-muted hover:text-rose-400 border border-ink-border text-xs transition-colors cursor-pointer"
+                              className="p-1 rounded-lg bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 text-xs transition-colors cursor-pointer"
                               title="Hủy lịch hẹn (xuất bản ngay)"
                             >
-                              <i className="fa-solid fa-ban" />
+                              <i className="fa-solid fa-ban text-xs" />
                             </button>
                           )}
                         </div>
@@ -426,7 +447,7 @@ export default function AdminSchedulesPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-ink-border flex items-center justify-between text-xs text-ink-muted">
+          <div className="pt-2 border-t border-ink-border flex items-center justify-between text-xs text-ink-muted">
             <div>
               Trang <span className="font-semibold text-ink-text">{page}</span> / {totalPages} (Tổng số {totalCount} chương)
             </div>
@@ -434,14 +455,14 @@ export default function AdminSchedulesPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="px-2.5 py-1.5 rounded-lg bg-ink-bg border border-ink-border disabled:opacity-40 hover:bg-ink-card transition-colors cursor-pointer"
+                className="px-2.5 py-1.5 rounded-lg bg-ink-bg border border-ink-border disabled:opacity-40 hover:bg-ink-border transition-colors cursor-pointer"
               >
                 Trước
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
-                className="px-2.5 py-1.5 rounded-lg bg-ink-bg border border-ink-border disabled:opacity-40 hover:bg-ink-card transition-colors cursor-pointer"
+                className="px-2.5 py-1.5 rounded-lg bg-ink-bg border border-ink-border disabled:opacity-40 hover:bg-ink-border transition-colors cursor-pointer"
               >
                 Sau
               </button>
@@ -450,112 +471,103 @@ export default function AdminSchedulesPage() {
         )}
       </div>
 
-      {/* ============================================================ */}
-      {/* MODAL ĐỔI LỊCH HẸN (RESCHEDULE MODAL)                          */}
-      {/* ============================================================ */}
+      {/* Modal Đổi Lịch Hẹn */}
       {selectedChapter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-ink-card border border-ink-border rounded-2xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
-            <div className="flex items-center justify-between border-b border-ink-border pb-3">
-              <h3 className="font-bold text-base text-ink-text flex items-center gap-2">
-                <i className="fa-solid fa-calendar-check text-amber-500" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+                <i className="fa-regular fa-calendar-check text-orange-600" />
                 Cập nhật Lịch Đăng Chương
               </h3>
               <button
                 onClick={() => setSelectedChapter(null)}
-                className="text-ink-muted hover:text-ink-text cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
               >
-                <i className="fa-solid fa-xmark text-lg" />
+                <i className="fa-solid fa-xmark text-base" />
               </button>
             </div>
 
-            <div className="text-xs text-ink-muted space-y-1">
-              <p>
-                Truyện: <strong className="text-ink-text">{selectedChapter.storyTitle}</strong>
-              </p>
-              <p>
-                Chương:{" "}
-                <strong className="text-ink-text">
-                  Chương {selectedChapter.chapterNumber}: {selectedChapter.title}
-                </strong>
-              </p>
+            <div className="text-xs space-y-1 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+              <div className="font-semibold text-slate-900">
+                {selectedChapter.storyTitle}
+              </div>
+              <div className="text-slate-500">
+                Chương {selectedChapter.chapterNumber}: {selectedChapter.title}
+              </div>
             </div>
 
-            {/* Input Datetime Local */}
-            <div>
-              <label className="block text-xs font-semibold text-ink-muted mb-1.5">
-                Chọn ngày và giờ xuất bản (Giờ máy tính):
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-slate-600">
+                Thời gian xuất bản mới:
               </label>
               <input
                 type="datetime-local"
                 value={newPublishAt}
                 onChange={(e) => setNewPublishAt(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-ink-bg border border-ink-border text-ink-text text-sm focus:outline-none focus:border-gold/50"
+                className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
               />
             </div>
 
-            {/* Gợi ý thời gian nhanh */}
-            <div>
-              <span className="block text-[11px] text-ink-muted mb-1 font-medium">Đặt nhanh:</span>
-              <div className="flex flex-wrap gap-1.5 text-xs">
+            <div className="space-y-1.5">
+              <div className="text-[11px] text-slate-500 font-medium">Chọn nhanh mốc thời gian:</div>
+              <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
                   onClick={() => setQuickTime(1)}
-                  className="px-2.5 py-1 rounded-lg bg-ink-bg border border-ink-border hover:bg-gold/15 hover:text-gold transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs text-slate-700 font-medium cursor-pointer transition-colors"
                 >
-                  Sau 1 giờ
+                  +1 giờ
                 </button>
                 <button
                   type="button"
-                  onClick={() => setQuickTime(3)}
-                  className="px-2.5 py-1 rounded-lg bg-ink-bg border border-ink-border hover:bg-gold/15 hover:text-gold transition-colors cursor-pointer"
+                  onClick={() => setQuickTime(6)}
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs text-slate-700 font-medium cursor-pointer transition-colors"
                 >
-                  Sau 3 giờ
+                  +6 giờ
                 </button>
                 <button
                   type="button"
                   onClick={() => setQuickTime(24)}
-                  className="px-2.5 py-1 rounded-lg bg-ink-bg border border-ink-border hover:bg-gold/15 hover:text-gold transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs text-slate-700 font-medium cursor-pointer transition-colors"
                 >
-                  Ngày mai (+24h)
+                  +1 ngày
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuickTime(72)}
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs text-slate-700 font-medium cursor-pointer transition-colors"
+                >
+                  +3 ngày
                 </button>
               </div>
             </div>
 
-            {/* Buttons */}
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-ink-border">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setSelectedChapter(null)}
-                className="px-4 py-2 rounded-xl bg-ink-bg border border-ink-border text-ink-muted hover:text-ink-text text-xs font-medium cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 text-xs font-medium transition-colors cursor-pointer"
               >
-                Hủy
+                Hủy bỏ
               </button>
               <button
                 type="button"
-                disabled={rescheduleMutation.isPending || !newPublishAt}
                 onClick={() => {
-                  if (selectedChapter && newPublishAt) {
-                    const utcDate = new Date(newPublishAt).toISOString();
-                    rescheduleMutation.mutate({
-                      chapterId: selectedChapter.id,
-                      publishAt: utcDate,
-                    });
+                  if (!newPublishAt) {
+                    alert("Vui lòng chọn ngày giờ xuất bản hợp lệ.");
+                    return;
                   }
+                  const isoStr = new Date(newPublishAt).toISOString();
+                  rescheduleMutation.mutate({
+                    chapterId: selectedChapter.id,
+                    publishAt: isoStr,
+                  });
                 }}
-                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                disabled={rescheduleMutation.isPending}
+                className="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50"
               >
-                {rescheduleMutation.isPending ? (
-                  <>
-                    <i className="fa-solid fa-spinner fa-spin" />
-                    Đang lưu...
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-floppy-disk" />
-                    Lưu lịch hẹn
-                  </>
-                )}
+                Lưu lịch hẹn
               </button>
             </div>
           </div>

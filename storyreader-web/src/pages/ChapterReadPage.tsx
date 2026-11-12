@@ -3,8 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChapterContent } from "../api/chapters";
 import { groupChaptersByPart, type ChapterGroup } from "../utils/chapterGrouping";
 import { getStoryDetail, type ChapterListItem } from "../api/stories";
-import { getChapterDiscussions, postChapterDiscussion, hideDiscussion, reportChapterDiscussion } from "../api/discussions";
-import { useAuthStore, useIsAdmin } from "../store/authStore";
+import { getChapterDiscussions, postChapterDiscussion, hideDiscussion, reportChapterDiscussion, type DiscussionItem } from "../api/discussions";
+import { useAuthStore, useIsAdmin, useCurrentUserId } from "../store/authStore";
 import { AxiosError } from "axios";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { AtmosphereType } from "../components/AtmosphericOverlay";
@@ -38,6 +38,10 @@ export default function ChapterReadPage() {
   const queryClient = useQueryClient();
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
   const isAdmin = useIsAdmin();
+  const currentUserId = useCurrentUserId();
+  const [reportingComment, setReportingComment] = useState<DiscussionItem | null>(null);
+  const [selectedReason, setSelectedReason] = useState<string>("Spam, quảng cáo, cờ bạc");
+  const [customReason, setCustomReason] = useState<string>("");
 
   // Hiệu ứng bối cảnh Atmospheric Reader (Easter Egg #1)
   const ATMOSPHERE_MODES: { type: AtmosphereType; label: string }[] = useMemo(
@@ -117,11 +121,14 @@ export default function ChapterReadPage() {
     mutationFn: ({ discussionId, reason }: { discussionId: string; reason: string }) =>
       reportChapterDiscussion(id!, discussionId, reason),
     onSuccess: (data) => {
-      alert(data?.message || "Báo cáo bình luận thành công! Ban quản trị sẽ kiểm duyệt sớm nhất.");
+      setReportingComment(null);
+      setCustomReason("");
+      showCopyToast(data?.message || "Đã gửi báo cáo vi phạm thành công! Ban quản trị sẽ kiểm duyệt.");
       queryClient.invalidateQueries({ queryKey: ["discussions", id] });
     },
-    onError: () => {
-      alert("Không thể gửi báo cáo. Vui lòng đảm bảo bạn đã đăng nhập và tài khoản không bị hạn chế.");
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || "Không thể gửi báo cáo. Vui lòng đảm bảo bạn đã đăng nhập và tài khoản không bị hạn chế.";
+      showCopyToast(msg);
     },
   });
 
@@ -815,24 +822,29 @@ export default function ChapterReadPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          if (!isLoggedIn) {
-                            alert("Vui lòng đăng nhập để báo cáo bình luận vi phạm.");
-                            navigate("/login");
-                            return;
-                          }
-                          const reason = prompt("Nhập lý do báo cáo bình luận này (Spam, Xúc phạm, Spoil nội dung...):");
-                          if (reason && reason.trim()) {
-                            reportCommentMutation.mutate({ discussionId: d.id, reason: reason.trim() });
-                          }
-                        }}
-                        className="text-xs text-ink-muted hover:text-rose-400 opacity-60 hover:opacity-100 px-2 py-0.5 rounded-lg border border-transparent hover:border-rose-500/30 flex items-center gap-1 transition-colors cursor-pointer"
-                        title="Báo cáo bình luận vi phạm"
-                      >
-                        <i className="fa-solid fa-flag text-[10px]" />
-                        <span className="text-[11px]">Báo cáo</span>
-                      </button>
+                      {isLoggedIn && currentUserId && d.userId && d.userId.toLowerCase() === currentUserId.toLowerCase() ? (
+                        <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium">
+                          Bình luận của bạn
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            if (!isLoggedIn) {
+                              alert("Vui lòng đăng nhập để báo cáo bình luận vi phạm.");
+                              navigate("/login");
+                              return;
+                            }
+                            setSelectedReason("Spam, quảng cáo, cờ bạc");
+                            setCustomReason("");
+                            setReportingComment(d);
+                          }}
+                          className="text-xs text-slate-600 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-rose-300 dark:hover:border-rose-500/40 bg-slate-50 dark:bg-white/5 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                          title="Báo cáo bình luận vi phạm"
+                        >
+                          <i className="fa-solid fa-flag text-[10px] text-rose-500" />
+                          <span className="text-[11px] font-medium">Báo cáo</span>
+                        </button>
+                      )}
 
                       {isAdmin && (
                         <button
@@ -983,6 +995,109 @@ export default function ChapterReadPage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Báo cáo bình luận vi phạm */}
+      {reportingComment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white dark:bg-[#181d28] border border-slate-200 dark:border-[#2a3242] rounded-2xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#2a3242] pb-3">
+              <h3 className="font-semibold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <i className="fa-solid fa-flag text-rose-500" />
+                Báo cáo bình luận vi phạm
+              </h3>
+              <button
+                onClick={() => setReportingComment(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-base" />
+              </button>
+            </div>
+
+            {/* Trích dẫn bình luận */}
+            <div className="bg-slate-50 dark:bg-[#12161f] p-3 rounded-xl border border-slate-200 dark:border-[#2a3242] text-xs">
+              <div className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                {reportingComment.user || "Độc giả"}:
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 italic line-clamp-3">
+                "{reportingComment.content}"
+              </p>
+            </div>
+
+            {/* Chọn lý do */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Chọn lý do báo cáo:
+              </label>
+              <div className="space-y-1.5">
+                {[
+                  "Spam, quảng cáo, cờ bạc",
+                  "Ngôn từ xúc phạm, đả kích, thù ghét",
+                  "Tiết lộ trước nội dung (Spoil tình tiết)",
+                  "Nội dung phản cảm, đồi trụy",
+                  "Lý do khác",
+                ].map((reason) => (
+                  <label
+                    key={reason}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer transition-colors ${
+                      selectedReason === reason
+                        ? "border-orange-500 bg-orange-500/10 text-orange-600 dark:text-orange-400 font-semibold"
+                        : "border-slate-200 dark:border-[#2a3242] hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="reportReason"
+                      checked={selectedReason === reason}
+                      onChange={() => setSelectedReason(reason)}
+                      className="text-orange-600 focus:ring-orange-500"
+                    />
+                    <span>{reason}</span>
+                  </label>
+                ))}
+              </div>
+
+              {selectedReason === "Lý do khác" && (
+                <textarea
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  placeholder="Mô tả cụ thể vi phạm của bình luận này..."
+                  rows={3}
+                  className="w-full mt-2 p-2.5 rounded-xl border border-slate-200 dark:border-[#2a3242] bg-slate-50 dark:bg-[#12161f] text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-orange-500"
+                />
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-[#2a3242]">
+              <button
+                type="button"
+                onClick={() => setReportingComment(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-[#2a3242] text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const finalReason = selectedReason === "Lý do khác"
+                    ? (customReason.trim() || "Bị độc giả báo cáo vi phạm")
+                    : selectedReason;
+                  reportCommentMutation.mutate({
+                    discussionId: reportingComment.id,
+                    reason: finalReason,
+                  });
+                }}
+                disabled={reportCommentMutation.isPending}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {reportCommentMutation.isPending && (
+                  <i className="fa-solid fa-spinner fa-spin text-xs" />
+                )}
+                Gửi báo cáo
+              </button>
             </div>
           </div>
         </div>

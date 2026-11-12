@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import type { AtmosphereType } from "./AtmosphericOverlay";
 
 interface InteractiveMascotProps {
@@ -76,6 +77,8 @@ export default function InteractiveMascot({
   currentAtmosphere = "none",
   onAtmosphereChange,
 }: InteractiveMascotProps) {
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith("/admin");
   const [isMinimized, setIsMinimized] = useState(false);
   const [isTotoro, setIsTotoro] = useState(false);
   const [bubbleText, setBubbleText] = useState<string | null>(null);
@@ -85,13 +88,14 @@ export default function InteractiveMascot({
   const bubbleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clickResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Tự động chào hỏi lần đầu sau 3 giây
+  // Tự động chào hỏi lần đầu sau 2.5 giây (chỉ chạy ở trang người đọc, không chạy ở admin)
   useEffect(() => {
+    if (isAdmin) return;
     const timer = setTimeout(() => {
       showBubble("Chào bạn! Mình là mèo Jiji, linh vật của StoryReader nè~ 🐾");
     }, 2500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isAdmin]);
 
   const showBubble = (msg: string) => {
     if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
@@ -149,6 +153,11 @@ export default function InteractiveMascot({
     setIsTotoro(false);
     showBubble("Meow~ Mèo Jiji đã quay trở lại bên bạn đây! 🐾");
   };
+
+  // Không hiển thị linh vật đọc truyện trên các trang quản trị hệ thống (Admin)
+  if (isAdmin) {
+    return null;
+  }
 
   // Nút thu nhỏ
   if (isMinimized) {

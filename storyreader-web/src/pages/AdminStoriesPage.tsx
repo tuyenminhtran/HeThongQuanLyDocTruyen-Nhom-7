@@ -743,7 +743,11 @@ function EditChapterModal({
       chapterNumber: chapter.chapterNumber,
       title: chapter.title,
       content: chapterDetail?.content || "",
-      publishAt: null,
+      publishAt: chapter.publishAt
+        ? new Date(new Date(chapter.publishAt).getTime() - new Date(chapter.publishAt).getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16)
+        : null,
       partName: chapter.partName || "",
     },
   });
@@ -753,7 +757,8 @@ function EditChapterModal({
       updateChapter(story.id, chapter.id, {
         ...data,
         chapterNumber: Number(data.chapterNumber),
-        publishAt: null,
+        renderAsImages: story.type !== 1,
+        publishAt: data.publishAt ? new Date(data.publishAt).toISOString() : null,
         partName: data.partName?.trim() || null,
       }),
     onSuccess: () => {
@@ -868,23 +873,22 @@ function EditChapterModal({
               />
             </div>
 
-            {story.type !== 1 && (
-              <div className="p-3.5 rounded-xl border border-gold/30 bg-gold/5 flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="renderAsImagesEdit"
-                  {...register("renderAsImages")}
-                  className="mt-1 h-4 w-4 rounded border-ink-border text-gold focus:ring-gold bg-ink-bg cursor-pointer"
-                />
-                <label htmlFor="renderAsImagesEdit" className="cursor-pointer text-xs text-ink-text leading-relaxed">
-                  <span className="font-semibold text-gold block text-sm flex items-center gap-1.5">
-                    <i className="fa-solid fa-shield-halved text-xs" />
-                    Chống sao chép (Render lại thành ảnh)
-                  </span>
-                  Tự động chuyển đổi nội dung chữ thành các trang ảnh có watermark. Giao diện đọc sẽ tự động đồng bộ màu ảnh theo theme sáng / sepia / tối của người đọc.
-                </label>
-              </div>
-            )}
+            <div>
+              <label className={labelClass}>
+                <span className="flex items-center gap-1.5">
+                  <i className="fa-regular fa-clock text-xs text-orange-600" />
+                  Hẹn giờ xuất bản (Lên lịch đăng)
+                </span>
+              </label>
+              <input
+                {...register("publishAt")}
+                type="datetime-local"
+                className={inputClass}
+              />
+              <p className="text-[11px] text-ink-muted mt-1">
+                Để trống nếu muốn xuất bản ngay. Nếu chọn thời gian tương lai, chương sẽ tự động mở khóa theo lịch hẹn.
+              </p>
+            </div>
 
             {mutation.isError && (
               <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
@@ -940,6 +944,7 @@ function AddChapterModal({
   } = useForm<CreateChapterInput>({
     defaultValues: {
       chapterNumber: story.chapters.length + 1,
+      publishAt: "",
     },
   });
 
@@ -948,7 +953,8 @@ function AddChapterModal({
       addChapter(story.id, {
         ...data,
         chapterNumber: Number(data.chapterNumber),
-        publishAt: null,
+        renderAsImages: story.type !== 1,
+        publishAt: data.publishAt ? new Date(data.publishAt).toISOString() : null,
         partName: data.partName?.trim() || null,
       }),
     onSuccess: () => {
@@ -1063,23 +1069,22 @@ function AddChapterModal({
             )}
           </div>
 
-          {story.type !== 1 && (
-            <div className="p-3.5 rounded-xl border border-gold/30 bg-gold/5 flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="renderAsImagesAdd"
-                {...register("renderAsImages")}
-                className="mt-1 h-4 w-4 rounded border-ink-border text-gold focus:ring-gold bg-ink-bg cursor-pointer"
-              />
-              <label htmlFor="renderAsImagesAdd" className="cursor-pointer text-xs text-ink-text leading-relaxed">
-                <span className="font-semibold text-gold block text-sm flex items-center gap-1.5">
-                  <i className="fa-solid fa-shield-halved text-xs" />
-                  Chống sao chép (Bảo vệ bản quyền bằng ảnh)
-                </span>
-                Hệ thống sẽ chuyển đổi văn bản thành các trang ảnh có watermark. Giao diện đọc sẽ tự động đồng bộ màu ảnh theo theme sáng / sepia / tối của người đọc.
-              </label>
-            </div>
-          )}
+          <div>
+            <label className={labelClass}>
+              <span className="flex items-center gap-1.5">
+                <i className="fa-regular fa-clock text-xs text-orange-600" />
+                Hẹn giờ xuất bản (Lên lịch đăng)
+              </span>
+            </label>
+            <input
+              {...register("publishAt")}
+              type="datetime-local"
+              className={inputClass}
+            />
+            <p className="text-[11px] text-ink-muted mt-1">
+              Để trống nếu muốn xuất bản ngay. Nếu chọn thời gian tương lai, chương sẽ tự động mở khóa theo lịch hẹn.
+            </p>
+          </div>
 
           {/* Success message */}
           {mutation.isSuccess && (
