@@ -1,30 +1,15 @@
+import '../../core/constants/api_constants.dart';
+import '../../core/network/dio_client.dart';
 import '../models/payment_model.dart';
-import '../repositories/subscription_repository.dart';
 
 class PaymentApi {
-  static final _repository = SubscriptionRepository();
-
   static Future<InitiatePaymentResult> buyStory(String storyId) async {
-    return await _repository.buyStory(storyId);
+    final res = await DioClient.instance.post(ApiConstants.buyStory(storyId));
+    return InitiatePaymentResult.fromJson(res.data as Map<String, dynamic>);
   }
 
   static Future<InitiatePaymentResult> buySubscription(String planId) async {
-    return await _repository.buySubscription(planId);
-  }
-
-  static Future<List<SubscriptionPlanItem>> getPlans() async {
-    return await _repository.getPlans();
-  }
-
-  static Future<List<MySubscriptionItem>> getMySubscriptions() async {
-    return await _repository.getMySubscriptions();
-  }
-
-  static Future<List<MyPurchaseItem>> getMyPurchases() async {
-    return await _repository.getMyPurchases();
-  }
-
-  static Future<void> simulatePaymentCallback(String providerRef, {bool success = true}) async {
-    await _repository.simulatePaymentCallback(providerRef, success: success);
+    final res = await DioClient.instance.post(ApiConstants.buySubscription(planId));
+    return InitiatePaymentResult.fromJson(res.data as Map<String, dynamic>);
   }
 }

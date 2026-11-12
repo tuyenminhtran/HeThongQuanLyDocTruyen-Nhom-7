@@ -8,7 +8,6 @@ import 'admin_dashboard_screen.dart';
 import 'admin_stories_screen.dart';
 import 'admin_categories_screen.dart';
 import 'admin_users_screen.dart';
-import 'admin_transactions_screen.dart';
 
 class AdminLayoutScreen extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -42,11 +41,6 @@ class _AdminLayoutScreenState extends ConsumerState<AdminLayoutScreen> {
       'title': 'Người Dùng',
       'icon': Icons.people_outline,
       'screen': const AdminUsersScreen(),
-    },
-    {
-      'title': 'Giao Dịch',
-      'icon': Icons.receipt_long_outlined,
-      'screen': const AdminTransactionsScreen(),
     },
   ];
 
