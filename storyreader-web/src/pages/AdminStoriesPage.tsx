@@ -757,6 +757,7 @@ function EditChapterModal({
       updateChapter(story.id, chapter.id, {
         ...data,
         chapterNumber: Number(data.chapterNumber),
+        renderAsImages: story.type !== 1,
         publishAt: data.publishAt ? new Date(data.publishAt).toISOString() : null,
         partName: data.partName?.trim() || null,
       }),
@@ -872,24 +873,6 @@ function EditChapterModal({
               />
             </div>
 
-            {story.type !== 1 && (
-              <div className="p-3.5 rounded-xl border border-gold/30 bg-gold/5 flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="renderAsImagesEdit"
-                  {...register("renderAsImages")}
-                  className="mt-1 h-4 w-4 rounded border-ink-border text-gold focus:ring-gold bg-ink-bg cursor-pointer"
-                />
-                <label htmlFor="renderAsImagesEdit" className="cursor-pointer text-xs text-ink-text leading-relaxed">
-                  <span className="font-semibold text-gold block text-sm flex items-center gap-1.5">
-                    <i className="fa-solid fa-shield-halved text-xs" />
-                    Chống sao chép (Render lại thành ảnh)
-                  </span>
-                  Tự động chuyển đổi nội dung chữ thành các trang ảnh có watermark. Giao diện đọc sẽ tự động đồng bộ màu ảnh theo theme sáng / sepia / tối của người đọc.
-                </label>
-              </div>
-            )}
-
             <div>
               <label className={labelClass}>
                 <span className="flex items-center gap-1.5">
@@ -970,6 +953,7 @@ function AddChapterModal({
       addChapter(story.id, {
         ...data,
         chapterNumber: Number(data.chapterNumber),
+        renderAsImages: story.type !== 1,
         publishAt: data.publishAt ? new Date(data.publishAt).toISOString() : null,
         partName: data.partName?.trim() || null,
       }),
@@ -1084,24 +1068,6 @@ function AddChapterModal({
               </p>
             )}
           </div>
-
-          {story.type !== 1 && (
-            <div className="p-3.5 rounded-xl border border-gold/30 bg-gold/5 flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="renderAsImagesAdd"
-                {...register("renderAsImages")}
-                className="mt-1 h-4 w-4 rounded border-ink-border text-gold focus:ring-gold bg-ink-bg cursor-pointer"
-              />
-              <label htmlFor="renderAsImagesAdd" className="cursor-pointer text-xs text-ink-text leading-relaxed">
-                <span className="font-semibold text-gold block text-sm flex items-center gap-1.5">
-                  <i className="fa-solid fa-shield-halved text-xs" />
-                  Chống sao chép (Bảo vệ bản quyền bằng ảnh)
-                </span>
-                Hệ thống sẽ chuyển đổi văn bản thành các trang ảnh có watermark. Giao diện đọc sẽ tự động đồng bộ màu ảnh theo theme sáng / sepia / tối của người đọc.
-              </label>
-            </div>
-          )}
 
           <div>
             <label className={labelClass}>

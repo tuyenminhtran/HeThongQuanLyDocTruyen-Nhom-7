@@ -84,7 +84,7 @@ public record CreateChapterDto(
     string Content,
 
     DateTime? PublishAt,
-    bool RenderAsImages = false,
+    bool RenderAsImages = true,
 
     [MaxLength(100, ErrorMessage = "Tên tập/hồi tối đa 100 ký tự")]
     string? PartName = null);
@@ -101,7 +101,7 @@ public record UpdateChapterDto(
     string Content,
 
     DateTime? PublishAt,
-    bool RenderAsImages = false,
+    bool RenderAsImages = true,
 
     [MaxLength(100, ErrorMessage = "Tên tập/hồi tối đa 100 ký tự")]
     string? PartName = null);
