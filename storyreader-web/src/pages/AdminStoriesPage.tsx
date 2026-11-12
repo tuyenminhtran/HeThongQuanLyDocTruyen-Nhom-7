@@ -743,7 +743,11 @@ function EditChapterModal({
       chapterNumber: chapter.chapterNumber,
       title: chapter.title,
       content: chapterDetail?.content || "",
-      publishAt: null,
+      publishAt: chapter.publishAt
+        ? new Date(new Date(chapter.publishAt).getTime() - new Date(chapter.publishAt).getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16)
+        : null,
       partName: chapter.partName || "",
     },
   });
@@ -753,7 +757,7 @@ function EditChapterModal({
       updateChapter(story.id, chapter.id, {
         ...data,
         chapterNumber: Number(data.chapterNumber),
-        publishAt: null,
+        publishAt: data.publishAt ? new Date(data.publishAt).toISOString() : null,
         partName: data.partName?.trim() || null,
       }),
     onSuccess: () => {
@@ -886,6 +890,23 @@ function EditChapterModal({
               </div>
             )}
 
+            <div>
+              <label className={labelClass}>
+                <span className="flex items-center gap-1.5">
+                  <i className="fa-regular fa-clock text-xs text-orange-600" />
+                  Hẹn giờ xuất bản (Lên lịch đăng)
+                </span>
+              </label>
+              <input
+                {...register("publishAt")}
+                type="datetime-local"
+                className={inputClass}
+              />
+              <p className="text-[11px] text-ink-muted mt-1">
+                Để trống nếu muốn xuất bản ngay. Nếu chọn thời gian tương lai, chương sẽ tự động mở khóa theo lịch hẹn.
+              </p>
+            </div>
+
             {mutation.isError && (
               <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
                 <i className="fa-solid fa-circle-exclamation text-red-400 text-lg shrink-0" />
@@ -940,6 +961,7 @@ function AddChapterModal({
   } = useForm<CreateChapterInput>({
     defaultValues: {
       chapterNumber: story.chapters.length + 1,
+      publishAt: "",
     },
   });
 
@@ -948,7 +970,7 @@ function AddChapterModal({
       addChapter(story.id, {
         ...data,
         chapterNumber: Number(data.chapterNumber),
-        publishAt: null,
+        publishAt: data.publishAt ? new Date(data.publishAt).toISOString() : null,
         partName: data.partName?.trim() || null,
       }),
     onSuccess: () => {
@@ -1080,6 +1102,23 @@ function AddChapterModal({
               </label>
             </div>
           )}
+
+          <div>
+            <label className={labelClass}>
+              <span className="flex items-center gap-1.5">
+                <i className="fa-regular fa-clock text-xs text-orange-600" />
+                Hẹn giờ xuất bản (Lên lịch đăng)
+              </span>
+            </label>
+            <input
+              {...register("publishAt")}
+              type="datetime-local"
+              className={inputClass}
+            />
+            <p className="text-[11px] text-ink-muted mt-1">
+              Để trống nếu muốn xuất bản ngay. Nếu chọn thời gian tương lai, chương sẽ tự động mở khóa theo lịch hẹn.
+            </p>
+          </div>
 
           {/* Success message */}
           {mutation.isSuccess && (
