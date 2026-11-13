@@ -200,12 +200,6 @@ export default function ChapterReadPage() {
         e.preventDefault();
         cycleAtmosphere();
       }
-
-      // Phím tắt 'A' để bật/tắt Audio Reader (Nghe truyện bằng giọng đọc)
-      if (!isInput && (e.key === "a" || e.key === "A") && !e.ctrlKey && !e.metaKey && !e.altKey && !isComic) {
-        e.preventDefault();
-        setShowAudioPlayer((prev) => !prev);
-      }
     };
 
     document.addEventListener("copy", handleCopy);
@@ -276,18 +270,22 @@ export default function ChapterReadPage() {
   const isProtectedNovel = !isComic && !!(chapter?.imageUrls && chapter.imageUrls.length > 0);
   const hasImages = isComic || isProtectedNovel;
 
-  // Keyboard navigation: ArrowLeft -> Prev, ArrowRight -> Next, A -> Audio Player
+  // Keyboard navigation: ArrowLeft -> Prev, ArrowRight -> Next, A -> Audio Player, Esc -> Close Audio
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
         return;
       }
       if (e.key === "ArrowLeft" && prevChapter) {
         goToChapter(prevChapter.id);
       } else if (e.key === "ArrowRight" && nextChapter) {
         goToChapter(nextChapter.id);
-      } else if ((e.key === "a" || e.key === "A") && !isComic && chapter?.content) {
+      } else if ((e.key === "a" || e.key === "A") && !e.ctrlKey && !e.metaKey && !e.altKey && !isComic && chapter?.content) {
+        e.preventDefault();
         setShowAudioPlayer((prev) => !prev);
+      } else if (e.key === "Escape") {
+        setShowAudioPlayer(false);
       }
     };
 
@@ -1140,6 +1138,7 @@ export default function ChapterReadPage() {
       {/* Audio Reader Floating Player */}
       {showAudioPlayer && !isComic && chapter?.content && (
         <AudioReaderPlayer
+          key={chapter.id}
           content={chapter.content}
           chapterTitle={chapter.title}
           chapterNumber={chapter.chapterNumber}
