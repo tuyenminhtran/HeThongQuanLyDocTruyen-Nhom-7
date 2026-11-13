@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import type { AtmosphereType } from "./AtmosphericOverlay";
 
@@ -81,12 +81,32 @@ export default function InteractiveMascot({
   const isAdmin = location.pathname.startsWith("/admin");
   const [isMinimized, setIsMinimized] = useState(false);
   const [isTotoro, setIsTotoro] = useState(false);
+  const [isAudioOpen, setIsAudioOpen] = useState(false);
   const [bubbleText, setBubbleText] = useState<string | null>(null);
   const [clickCount, setClickCount] = useState(0);
   const [showSparkles, setShowSparkles] = useState(false);
   const [showAtmosphereMenu, setShowAtmosphereMenu] = useState(false);
   const bubbleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clickResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const quoteIdxRef = useRef(0);
+
+  const showBubble = useCallback((msg: string) => {
+    if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
+    setBubbleText(msg);
+    bubbleTimeoutRef.current = setTimeout(() => {
+      setBubbleText(null);
+    }, 4500);
+  }, []);
+
+  // Lắng nghe trạng thái bật/tắt Audio Reader để tránh che khuất thanh phát
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setIsAudioOpen(!!custom.detail);
+    };
+    window.addEventListener("storyreader-audio-open", handler);
+    return () => window.removeEventListener("storyreader-audio-open", handler);
+  }, []);
 
   // Tự động chào hỏi lần đầu sau 2.5 giây (chỉ chạy ở trang người đọc, không chạy ở admin)
   useEffect(() => {
@@ -95,14 +115,18 @@ export default function InteractiveMascot({
       showBubble("Chào bạn! Mình là mèo Jiji, linh vật của StoryReader nè~ 🐾");
     }, 2500);
     return () => clearTimeout(timer);
-  }, [isAdmin]);
+  }, [isAdmin, showBubble]);
 
-  const showBubble = (msg: string) => {
-    if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
-    setBubbleText(msg);
-    bubbleTimeoutRef.current = setTimeout(() => {
-      setBubbleText(null);
-    }, 4500);
+  const triggerTotoroTransformation = () => {
+    playTransformationChime();
+    setShowSparkles(true);
+    setIsTotoro(true);
+    setClickCount(0);
+    showBubble("🎉 BÙM! Bạn đã đánh thức Thần Rừng Totoro (Easter Egg bí mật của Nhóm 7)! 🍃");
+
+    setTimeout(() => {
+      setShowSparkles(false);
+    }, 2000);
   };
 
   const handleMascotClick = () => {
@@ -128,25 +152,14 @@ export default function InteractiveMascot({
       return;
     }
 
-    // Câu thoại ngẫu nhiên
+    // Câu thoại xoay vòng lần lượt (tránh trùng lặp liên tiếp)
     if (nextCount === 3) {
       showBubble("Ồ! Bạn vừa click 3 lần rồi kìa, click thêm 2 lần nữa xem nào! ⚡");
     } else {
-      const randomQuote = CAT_QUOTES[Math.floor(Math.random() * CAT_QUOTES.length)];
-      showBubble(randomQuote);
+      const nextQuote = CAT_QUOTES[quoteIdxRef.current % CAT_QUOTES.length];
+      quoteIdxRef.current = (quoteIdxRef.current + 1) % CAT_QUOTES.length;
+      showBubble(nextQuote);
     }
-  };
-
-  const triggerTotoroTransformation = () => {
-    playTransformationChime();
-    setShowSparkles(true);
-    setIsTotoro(true);
-    setClickCount(0);
-    showBubble("🎉 BÙM! Bạn đã đánh thức Thần Rừng Totoro (Easter Egg bí mật của Nhóm 7)! 🍃");
-
-    setTimeout(() => {
-      setShowSparkles(false);
-    }, 2000);
   };
 
   const handleRevertToCat = () => {
@@ -167,7 +180,9 @@ export default function InteractiveMascot({
           setIsMinimized(false);
           showBubble("Meow! Mình đã quay lại đây nè! 🐾");
         }}
-        className="fixed bottom-4 right-4 z-40 w-11 h-11 rounded-full bg-slate-900 border-2 border-orange-400 text-white shadow-xl hover:scale-110 hover:border-orange-500 transition-all flex items-center justify-center cursor-pointer group"
+        className={`fixed z-40 w-11 h-11 rounded-full bg-slate-900 border-2 border-orange-400 text-white shadow-xl hover:scale-110 hover:border-orange-500 transition-all duration-300 flex items-center justify-center cursor-pointer group ${
+          isAudioOpen ? "bottom-56 right-3 xl:bottom-5 xl:right-5" : "bottom-4 right-4"
+        }`}
         title="Mở Linh Vật StoryReader"
       >
         <span className="text-lg group-hover:rotate-12 transition-transform">🐾</span>
@@ -176,7 +191,12 @@ export default function InteractiveMascot({
   }
 
   return (
-    <aside aria-label="Linh vật tương tác" className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-40 flex flex-col items-end select-none pointer-events-auto">
+    <aside
+      aria-label="Linh vật tương tác"
+      className={`fixed z-40 flex flex-col items-end select-none pointer-events-auto transition-all duration-300 ${
+        isAudioOpen ? "bottom-56 right-3 xl:bottom-5 xl:right-5" : "bottom-3 right-3 sm:bottom-5 sm:right-5"
+      }`}
+    >
       {/* ============================================================ */}
       {/* 1. BONG BÓNG THOẠI (SPEECH BUBBLE)                           */}
       {/* ============================================================ */}

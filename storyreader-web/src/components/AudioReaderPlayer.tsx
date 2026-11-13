@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 interface AudioReaderPlayerProps {
+  chapterId: string;
   content: string;
   chapterTitle: string;
   chapterNumber: number;
@@ -15,6 +16,29 @@ interface AudioReaderPlayerProps {
 type TtsEngine = "google" | "webspeech";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5066/api";
+const VALID_RATES = [0.8, 1.0, 1.25, 1.5, 2.0];
+const STORAGE_RATE_KEY = "storyreader-audio-rate";
+const STORAGE_ENGINE_KEY = "storyreader-audio-engine";
+const STORAGE_VOICE_KEY = "storyreader-audio-voice";
+
+function getSavedRate(): number {
+  const saved = Number(localStorage.getItem(STORAGE_RATE_KEY));
+  return VALID_RATES.includes(saved) ? saved : 1.0;
+}
+
+function getSavedEngine(): TtsEngine {
+  const saved = localStorage.getItem(STORAGE_ENGINE_KEY);
+  return saved === "webspeech" ? "webspeech" : "google";
+}
+
+function getSavedChunkIndex(chapterId: string, totalChunks: number): number {
+  if (totalChunks <= 1) return 0;
+  const raw = Number(localStorage.getItem(`storyreader-audio-pos-${chapterId}`));
+  if (!Number.isInteger(raw) || raw < 0 || raw >= totalChunks - 1) {
+    return 0;
+  }
+  return raw;
+}
 
 // Tách nội dung thành các câu ngắn hợp lý (< 180 ký tự) cho TTS, bỏ qua dòng chỉ có ký tự phân cách (---, ***, ...)
 function splitTextIntoSentences(text: string, maxLength: number = 180): string[] {
@@ -29,7 +53,6 @@ function splitTextIntoSentences(text: string, maxLength: number = 180): string[]
     const sentences = para.match(/[^.!?…]+[.!?…]+|[^.!?…]+$/g) || [para];
     for (const s of sentences) {
       const trimmed = s.trim();
-      // Chỉ giữ các câu có chứa ít nhất 1 chữ cái hoặc chữ số
       if (!trimmed || !/[\p{L}\p{N}]/u.test(trimmed)) continue;
 
       if (trimmed.length <= maxLength) {
@@ -54,6 +77,7 @@ function splitTextIntoSentences(text: string, maxLength: number = 180): string[]
 }
 
 export default function AudioReaderPlayer({
+  chapterId,
   content,
   chapterTitle,
   chapterNumber,
@@ -66,10 +90,21 @@ export default function AudioReaderPlayer({
 }: AudioReaderPlayerProps) {
   const chunks = useMemo(() => splitTextIntoSentences(content, 180), [content]);
 
-  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+  // Tránh lặp "Chương X: Chương X: ..." nếu tiêu đề chương đã ghi sẵn số chương
+  const displayChapterTitle = useMemo(() => {
+    const trimmed = chapterTitle.trim();
+    if (/^chương\s*\d+/i.test(trimmed)) {
+      return trimmed;
+    }
+    return `Chương ${chapterNumber}: ${trimmed}`;
+  }, [chapterNumber, chapterTitle]);
+
+  const [currentChunkIndex, setCurrentChunkIndex] = useState<number>(() =>
+    getSavedChunkIndex(chapterId, chunks.length)
+  );
   const [isPlaying, setIsPlaying] = useState(false);
-  const [rate, setRate] = useState<number>(1.0);
-  const [engine, setEngine] = useState<TtsEngine>("google");
+  const [rate, setRate] = useState<number>(getSavedRate);
+  const [engine, setEngine] = useState<TtsEngine>(getSavedEngine);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [showVoiceMenu, setShowVoiceMenu] = useState(false);
@@ -79,14 +114,48 @@ export default function AudioReaderPlayer({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const preloadAudioRef = useRef<HTMLAudioElement | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const voiceMenuRef = useRef<HTMLDivElement | null>(null);
   const sessionIdRef = useRef(0);
   const consecutiveErrorsRef = useRef(0);
-
-  const isPlayingRef = useRef(false);
-  isPlayingRef.current = isPlaying;
-
   const rateRef = useRef(rate);
-  rateRef.current = rate;
+  const playChunkRef = useRef<(index: number, forcedEngine?: TtsEngine) => void>(() => {});
+  const initialStartIndexRef = useRef(currentChunkIndex);
+
+  useEffect(() => {
+    rateRef.current = rate;
+  }, [rate]);
+
+  // Lưu vị trí câu đang nghe vào localStorage
+  useEffect(() => {
+    if (chunks.length > 0 && currentChunkIndex > 0) {
+      localStorage.setItem(`storyreader-audio-pos-${chapterId}`, String(currentChunkIndex));
+    }
+  }, [chapterId, currentChunkIndex, chunks.length]);
+
+  // Đóng dropdown chọn giọng khi click ra ngoài hoặc nhấn Esc
+  useEffect(() => {
+    if (!showVoiceMenu) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (voiceMenuRef.current && !voiceMenuRef.current.contains(e.target as Node)) {
+        setShowVoiceMenu(false);
+      }
+    };
+
+    const handleEscapeMenu = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        setShowVoiceMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("keydown", handleEscapeMenu, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("keydown", handleEscapeMenu, true);
+    };
+  }, [showVoiceMenu]);
 
   // Dừng hoàn toàn mọi luồng âm thanh hiện tại và hủy các callback cũ
   const stopAllAudio = useCallback(() => {
@@ -112,7 +181,7 @@ export default function AudioReaderPlayer({
     }
   }, []);
 
-  // Load danh sách giọng hệ thống (không làm gián đoạn audio đang phát)
+  // Load danh sách giọng hệ thống và khôi phục giọng đã chọn trước đó
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       return;
@@ -130,8 +199,13 @@ export default function AudioReaderPlayer({
       setHasViWebSpeechVoice(viVoices.length > 0);
       setVoices(allVoices);
 
+      const savedVoiceName = localStorage.getItem(STORAGE_VOICE_KEY);
       setSelectedVoice((prev) => {
         if (prev) return prev;
+        if (savedVoiceName) {
+          const matched = allVoices.find((v) => v.name === savedVoiceName);
+          if (matched) return matched;
+        }
         if (viVoices.length > 0) return viVoices[0];
         if (allVoices.length > 0) return allVoices[0];
         return null;
@@ -192,8 +266,9 @@ export default function AudioReaderPlayer({
           if (mySession !== sessionIdRef.current) return;
           if (index + 1 < chunks.length) {
             setCurrentChunkIndex(index + 1);
-            playChunk(index + 1, "google");
+            playChunkRef.current(index + 1, "google");
           } else {
+            localStorage.removeItem(`storyreader-audio-pos-${chapterId}`);
             setIsPlaying(false);
             if (hasNextChapter && onNextChapter) {
               setTimeout(() => {
@@ -213,7 +288,7 @@ export default function AudioReaderPlayer({
             setTimeout(() => {
               if (mySession !== sessionIdRef.current) return;
               setCurrentChunkIndex(index + 1);
-              playChunk(index + 1, "google");
+              playChunkRef.current(index + 1, "google");
             }, 600);
           } else {
             setIsPlaying(false);
@@ -231,7 +306,6 @@ export default function AudioReaderPlayer({
           }
         });
       } else {
-        // Web Speech API
         if (typeof window === "undefined" || !("speechSynthesis" in window)) {
           setErrorMsg("Trình duyệt không hỗ trợ Web Speech API.");
           return;
@@ -251,8 +325,9 @@ export default function AudioReaderPlayer({
           if (mySession !== sessionIdRef.current) return;
           if (index + 1 < chunks.length) {
             setCurrentChunkIndex(index + 1);
-            playChunk(index + 1, "webspeech");
+            playChunkRef.current(index + 1, "webspeech");
           } else {
+            localStorage.removeItem(`storyreader-audio-pos-${chapterId}`);
             setIsPlaying(false);
             if (hasNextChapter && onNextChapter) {
               setTimeout(() => {
@@ -276,21 +351,25 @@ export default function AudioReaderPlayer({
         setIsPlaying(true);
       }
     },
-    [chunks, engine, selectedVoice, hasNextChapter, onNextChapter, stopAllAudio]
+    [chunks, chapterId, engine, selectedVoice, hasNextChapter, onNextChapter, stopAllAudio]
   );
 
-  // Tự động phát khi mở player (dọn dẹp sạch sẽ khi đóng hoặc đổi chương)
   useEffect(() => {
+    playChunkRef.current = playChunk;
+  }, [playChunk]);
+
+  // Tự động phát khi mở player (tiếp tục từ vị trí đã lưu nếu có)
+  useEffect(() => {
+    const startIdx = initialStartIndexRef.current;
     const timer = setTimeout(() => {
-      playChunk(0);
+      playChunkRef.current(startIdx);
     }, 60);
 
     return () => {
       clearTimeout(timer);
       stopAllAudio();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [stopAllAudio]);
 
   // Play / Pause
   const togglePlay = useCallback(() => {
@@ -312,7 +391,7 @@ export default function AudioReaderPlayer({
           .then(() => {
             if (mySession === sessionIdRef.current) setIsPlaying(true);
           })
-          .catch(() => playChunk(currentChunkIndex));
+          .catch(() => playChunkRef.current(currentChunkIndex));
       } else if (
         engine === "webspeech" &&
         typeof window !== "undefined" &&
@@ -322,10 +401,10 @@ export default function AudioReaderPlayer({
         setIsPlaying(true);
       } else {
         consecutiveErrorsRef.current = 0;
-        playChunk(currentChunkIndex);
+        playChunkRef.current(currentChunkIndex);
       }
     }
-  }, [isPlaying, engine, currentChunkIndex, playChunk]);
+  }, [isPlaying, engine, currentChunkIndex]);
 
   // Lùi câu
   const handlePrev = () => {
@@ -359,13 +438,13 @@ export default function AudioReaderPlayer({
     }
   };
 
-  // Đổi tốc độ đọc
+  // Đổi tốc độ đọc và lưu vào localStorage
   const cycleRate = () => {
-    const rates = [0.8, 1.0, 1.25, 1.5, 2.0];
-    const curIdx = rates.indexOf(rate);
-    const nextRate = rates[(curIdx + 1) % rates.length];
+    const curIdx = VALID_RATES.indexOf(rate);
+    const nextRate = VALID_RATES[(curIdx + 1) % VALID_RATES.length];
     setRate(nextRate);
     rateRef.current = nextRate;
+    localStorage.setItem(STORAGE_RATE_KEY, String(nextRate));
 
     if (engine === "google" && audioRef.current) {
       audioRef.current.playbackRate = nextRate;
@@ -439,8 +518,8 @@ export default function AudioReaderPlayer({
                 <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 shrink-0">
                   {engine === "google" ? "Google Tiếng Việt" : "Giọng Hệ Thống"}
                 </span>
-                <span className="text-xs font-semibold truncate">
-                  Chương {chapterNumber}: {chapterTitle}
+                <span className="text-xs font-semibold truncate" title={displayChapterTitle}>
+                  {displayChapterTitle}
                 </span>
               </div>
               <p className="text-[11px] opacity-70 truncate mt-0.5 font-medium italic">
@@ -463,7 +542,7 @@ export default function AudioReaderPlayer({
           </button>
         </div>
 
-        {/* Inline error banner (if any) */}
+        {/* Inline error banner */}
         {errorMsg && (
           <div className="mb-2 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-400 text-[11px] flex items-center justify-between gap-2">
             <span>
@@ -513,9 +592,9 @@ export default function AudioReaderPlayer({
               {rate.toFixed(1)}x
             </button>
 
-            <div className="relative">
+            <div className="relative" ref={voiceMenuRef}>
               <button
-                onClick={() => setShowVoiceMenu(!showVoiceMenu)}
+                onClick={() => setShowVoiceMenu((prev) => !prev)}
                 className="px-2 py-1 rounded-lg text-xs font-medium border border-slate-300 dark:border-slate-700 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-1 cursor-pointer"
                 title="Chọn giọng đọc hoặc đổi chế độ"
               >
@@ -538,6 +617,7 @@ export default function AudioReaderPlayer({
                   <button
                     onClick={() => {
                       setEngine("google");
+                      localStorage.setItem(STORAGE_ENGINE_KEY, "google");
                       setShowVoiceMenu(false);
                       consecutiveErrorsRef.current = 0;
                       playChunk(currentChunkIndex, "google");
@@ -584,7 +664,9 @@ export default function AudioReaderPlayer({
                           key={i}
                           onClick={() => {
                             setEngine("webspeech");
+                            localStorage.setItem(STORAGE_ENGINE_KEY, "webspeech");
                             setSelectedVoice(v);
+                            localStorage.setItem(STORAGE_VOICE_KEY, v.name);
                             setShowVoiceMenu(false);
                             playChunk(currentChunkIndex, "webspeech");
                           }}

@@ -128,8 +128,9 @@ export default function ChapterReadPage() {
       showCopyToast(data?.message || "Đã gửi báo cáo vi phạm thành công! Ban quản trị sẽ kiểm duyệt.");
       queryClient.invalidateQueries({ queryKey: ["discussions", id] });
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message || "Không thể gửi báo cáo. Vui lòng đảm bảo bạn đã đăng nhập và tài khoản không bị hạn chế.";
+    onError: (err: unknown) => {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      const msg = axiosErr?.response?.data?.message || "Không thể gửi báo cáo. Vui lòng đảm bảo bạn đã đăng nhập và tài khoản không bị hạn chế.";
       showCopyToast(msg);
     },
   });
@@ -162,7 +163,18 @@ export default function ChapterReadPage() {
 
   const { data: chapter, isLoading, error } = useQuery({
     queryKey: ["chapter", id],
-    queryFn: () => getChapterContent(id!),
+    queryFn: async () => {
+      try {
+        const res = await getChapterContent(id!);
+        if (res.storyType === 1) {
+          setShowAudioPlayer(false);
+        }
+        return res;
+      } catch (err) {
+        setShowAudioPlayer(false);
+        throw err;
+      }
+    },
     enabled: !!id,
     retry: false,
   });
@@ -221,13 +233,13 @@ export default function ChapterReadPage() {
     return story?.chapters
       ? [...story.chapters].sort((a, b) => a.chapterNumber - b.chapterNumber)
       : [];
-  }, [story?.chapters]);
+  }, [story]);
 
   const readChapterGroups = useMemo<ChapterGroup[]>(() => groupChaptersByPart(sortedChapters), [sortedChapters]);
   const [readExpandedFolders, setReadExpandedFolders] = useState<Set<string>>(new Set());
 
-  // Auto-expand folder that contains current chapter, or expand all
-  useEffect(() => {
+  // Mở danh sách chương và tự động mở thư mục chứa chương hiện tại
+  const openChapterList = () => {
     if (readChapterGroups.length > 0) {
       const activeGroup = readChapterGroups.find((g: ChapterGroup) => g.chapters.some((c) => c.id === id));
       if (activeGroup) {
@@ -236,7 +248,8 @@ export default function ChapterReadPage() {
         setReadExpandedFolders(new Set(readChapterGroups.map((g: ChapterGroup) => g.partName)));
       }
     }
-  }, [story?.id, id, showChapterList]);
+    setShowChapterList(true);
+  };
 
   const toggleReadFolder = (partName: string) => {
     setReadExpandedFolders((prev) => {
@@ -269,6 +282,15 @@ export default function ChapterReadPage() {
   const isComic = chapter?.storyType === 1;
   const isProtectedNovel = !isComic && !!(chapter?.imageUrls && chapter.imageUrls.length > 0);
   const hasImages = isComic || isProtectedNovel;
+  const isAudioActive = !!(showAudioPlayer && !error && !isComic && chapter?.content);
+
+  // Phát sự kiện để linh vật Jiji tự né vị trí thanh Audio Player trên màn hình nhỏ
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("storyreader-audio-open", { detail: isAudioActive }));
+    return () => {
+      window.dispatchEvent(new CustomEvent("storyreader-audio-open", { detail: false }));
+    };
+  }, [isAudioActive]);
 
   // Keyboard navigation: ArrowLeft -> Prev, ArrowRight -> Next, A -> Audio Player, Esc -> Close Audio
   useEffect(() => {
@@ -712,7 +734,7 @@ export default function ChapterReadPage() {
             {/* Quick Table of Contents button */}
             {sortedChapters.length > 0 && (
               <button
-                onClick={() => setShowChapterList(true)}
+                onClick={openChapterList}
                 className={`w-full sm:w-auto px-5 py-3 rounded-xl border ${borderClasses[theme]} ${cardClasses[theme]} hover:border-gold hover:text-gold transition-all text-sm font-medium flex items-center justify-center gap-2`}
               >
                 <i className="fa-solid fa-list-ul text-gold text-xs" />
@@ -915,11 +937,13 @@ export default function ChapterReadPage() {
         </div>
       )}
 
-      {/* Nút Cuộn Lên Đầu Trang (Đặt lệch sang trái để không bị trùng vị trí với chú mèo Jiji) */}
+      {/* Nút Cuộn Lên Đầu Trang (Tự né vị trí chú mèo Jiji và thanh Audio Player) */}
       {showScrollTop && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-4 right-20 sm:bottom-5 sm:right-24 z-40 w-11 h-11 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 cursor-pointer"
+          className={`fixed z-40 w-11 h-11 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 cursor-pointer ${
+            isAudioActive ? "bottom-56 right-28 xl:bottom-5 xl:right-32" : "bottom-4 sm:bottom-5 right-24 sm:right-32"
+          }`}
           title="Cuộn lên đầu trang"
         >
           <i className="fa-solid fa-arrow-up text-sm" />
@@ -1136,9 +1160,10 @@ export default function ChapterReadPage() {
       )}
 
       {/* Audio Reader Floating Player */}
-      {showAudioPlayer && !isComic && chapter?.content && (
+      {isAudioActive && chapter && (
         <AudioReaderPlayer
           key={chapter.id}
+          chapterId={chapter.id}
           content={chapter.content}
           chapterTitle={chapter.title}
           chapterNumber={chapter.chapterNumber}

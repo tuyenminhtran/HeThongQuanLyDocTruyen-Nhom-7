@@ -23,7 +23,7 @@ export function groupChaptersByPart(chapters: ChapterListItem[]): ChapterGroup[]
       hasExplicitPart = true;
     } else {
       // Check title for pattern: [Phần 1], (Tập 1), Phần 1:...
-      const match = c.title.match(/(?:\[|\()?((?:Phần|Tập|Quyển)\s*\d+[^\]\)]*)(?:\]|\))?/i);
+      const match = c.title.match(/(?:\[|\()?((?:Phần|Tập|Quyển)\s*\d+[^\])]*)(?:\]|\))?/i);
       if (match) {
         part = match[1].trim();
       } else {
