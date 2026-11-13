@@ -32,6 +32,41 @@ class ApiServer implements HttpClientAdapter {
     },
   ];
   bool fail = false;
+  final List<Map<String, dynamic>> schedules = [
+    {
+      'id': 'chap-sched-1',
+      'storyId': 'story-1',
+      'storyTitle': 'Truyện Hẹn Giờ',
+      'storyCoverImageUrl': '/uploads/cover.jpg',
+      'storyType': 0,
+      'chapterNumber': 12,
+      'title': 'Chương sắp đăng',
+      'publishAt': '2026-12-01T10:00:00Z',
+      'isPublished': false,
+      'createdAt': '2026-11-01T00:00:00Z',
+      'viewCount': 0,
+    },
+  ];
+  final List<Map<String, dynamic>> reportedComments = [
+    {
+      'id': 'disc-1',
+      'content': 'Bình luận cần kiểm duyệt',
+      'status': 2,
+      'statusName': 'Reported',
+      'reportReason': 'Ngôn từ xúc phạm',
+      'reportCount': 2,
+      'createdAt': '2026-11-10T00:00:00Z',
+      'userId': 'reader-1',
+      'userName': 'Độc Giả Mẫu',
+      'userEmail': 'reader@storyreader.vn',
+      'isUserRestricted': false,
+      'chapterId': 'chap-1',
+      'chapterNumber': 1,
+      'chapterTitle': 'Chương 1',
+      'storyId': 'story-1',
+      'storyTitle': 'Truyện Test',
+    },
+  ];
 
   Dio client() =>
       Dio(BaseOptions(baseUrl: 'http://localhost:5066/api'))
@@ -46,6 +81,24 @@ class ApiServer implements HttpClientAdapter {
     requests.add(options);
     if (fail) return _response({'message': 'Máy chủ đang bận'}, 503);
     final path = options.path;
+
+    if (path == '/stories') {
+      return _response([
+        {
+          'id': 'story-1',
+          'title': 'Truyện Test',
+          'coverImageUrl': '/uploads/cover.jpg',
+          'author': 'Tác giả A',
+          'status': 0,
+          'accessPolicy': 0,
+          'viewCount': 100,
+          'type': 0,
+          'totalChapters': 10,
+          'latestChapterNumber': 10,
+        }
+      ]);
+    }
+
     if (path == '/genres' && options.method == 'GET') return _response(genres);
     if (path == '/genres' && options.method == 'POST') {
       final name = (options.data as Map)['name'] as String;
@@ -131,6 +184,216 @@ class ApiServer implements HttpClientAdapter {
         },
       ]);
     }
+
+    if (path == '/notifications/unread-count') {
+      return _response({'unreadCount': 2});
+    }
+    if (path == '/notifications' && options.method == 'GET') {
+      return _response({
+        'unreadCount': 2,
+        'items': [
+          {
+            'id': 'notif-1',
+            'title': 'Chương mới',
+            'message': 'Đã có chương 11',
+            'linkUrl': '/chapters/c-11',
+            'isRead': false,
+            'createdAt': '2026-10-28T00:00:00Z',
+          }
+        ]
+      });
+    }
+    if (path.startsWith('/notifications/') && path.endsWith('/read')) {
+      return _response({'message': 'Đã đánh dấu đã đọc.'});
+    }
+    if (path == '/notifications/read-all') {
+      return _response({'message': 'Đã đánh dấu tất cả thông báo là đã đọc.'});
+    }
+
+    if (path == '/subscriptions/plans') {
+      return _response([
+        {
+          'id': 'plan-1',
+          'name': 'Gói 1 tháng',
+          'price': 49000,
+          'durationDays': 30,
+          'scope': 'all',
+        }
+      ]);
+    }
+    if (path == '/subscriptions/me') {
+      return _response([
+        {
+          'id': 'my-sub-1',
+          'planId': 'plan-1',
+          'planName': 'Gói 1 tháng',
+          'startDate': '2026-10-01T00:00:00Z',
+          'endDate': '2026-11-01T00:00:00Z',
+          'isActive': true,
+        }
+      ]);
+    }
+    if (path == '/subscriptions/me/purchases') {
+      return _response([
+        {
+          'id': 'purchase-1',
+          'storyId': 'story-1',
+          'storyTitle': 'Truyện đã mua',
+          'amount': 25000,
+          'purchasedAt': '2026-10-15T00:00:00Z',
+        }
+      ]);
+    }
+    if (path.startsWith('/payments/subscription/')) {
+      return _response({
+        'transactionId': 'tx-sub-1',
+        'paymentUrl': 'https://sandbox.vnpayment.vn/pay?ref=tx-sub-1',
+      });
+    }
+    if (path.startsWith('/payments/story/')) {
+      return _response({
+        'transactionId': 'tx-story-1',
+        'paymentUrl': 'https://sandbox.vnpayment.vn/pay?ref=tx-story-1',
+      });
+    }
+    if (path == '/payments/callback') {
+      return _response({'message': 'Thành công'});
+    }
+
+    if (path == '/admin/transactions') {
+      return _response({
+        'total': 1,
+        'page': 1,
+        'pageSize': 20,
+        'items': [
+          {
+            'id': 'tx-admin-1',
+            'userId': 'user-1',
+            'userEmail': 'user@example.com',
+            'userDisplayName': 'Độc giả 1',
+            'type': 'Subscription',
+            'status': 'Pending',
+            'targetId': 'plan-1',
+            'amount': 49000,
+            'provider': 'VNPay',
+            'providerTransactionRef': 'REF123',
+            'createdAt': '2026-10-28T00:00:00Z',
+            'completedAt': null,
+          }
+        ]
+      });
+    }
+    if (path.endsWith('/force-activate')) {
+      return _response({'message': 'Đã cấp quyền truy cập và hoàn tất giao dịch thành công.'});
+    }
+    if (path.endsWith('/mark-failed')) {
+      return _response({'message': 'Đã đánh dấu giao dịch thất bại.'});
+    }
+
+    if (path == '/admin/schedules' && options.method == 'GET') {
+      final status = (options.queryParameters['status'] as String? ?? 'pending').toLowerCase();
+      final filtered = schedules.where((s) {
+        final published = s['isPublished'] as bool;
+        if (status == 'pending') return !published;
+        if (status == 'published') return published;
+        return true;
+      }).toList();
+      final pendingCount = schedules.where((s) => !(s['isPublished'] as bool)).length;
+      final publishedCount = schedules.where((s) => s['isPublished'] as bool).length;
+      return _response({
+        'items': filtered,
+        'totalCount': filtered.length,
+        'page': 1,
+        'pageSize': 20,
+        'stats': {
+          'pendingCount': pendingCount,
+          'publishedTodayCount': publishedCount,
+          'storiesCount': 1,
+          'serverTimeUtc': '2026-11-13T00:00:00Z',
+        },
+      });
+    }
+    if (path.startsWith('/admin/schedules/') && path.endsWith('/publish-now')) {
+      final id = path.split('/')[3];
+      for (final s in schedules) {
+        if (s['id'] == id) s['isPublished'] = true;
+      }
+      return _response({'message': 'Đã xuất bản chương ngay lập tức'});
+    }
+    if (path.startsWith('/admin/schedules/') && path.endsWith('/reschedule')) {
+      final id = path.split('/')[3];
+      final newDate = (options.data as Map)['publishAt'] as String;
+      for (final s in schedules) {
+        if (s['id'] == id) s['publishAt'] = newDate;
+      }
+      return _response({'message': 'Đã cập nhật lịch đăng chương'});
+    }
+    if (path.startsWith('/admin/schedules/') && options.method == 'DELETE') {
+      final id = path.split('/')[3];
+      schedules.removeWhere((s) => s['id'] == id);
+      return _response({'message': 'Đã hủy lịch đăng'});
+    }
+
+    if (path == '/admin/reported-comments' && options.method == 'GET') {
+      final status = (options.queryParameters['status'] as String? ?? 'reported').toLowerCase();
+      final filtered = reportedComments.where((c) {
+        if (status == 'all') return true;
+        return (c['statusName'] as String).toLowerCase() == status;
+      }).toList();
+      return _response({
+        'items': filtered,
+        'totalCount': filtered.length,
+        'page': 1,
+        'pageSize': 20,
+        'stats': {
+          'reportedCount': reportedComments.where((c) => c['statusName'] == 'Reported').length,
+          'hiddenCount': reportedComments.where((c) => c['statusName'] == 'Hidden').length,
+          'visibleCount': reportedComments.where((c) => c['statusName'] == 'Visible').length,
+          'restrictedUsersCount': reportedComments.where((c) => c['isUserRestricted'] == true).length,
+        },
+      });
+    }
+    if (path.startsWith('/admin/reported-comments/') && path.endsWith('/approve')) {
+      final id = path.split('/')[3];
+      for (final c in reportedComments) {
+        if (c['id'] == id) {
+          c['status'] = 0;
+          c['statusName'] = 'Visible';
+        }
+      }
+      return _response({'message': 'Đã duyệt bình luận hợp lệ.'});
+    }
+    if (path.startsWith('/admin/reported-comments/') && path.endsWith('/hide')) {
+      final id = path.split('/')[3];
+      for (final c in reportedComments) {
+        if (c['id'] == id) {
+          c['status'] = 1;
+          c['statusName'] = 'Hidden';
+        }
+      }
+      return _response({'message': 'Đã ẩn bình luận.'});
+    }
+    if (path.startsWith('/admin/reported-comments/') && path.endsWith('/restrict-user')) {
+      final id = path.split('/')[3];
+      for (final c in reportedComments) {
+        if (c['id'] == id) c['isUserRestricted'] = !(c['isUserRestricted'] as bool);
+      }
+      return _response({'message': 'Đã cập nhật hạn chế người dùng.'});
+    }
+    if (path.startsWith('/admin/reported-comments/') && options.method == 'DELETE') {
+      final id = path.split('/')[3];
+      reportedComments.removeWhere((c) => c['id'] == id);
+      return _response({'message': 'Đã xóa bình luận.'});
+    }
+
+    if (path.startsWith('/chapters/') && path.endsWith('/report') && options.method == 'POST') {
+      return _response({
+        'message': 'Cảm ơn bạn đã báo cáo. Quản trị viên sẽ xem xét bình luận này.',
+        'status': 2,
+        'reportCount': 1,
+      });
+    }
+
     if (path.startsWith('/profile/')) return _response([]);
     return _response({'message': 'Unknown test endpoint $path'}, 404);
   }

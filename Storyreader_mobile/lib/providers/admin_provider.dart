@@ -21,3 +21,95 @@ final dashboardProvider = FutureProvider.autoDispose<DashboardData>((ref) {
   ref.watch(authProvider.select((auth) => auth.accessToken));
   return ref.watch(adminApiProvider).getDashboard();
 });
+
+class AdminTransactionQuery {
+  final String? status;
+  final String? keyword;
+  final int page;
+  final int pageSize;
+
+  const AdminTransactionQuery({
+    this.status,
+    this.keyword,
+    this.page = 1,
+    this.pageSize = 20,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AdminTransactionQuery &&
+          runtimeType == other.runtimeType &&
+          status == other.status &&
+          keyword == other.keyword &&
+          page == other.page &&
+          pageSize == other.pageSize;
+
+  @override
+  int get hashCode =>
+      (status?.hashCode ?? 0) ^
+      (keyword?.hashCode ?? 0) ^
+      page.hashCode ^
+      pageSize.hashCode;
+}
+
+final adminTransactionsProvider = FutureProvider.autoDispose
+    .family<AdminTransactionsResponse, AdminTransactionQuery>((ref, query) {
+  ref.watch(authProvider.select((auth) => auth.accessToken));
+  return ref.watch(adminApiProvider).getAdminTransactions(
+        status: query.status,
+        keyword: query.keyword,
+        page: query.page,
+        pageSize: query.pageSize,
+      );
+});
+
+class AdminPagedQuery {
+  final String status;
+  final String keyword;
+  final int page;
+  final int pageSize;
+
+  const AdminPagedQuery({
+    required this.status,
+    this.keyword = '',
+    this.page = 1,
+    this.pageSize = 20,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AdminPagedQuery &&
+          runtimeType == other.runtimeType &&
+          status == other.status &&
+          keyword == other.keyword &&
+          page == other.page &&
+          pageSize == other.pageSize;
+
+  @override
+  int get hashCode =>
+      status.hashCode ^ keyword.hashCode ^ page.hashCode ^ pageSize.hashCode;
+}
+
+final adminSchedulesProvider = FutureProvider.autoDispose
+    .family<AdminSchedulesResponse, AdminPagedQuery>((ref, query) {
+  ref.watch(authProvider.select((auth) => auth.accessToken));
+  return ref.watch(adminApiProvider).getAdminSchedules(
+        status: query.status,
+        search: query.keyword,
+        page: query.page,
+        pageSize: query.pageSize,
+      );
+});
+
+final adminReportedCommentsProvider = FutureProvider.autoDispose
+    .family<AdminReportedCommentsResponse, AdminPagedQuery>((ref, query) {
+  ref.watch(authProvider.select((auth) => auth.accessToken));
+  return ref.watch(adminApiProvider).getReportedComments(
+        status: query.status,
+        search: query.keyword,
+        page: query.page,
+        pageSize: query.pageSize,
+      );
+});

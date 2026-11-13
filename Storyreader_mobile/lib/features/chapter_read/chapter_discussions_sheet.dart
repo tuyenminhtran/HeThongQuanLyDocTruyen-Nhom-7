@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_error.dart';
 import '../../data/models/discussion_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/reader_provider.dart';
@@ -78,11 +79,101 @@ class _ChapterDiscussionsSheetState extends ConsumerState<ChapterDiscussionsShee
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi gửi bình luận: $e')),
+          SnackBar(content: Text(apiErrorMessage(e, 'Không thể gửi bình luận.'))),
         );
       }
     } finally {
       if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  Future<void> _reportDiscussion(DiscussionItem item) async {
+    final auth = ref.read(authProvider);
+    if (!auth.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng đăng nhập để báo cáo bình luận.')),
+      );
+      return;
+    }
+
+    final reasonCtrl = TextEditingController();
+    const presets = ['Spam / Quảng cáo', 'Ngôn từ xúc phạm', 'Tiết lộ nội dung (Spoiler)'];
+
+    final submittedReason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Báo cáo bình luận',
+          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Chọn nhanh hoặc nhập lý do để quản trị viên xem xét:',
+              style: GoogleFonts.inter(fontSize: 12.5, color: AppColors.inkMuted),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: presets
+                  .map(
+                    (preset) => ActionChip(
+                      label: Text(preset, style: GoogleFonts.inter(fontSize: 11.5)),
+                      onPressed: () => reasonCtrl.text = preset,
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: reasonCtrl,
+              maxLength: 500,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                hintText: 'Lý do báo cáo (không bắt buộc)...',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, reasonCtrl.text.trim()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.red400,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Gửi báo cáo'),
+          ),
+        ],
+      ),
+    );
+    reasonCtrl.dispose();
+
+    if (submittedReason == null || !mounted) return;
+
+    try {
+      final msg = await ref
+          .read(discussionRepositoryProvider)
+          .reportDiscussion(widget.chapterId, item.id, reason: submittedReason);
+      if (!mounted) return;
+      ref.invalidate(chapterDiscussionsFamily(widget.chapterId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e, 'Không thể gửi báo cáo.'))),
+      );
     }
   }
 
@@ -348,12 +439,15 @@ class _ChapterDiscussionsSheetState extends ConsumerState<ChapterDiscussionsShee
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    item.user,
-                    style: GoogleFonts.inter(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: textColor,
+                  Expanded(
+                    child: Text(
+                      item.user,
+                      style: GoogleFonts.inter(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Text(
@@ -363,6 +457,18 @@ class _ChapterDiscussionsSheetState extends ConsumerState<ChapterDiscussionsShee
                       color: AppColors.inkMuted,
                     ),
                   ),
+                  if (item.id.isNotEmpty) ...[
+                    const SizedBox(width: 4),
+                    IconButton(
+                      onPressed: () => _reportDiscussion(item),
+                      icon: const Icon(Icons.flag_outlined, size: 16),
+                      color: AppColors.inkMuted,
+                      tooltip: 'Báo cáo bình luận',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 4),

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_error.dart';
 import '../../data/api/story_api.dart';
 import '../../data/models/story_model.dart';
+import '../../providers/reader_provider.dart';
 import '../../providers/story_provider.dart';
 import '../../providers/admin_provider.dart';
 import '../../widgets/request_error.dart';
@@ -459,11 +462,15 @@ class _AdminStoriesScreenState extends ConsumerState<AdminStoriesScreen> {
   }
 }
 
-/* ────────────────────────── CREATE STORY SHEET ────────────────────────── */
+/* ────────────────────────── CREATE / EDIT STORY SHEET ────────────────────────── */
 class _CreateStorySheet extends ConsumerStatefulWidget {
   final Function(String id) onCreated;
+  final StoryDetail? existingStory;
 
-  const _CreateStorySheet({required this.onCreated});
+  const _CreateStorySheet({
+    required this.onCreated,
+    this.existingStory,
+  });
 
   @override
   ConsumerState<_CreateStorySheet> createState() => _CreateStorySheetState();
@@ -480,8 +487,32 @@ class _CreateStorySheetState extends ConsumerState<_CreateStorySheet> {
   final Set<String> _selectedGenreIds = {};
 
   int _accessPolicy = 0; // 0: Miễn phí, 1: Trả phí, 2: Mixed
+  int _releaseStatus = 0; // 0: Đang phát hành, 1: Hoàn thành
+  StoryType _storyType = StoryType.novel;
+  bool _genresInitialized = false;
   bool _loading = false;
   String? _error;
+
+  bool get _isEditing => widget.existingStory != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existingStory;
+    if (existing != null) {
+      _titleController.text = existing.title;
+      _authorController.text = existing.author;
+      _coverController.text = existing.coverImageUrl;
+      _descController.text = existing.description;
+      _accessPolicy = existing.accessPolicy;
+      _releaseStatus = existing.status;
+      _storyType = existing.type;
+      if (existing.price != null && existing.price! > 0) {
+        _priceController.text = existing.price!.toInt().toString();
+      }
+      _freeCountController.text = '${existing.freeChapterCount}';
+    }
+  }
 
   @override
   void dispose() {
@@ -500,29 +531,60 @@ class _CreateStorySheetState extends ConsumerState<_CreateStorySheet> {
 
     setState(() => _loading = true);
     try {
-      final input = CreateStoryInput(
-        title: _titleController.text.trim(),
-        author: _authorController.text.trim(),
-        coverImageUrl: _coverController.text.trim(),
-        description: _descController.text.trim(),
-        genreIds: _selectedGenreIds.toList(),
-        accessPolicy: _accessPolicy,
-        price: _accessPolicy == 0
-            ? null
-            : double.tryParse(_priceController.text.trim()),
-        freeChapterCount: _accessPolicy == 0
-            ? 0
-            : int.tryParse(_freeCountController.text.trim()) ?? 0,
-      );
+      final parsedPrice = _accessPolicy == 0
+          ? null
+          : double.tryParse(_priceController.text.trim());
+      final parsedFree = _accessPolicy == 0
+          ? 0
+          : int.tryParse(_freeCountController.text.trim()) ?? 0;
 
-      final newId = await StoryApi.createStory(input);
-      if (mounted) {
-        Navigator.pop(context);
-        widget.onCreated(newId);
+      if (_isEditing) {
+        final input = UpdateStoryInput(
+          title: _titleController.text.trim(),
+          author: _authorController.text.trim(),
+          coverImageUrl: _coverController.text.trim(),
+          description: _descController.text.trim(),
+          status: _releaseStatus,
+          genreIds: _selectedGenreIds.toList(),
+          accessPolicy: _accessPolicy,
+          price: parsedPrice,
+          freeChapterCount: parsedFree,
+          type: _storyType,
+        );
+        await StoryApi.updateStory(widget.existingStory!.id, input);
+        if (mounted) {
+          Navigator.pop(context);
+          widget.onCreated(widget.existingStory!.id);
+        }
+      } else {
+        final input = CreateStoryInput(
+          title: _titleController.text.trim(),
+          author: _authorController.text.trim(),
+          coverImageUrl: _coverController.text.trim(),
+          description: _descController.text.trim(),
+          genreIds: _selectedGenreIds.toList(),
+          accessPolicy: _accessPolicy,
+          price: parsedPrice,
+          freeChapterCount: parsedFree,
+          type: _storyType,
+        );
+
+        final newId = await StoryApi.createStory(input);
+        if (mounted) {
+          Navigator.pop(context);
+          widget.onCreated(newId);
+        }
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _error = 'Không tạo được truyện. Kiểm tra lại dữ liệu.');
+        setState(
+          () => _error = apiErrorMessage(
+            e,
+            _isEditing
+                ? 'Không cập nhật được truyện. Kiểm tra lại dữ liệu.'
+                : 'Không tạo được truyện. Kiểm tra lại dữ liệu.',
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -549,7 +611,7 @@ class _CreateStorySheetState extends ConsumerState<_CreateStorySheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Tạo truyện mới',
+                    _isEditing ? 'Chỉnh sửa truyện' : 'Tạo truyện mới',
                     style: GoogleFonts.notoSerif(
                       color: AppColors.inkText,
                       fontSize: 18,
@@ -663,37 +725,102 @@ class _CreateStorySheetState extends ConsumerState<_CreateStorySheet> {
                       error: error,
                       onRetry: () => ref.invalidate(genresProvider),
                     ),
-                    data: (genres) => genres.isEmpty
-                        ? const Text(
-                            'Chưa có thể loại. Bạn có thể thêm trong Quản lý thể loại.',
-                            style: TextStyle(color: AppColors.inkMuted),
-                          )
-                        : Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: genres
-                                .map(
-                                  (genre) => FilterChip(
-                                    label: Text(genre.name),
-                                    selected: _selectedGenreIds.contains(
-                                      genre.id,
+                    data: (genres) {
+                      if (!_genresInitialized && widget.existingStory != null) {
+                        _genresInitialized = true;
+                        for (final g in genres) {
+                          if (widget.existingStory!.genres.contains(g.name)) {
+                            _selectedGenreIds.add(g.id);
+                          }
+                        }
+                      }
+                      return genres.isEmpty
+                          ? const Text(
+                              'Chưa có thể loại. Bạn có thể thêm trong Quản lý thể loại.',
+                              style: TextStyle(color: AppColors.inkMuted),
+                            )
+                          : Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: genres
+                                  .map(
+                                    (genre) => FilterChip(
+                                      label: Text(genre.name),
+                                      selected: _selectedGenreIds.contains(
+                                        genre.id,
+                                      ),
+                                      onSelected: _loading
+                                          ? null
+                                          : (selected) => setState(() {
+                                              if (selected) {
+                                                _selectedGenreIds.add(genre.id);
+                                              } else {
+                                                _selectedGenreIds.remove(
+                                                  genre.id,
+                                                );
+                                              }
+                                            }),
                                     ),
-                                    onSelected: _loading
-                                        ? null
-                                        : (selected) => setState(() {
-                                            if (selected) {
-                                              _selectedGenreIds.add(genre.id);
-                                            } else {
-                                              _selectedGenreIds.remove(
-                                                genre.id,
-                                              );
-                                            }
-                                          }),
-                                  ),
-                                )
-                                .toList(),
-                          ),
+                                  )
+                                  .toList(),
+                            );
+                    },
                   ),
+              const SizedBox(height: 12),
+              Text(
+                'Loại truyện',
+                style: GoogleFonts.inter(
+                  color: AppColors.inkMuted,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 4),
+              DropdownButtonFormField<StoryType>(
+                initialValue: _storyType,
+                dropdownColor: AppColors.inkCard,
+                style: GoogleFonts.inter(
+                  color: AppColors.inkText,
+                  fontSize: 14,
+                ),
+                decoration: const InputDecoration(),
+                items: const [
+                  DropdownMenuItem(
+                    value: StoryType.novel,
+                    child: Text('Truyện chữ (Novel)'),
+                  ),
+                  DropdownMenuItem(
+                    value: StoryType.comic,
+                    child: Text('Truyện tranh (Comic)'),
+                  ),
+                ],
+                onChanged: (val) =>
+                    setState(() => _storyType = val ?? StoryType.novel),
+              ),
+              if (_isEditing) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Trạng thái phát hành',
+                  style: GoogleFonts.inter(
+                    color: AppColors.inkMuted,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                DropdownButtonFormField<int>(
+                  initialValue: _releaseStatus,
+                  dropdownColor: AppColors.inkCard,
+                  style: GoogleFonts.inter(
+                    color: AppColors.inkText,
+                    fontSize: 14,
+                  ),
+                  decoration: const InputDecoration(),
+                  items: const [
+                    DropdownMenuItem(value: 0, child: Text('Đang phát hành')),
+                    DropdownMenuItem(value: 1, child: Text('Đã hoàn thành')),
+                  ],
+                  onChanged: (val) => setState(() => _releaseStatus = val ?? 0),
+                ),
+              ],
               const SizedBox(height: 12),
               Text(
                 'Chính sách truy cập',
@@ -835,7 +962,7 @@ class _CreateStorySheetState extends ConsumerState<_CreateStorySheet> {
                             ),
                           )
                         : Text(
-                            'Tạo truyện',
+                            _isEditing ? 'Lưu thay đổi' : 'Tạo truyện',
                             style: GoogleFonts.inter(
                               fontWeight: FontWeight.w600,
                             ),
@@ -864,17 +991,148 @@ class _AdminStoryDetailSheet extends ConsumerStatefulWidget {
 
 class _AdminStoryDetailSheetState
     extends ConsumerState<_AdminStoryDetailSheet> {
+  void _invalidateStoryData() {
+    ref.invalidate(storyDetailFamily(widget.storyId));
+    ref.invalidate(storiesFamily);
+    ref.invalidate(dashboardProvider);
+  }
+
   void _openAddChapterModal(StoryDetail story) {
     showDialog(
       context: context,
       builder: (ctx) => _AddChapterDialog(
         story: story,
-        onAdded: () {
-          ref.invalidate(storyDetailFamily(widget.storyId));
-          ref.invalidate(storiesFamily(null));
-        },
+        onAdded: _invalidateStoryData,
       ),
     );
+  }
+
+  void _openEditStoryModal(StoryDetail story) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.inkCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _CreateStorySheet(
+        existingStory: story,
+        onCreated: (_) => _invalidateStoryData(),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteStory(StoryDetail story) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa truyện?'),
+        content: Text(
+          'Bạn có chắc muốn xóa "${story.title}" cùng toàn bộ chương? Thao tác không thể hoàn tác.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.red400,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await StoryApi.deleteStory(story.id);
+      ref.invalidate(storiesFamily);
+      ref.invalidate(dashboardProvider);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã xóa truyện.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e, 'Không thể xóa truyện.'))),
+        );
+      }
+    }
+  }
+
+  Future<void> _openEditChapterModal(
+    StoryDetail story,
+    ChapterListItem chapter,
+  ) async {
+    String initialContent = '';
+    try {
+      final loaded = await ref
+          .read(chapterRepositoryProvider)
+          .getChapterContent(chapter.id, cacheOffline: false);
+      initialContent = loaded.imageUrls.isNotEmpty && story.isComic
+          ? loaded.imageUrls.join('\n')
+          : loaded.content;
+    } catch (_) {}
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => _AddChapterDialog(
+        story: story,
+        existingChapter: chapter,
+        initialContent: initialContent,
+        onAdded: _invalidateStoryData,
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteChapter(
+    StoryDetail story,
+    ChapterListItem chapter,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa chương?'),
+        content: Text('Xóa "Chương ${chapter.chapterNumber}: ${chapter.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.red400,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await StoryApi.deleteChapter(story.id, chapter.id);
+      _invalidateStoryData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã xóa chương.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e, 'Không thể xóa chương.'))),
+        );
+      }
+    }
   }
 
   @override
@@ -911,6 +1169,16 @@ class _AdminStoryDetailSheetState
                         ),
                       ),
                       IconButton(
+                        icon: const Icon(Icons.edit_outlined, color: AppColors.gold),
+                        tooltip: 'Sửa truyện',
+                        onPressed: () => _openEditStoryModal(story),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: AppColors.red400),
+                        tooltip: 'Xóa truyện',
+                        onPressed: () => _confirmDeleteStory(story),
+                      ),
+                      IconButton(
                         icon: const Icon(
                           Icons.close,
                           color: AppColors.inkMuted,
@@ -935,8 +1203,8 @@ class _AdminStoryDetailSheetState
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: CachedNetworkImage(
-                          imageUrl: story.coverImageUrl.isNotEmpty
-                              ? story.coverImageUrl
+                          imageUrl: story.fullCoverUrl.isNotEmpty
+                              ? story.fullCoverUrl
                               : 'https://placehold.co/300x450?text=No+Cover',
                           fit: BoxFit.cover,
                         ),
@@ -1108,14 +1376,28 @@ class _AdminStoryDetailSheetState
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
-                                  child: Text(
-                                    c.title,
-                                    style: GoogleFonts.inter(
-                                      color: AppColors.inkText,
-                                      fontSize: 13,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        c.title,
+                                        style: GoogleFonts.inter(
+                                          color: AppColors.inkText,
+                                          fontSize: 13,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (c.partName != null &&
+                                          c.partName!.trim().isNotEmpty)
+                                        Text(
+                                          c.partName!,
+                                          style: GoogleFonts.inter(
+                                            color: AppColors.inkMuted,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                                 if (c.requiresAccess) ...[
@@ -1145,6 +1427,28 @@ class _AdminStoryDetailSheetState
                                     ),
                                   ),
                                 ],
+                                IconButton(
+                                  onPressed: () =>
+                                      _openEditChapterModal(story, c),
+                                  icon: const Icon(
+                                    Icons.edit_outlined,
+                                    size: 16,
+                                    color: AppColors.inkMuted,
+                                  ),
+                                  tooltip: 'Sửa chương',
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                IconButton(
+                                  onPressed: () =>
+                                      _confirmDeleteChapter(story, c),
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    size: 16,
+                                    color: AppColors.red400,
+                                  ),
+                                  tooltip: 'Xóa chương',
+                                  visualDensity: VisualDensity.compact,
+                                ),
                               ],
                             ),
                           );
@@ -1170,12 +1474,19 @@ class _AdminStoryDetailSheetState
   }
 }
 
-/* ────────────────────────── ADD CHAPTER DIALOG ────────────────────────── */
+/* ────────────────────────── ADD / EDIT CHAPTER DIALOG ────────────────────────── */
 class _AddChapterDialog extends StatefulWidget {
   final StoryDetail story;
   final VoidCallback onAdded;
+  final ChapterListItem? existingChapter;
+  final String? initialContent;
 
-  const _AddChapterDialog({required this.story, required this.onAdded});
+  const _AddChapterDialog({
+    required this.story,
+    required this.onAdded,
+    this.existingChapter,
+    this.initialContent,
+  });
 
   @override
   State<_AddChapterDialog> createState() => _AddChapterDialogState();
@@ -1185,26 +1496,60 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _numController;
   final _titleController = TextEditingController();
+  final _partNameController = TextEditingController();
   final _contentController = TextEditingController();
+  final DateFormat _dateFormat = DateFormat('dd/MM/yyyy HH:mm');
 
+  DateTime? _publishAt;
+  bool _renderAsImages = false;
   bool _loading = false;
   String? _error;
   bool _success = false;
 
+  bool get _isEditing => widget.existingChapter != null;
+
   @override
   void initState() {
     super.initState();
-    _numController = TextEditingController(
-      text: '${widget.story.chapters.length + 1}',
-    );
+    final existing = widget.existingChapter;
+    if (existing != null) {
+      _numController = TextEditingController(text: '${existing.chapterNumber}');
+      _titleController.text = existing.title;
+      _partNameController.text = existing.partName ?? '';
+      _contentController.text = widget.initialContent ?? '';
+    } else {
+      _numController = TextEditingController(
+        text: '${widget.story.chapters.length + 1}',
+      );
+    }
   }
 
   @override
   void dispose() {
     _numController.dispose();
     _titleController.dispose();
+    _partNameController.dispose();
     _contentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickPublishAt() async {
+    final base = _publishAt ?? DateTime.now().add(const Duration(hours: 1));
+    final date = await showDatePicker(
+      context: context,
+      initialDate: base.isBefore(DateTime.now()) ? DateTime.now() : base,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(base),
+    );
+    if (time == null || !mounted) return;
+    setState(() {
+      _publishAt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    });
   }
 
   Future<void> _submit() async {
@@ -1220,22 +1565,46 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
         chapterNumber: int.parse(_numController.text.trim()),
         title: _titleController.text.trim(),
         content: _contentController.text.trim(),
+        partName: _partNameController.text.trim().isEmpty
+            ? null
+            : _partNameController.text.trim(),
+        publishAt: _publishAt?.toUtc().toIso8601String(),
+        renderAsImages: widget.story.isComic ? false : _renderAsImages,
       );
 
-      await StoryApi.addChapter(widget.story.id, input);
-      if (mounted) {
-        setState(() {
-          _success = true;
-          _numController.text = '${int.parse(_numController.text.trim()) + 1}';
-          _titleController.clear();
-          _contentController.clear();
-        });
-        widget.onAdded();
+      if (_isEditing) {
+        await StoryApi.updateChapter(
+          widget.story.id,
+          widget.existingChapter!.id,
+          input,
+        );
+        if (mounted) {
+          widget.onAdded();
+          Navigator.pop(context);
+        }
+      } else {
+        await StoryApi.addChapter(widget.story.id, input);
+        if (mounted) {
+          setState(() {
+            _success = true;
+            _numController.text = '${int.parse(_numController.text.trim()) + 1}';
+            _titleController.clear();
+            _contentController.clear();
+            _publishAt = null;
+            _renderAsImages = false;
+          });
+          widget.onAdded();
+        }
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(
-          () => _error = 'Không thể thêm chương. Kiểm tra lại số chương.',
+          () => _error = apiErrorMessage(
+            e,
+            _isEditing
+                ? 'Không thể cập nhật chương.'
+                : 'Không thể thêm chương. Kiểm tra lại số chương.',
+          ),
         );
       }
     } finally {
@@ -1255,7 +1624,7 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Thêm chương mới',
+            _isEditing ? 'Chỉnh sửa chương' : 'Thêm chương mới',
             style: GoogleFonts.notoSerif(
               color: AppColors.inkText,
               fontSize: 18,
@@ -1338,6 +1707,25 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
                 ),
                 const SizedBox(height: 12),
                 Text(
+                  'Tên phần / Tập (tùy chọn)',
+                  style: GoogleFonts.inter(
+                    color: AppColors.inkMuted,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                TextFormField(
+                  controller: _partNameController,
+                  style: GoogleFonts.inter(
+                    color: AppColors.inkText,
+                    fontSize: 13,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: 'VD: Quyển 1 - Khởi đầu',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
                   'Nội dung *',
                   style: GoogleFonts.inter(
                     color: AppColors.inkMuted,
@@ -1352,12 +1740,52 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
                     color: AppColors.inkText,
                     fontSize: 13,
                   ),
-                  decoration: const InputDecoration(
-                    hintText: 'Nhập nội dung chương...',
+                  decoration: InputDecoration(
+                    hintText: widget.story.isComic
+                        ? 'Mỗi dòng là một URL ảnh trang truyện...'
+                        : 'Nhập nội dung chương...',
                   ),
                   validator: (v) =>
                       v == null || v.trim().isEmpty ? 'Nhập nội dung' : null,
                 ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _loading ? null : _pickPublishAt,
+                        icon: const Icon(Icons.schedule, size: 16),
+                        label: Text(
+                          _publishAt == null
+                              ? 'Hẹn giờ đăng (Đăng ngay)'
+                              : 'Hẹn: ${_dateFormat.format(_publishAt!)}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    if (_publishAt != null)
+                      IconButton(
+                        onPressed: () => setState(() => _publishAt = null),
+                        icon: const Icon(Icons.close, size: 18),
+                        tooltip: 'Bỏ hẹn giờ (Đăng ngay)',
+                      ),
+                  ],
+                ),
+                if (!widget.story.isComic)
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _renderAsImages,
+                    onChanged: _loading
+                        ? null
+                        : (v) => setState(() => _renderAsImages = v ?? false),
+                    title: Text(
+                      'Xuất bản dưới dạng ảnh (PNG chống copy)',
+                      style: GoogleFonts.inter(
+                        color: AppColors.inkText,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ),
 
                 if (_success) ...[
                   const SizedBox(height: 12),
@@ -1423,7 +1851,7 @@ class _AddChapterDialogState extends State<_AddChapterDialog> {
                   ),
                 )
               : Text(
-                  'Thêm chương',
+                  _isEditing ? 'Lưu chương' : 'Thêm chương',
                   style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                 ),
         ),

@@ -31,7 +31,7 @@ class NotificationBell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unreadCountAsync = ref.watch(unreadNotificationCountProvider);
-    final unreadCount = unreadCountAsync.value ?? 0;
+    final unreadCount = unreadCountAsync.asData?.value ?? 0;
 
     return Stack(
       clipBehavior: Clip.none,

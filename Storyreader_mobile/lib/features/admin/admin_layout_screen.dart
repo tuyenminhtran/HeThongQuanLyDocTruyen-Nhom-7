@@ -8,6 +8,9 @@ import 'admin_dashboard_screen.dart';
 import 'admin_stories_screen.dart';
 import 'admin_categories_screen.dart';
 import 'admin_users_screen.dart';
+import 'admin_transactions_screen.dart';
+import 'admin_schedules_screen.dart';
+import 'admin_reported_comments_screen.dart';
 
 class AdminLayoutScreen extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -41,6 +44,21 @@ class _AdminLayoutScreenState extends ConsumerState<AdminLayoutScreen> {
       'title': 'Người Dùng',
       'icon': Icons.people_outline,
       'screen': const AdminUsersScreen(),
+    },
+    {
+      'title': 'Giao Dịch',
+      'icon': Icons.receipt_long_outlined,
+      'screen': const AdminTransactionsScreen(),
+    },
+    {
+      'title': 'Lịch Đăng',
+      'icon': Icons.schedule_outlined,
+      'screen': const AdminSchedulesScreen(),
+    },
+    {
+      'title': 'Báo Cáo BL',
+      'icon': Icons.flag_outlined,
+      'screen': const AdminReportedCommentsScreen(),
     },
   ];
 
@@ -141,52 +159,55 @@ class _AdminLayoutScreenState extends ConsumerState<AdminLayoutScreen> {
             height: 48,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             alignment: Alignment.centerLeft,
-            child: ListView.separated(
+            child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              itemCount: _tabs.length,
-              separatorBuilder: (context, _) => const SizedBox(width: 8),
-              itemBuilder: (context, idx) {
-                final tab = _tabs[idx];
-                final isSelected = _currentIndex == idx;
+              child: Row(
+                children: List.generate(_tabs.length, (idx) {
+                  final tab = _tabs[idx];
+                  final isSelected = _currentIndex == idx;
 
-                return GestureDetector(
-                  onTap: () => setState(() => _currentIndex = idx),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.gold.withValues(alpha: 0.1)
-                          : Colors.transparent,
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.gold.withValues(alpha: 0.2)
-                            : Colors.transparent,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          tab['icon'] as IconData,
-                          size: 16,
-                          color: isSelected ? AppColors.gold : AppColors.inkMuted,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          tab['title'] as String,
-                          style: GoogleFonts.inter(
-                            color: isSelected ? AppColors.gold : AppColors.inkMuted,
-                            fontSize: 13,
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w400,
+                  return Padding(
+                    padding: EdgeInsets.only(right: idx == _tabs.length - 1 ? 0 : 8),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _currentIndex = idx),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.gold.withValues(alpha: 0.1)
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.gold.withValues(alpha: 0.2)
+                                : Colors.transparent,
                           ),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              tab['icon'] as IconData,
+                              size: 16,
+                              color: isSelected ? AppColors.gold : AppColors.inkMuted,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              tab['title'] as String,
+                              style: GoogleFonts.inter(
+                                color: isSelected ? AppColors.gold : AppColors.inkMuted,
+                                fontSize: 13,
+                                fontWeight:
+                                    isSelected ? FontWeight.w600 : FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                }),
+              ),
             ),
           ),
         ),

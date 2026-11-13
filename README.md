@@ -10,7 +10,7 @@ Nền tảng đọc truyện chữ (Novel), truyện tranh (Manga/Comic) và ngh
 | :--- | :--- | :--- |
 | **Backend API** | [`StoryReader.Api`](./StoryReader.Api) | **.NET 8.0** (ASP.NET Core Web API), **Entity Framework Core 8.0.10**, **ASP.NET Core Identity** (`AppUser` + `IdentityRole<Guid>`), **JWT Bearer**, **SkiaSharp 2.88.8** (render chữ sang ảnh PNG watermark chống copy), **IMemoryCache** (cache Audio TTS proxy & chống spam báo cáo), **Swashbuckle / Swagger** |
 | **Web Frontend** | [`storyreader-web`](./storyreader-web) | **React 19** (`^19.2.8`), **TypeScript 6** (`~6.0.2`), **Vite 8** (`^8.3.0`), **Tailwind CSS 3.4** (`^3.4.19`), **TanStack Query**, **Zustand**, **React Router**, **React Hook Form**, **Axios** |
-| **Mobile App** | [`Storyreader_mobile`](./Storyreader_mobile) | **Flutter** (Dart SDK `^3.12.2`), `flutter_riverpod`, `go_router`, `dio`, `flutter_secure_storage`, `cached_network_image`, `jwt_decoder`, `url_launcher` |
+| **Mobile App** | [`Storyreader_mobile`](./Storyreader_mobile) | **Flutter** (Dart SDK `^3.12.2`), `flutter_riverpod`, `go_router`, `dio`, `audioplayers` (`Audio TTS`), `flutter_secure_storage`, `cached_network_image`, `jwt_decoder`, `url_launcher`, `intl` |
 | **Cơ sở dữ liệu & Hạ tầng** | [`docker-compose.yml`](./docker-compose.yml) | **PostgreSQL 16** (cổng `5432`), **Redis 7** (cổng `6379`, khai báo sẵn trong Docker Compose để mở rộng Distributed Cache khi scale) |
 | **Công cụ & Dữ liệu** | [`tools`](./tools), [`scripts`](./scripts), [`db`](./db) | Crawler MangaDex API (`tools/crawl_manga.js`), script nạp truyện chữ (`tools/add_novels.js`, `scripts/import_story.ps1`), PostgreSQL dump mẫu (`db/dump.sql`) |
 
@@ -93,6 +93,7 @@ npm run dev
   dotnet test StoryReader.Tests
   npm run lint --prefix storyreader-web
   npm run build --prefix storyreader-web
+  Push-Location Storyreader_mobile; flutter analyze --no-pub; flutter test --no-pub; Pop-Location
   ```
 
 ### Bước 4: Nạp thêm dữ liệu truyện (Tùy chọn)

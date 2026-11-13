@@ -1,10 +1,10 @@
-import '../../core/constants/api_constants.dart';
-import '../../core/network/dio_client.dart';
 import '../models/chapter_model.dart';
+import '../repositories/chapter_repository.dart';
 
 class ChapterApi {
+  static final _repository = ChapterRepository();
+
   static Future<ChapterContent> getChapterContent(String id) async {
-    final res = await DioClient.instance.get(ApiConstants.chapterDetail(id));
-    return ChapterContent.fromJson(res.data as Map<String, dynamic>);
+    return await _repository.getChapterContent(id);
   }
 }
