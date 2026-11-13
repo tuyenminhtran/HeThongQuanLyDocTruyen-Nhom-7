@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Script tự động nhập truyện và các chương từ file văn bản (.txt) vào hệ thống StoryReader.
 .DESCRIPTION
@@ -69,7 +69,7 @@ catch {
 Write-Host "[3/5] Đang kiểm tra các truyện hiện có trên hệ thống..." -ForegroundColor Gray
 $existingStories = @{}
 try {
-    $existingList = Invoke-RestMethod -Uri "$ApiBaseUrl/stories" -Method Get
+    $existingList = Invoke-RestMethod -Uri "$ApiBaseUrl/stories?pageSize=100" -Method Get
     foreach ($s in $existingList) {
         $existingStories[$s.title.Trim().ToLower()] = $s.id
     }
@@ -196,7 +196,7 @@ foreach ($s in $stories) {
             coverImageUrl = if ($s.Cover) { $s.Cover } else { "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=800&q=80" }
             description = $s.Desc
             accessPolicy = $s.Access
-            price = $null
+            price = if ($s.Access -ne 0) { if ($s.Price) { $s.Price } else { 29000 } } else { $null }
             freeChapterCount = 0
             genreIds = $matchedGenreIds
         } | ConvertTo-Json

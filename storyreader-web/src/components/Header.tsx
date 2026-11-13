@@ -3,6 +3,7 @@ import { useAuthStore, useIsAdmin } from "../store/authStore";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getGenres } from "../api/genres";
+import { getUserProfile } from "../api/users";
 import NotificationBell from "./NotificationBell";
 
 export default function Header() {
@@ -13,9 +14,16 @@ export default function Header() {
   const [searchParams] = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileGenreOpen, setMobileGenreOpen] = useState(false);
-  const [keyword, setKeyword] = useState(searchParams.get("q") || "");
+  const urlQuery = searchParams.get("q") || "";
+  const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
+  const [keyword, setKeyword] = useState(urlQuery);
   const [showGenreMenu, setShowGenreMenu] = useState(false);
   const genreMenuRef = useRef<HTMLDivElement>(null);
+
+  if (urlQuery !== prevUrlQuery) {
+    setPrevUrlQuery(urlQuery);
+    setKeyword(urlQuery);
+  }
 
   const isReaderPage = location.pathname.startsWith("/chapters/");
 
@@ -24,10 +32,16 @@ export default function Header() {
     queryFn: getGenres,
   });
 
-  // Đồng bộ keyword khi URL param thay đổi
-  useEffect(() => {
-    setKeyword(searchParams.get("q") || "");
-  }, [searchParams]);
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile", accessToken],
+    queryFn: getUserProfile,
+    enabled: !!accessToken,
+    staleTime: 60_000,
+  });
+
+  const hasActiveVip = Boolean(
+    userProfile?.subscriptionEndAt && new Date(userProfile.subscriptionEndAt) > new Date()
+  );
 
   // Click ngoài đóng dropdown thể loại
   useEffect(() => {
@@ -106,13 +120,22 @@ export default function Header() {
           <div className="hidden md:flex items-center gap-2.5 shrink-0">
             {accessToken ? (
               <div className="flex items-center gap-3">
-                {/* VIP member badge */}
+                {/* VIP / Gói VIP badge */}
                 <Link
                   to="/pricing"
-                  className="px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-300 hover:bg-amber-100 transition-colors flex items-center gap-1.5 shadow-2xs"
+                  title={
+                    hasActiveVip
+                      ? `Đang kích hoạt ${userProfile?.activePlanName || "VIP"}`
+                      : "Xem & nâng cấp gói thành viên VIP"
+                  }
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors flex items-center gap-1.5 shadow-2xs ${
+                    hasActiveVip
+                      ? "text-amber-800 bg-amber-100 border-amber-400 hover:bg-amber-200"
+                      : "text-amber-700 bg-amber-50 border-amber-200 hover:bg-amber-100"
+                  }`}
                 >
-                  <i className="fa-solid fa-crown text-amber-500 text-xs" />
-                  <span>VIP</span>
+                  <i className={`fa-solid fa-crown text-xs ${hasActiveVip ? "text-amber-600" : "text-amber-500"}`} />
+                  <span>{hasActiveVip ? "VIP" : "Gói VIP"}</span>
                 </Link>
 
                 {/* Quản trị (Admin) */}

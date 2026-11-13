@@ -134,6 +134,7 @@ public class ProfileController : ControllerBase
     [HttpGet("history")]
     public async Task<IActionResult> GetReadingHistory()
     {
+        var now = DateTime.UtcNow;
         var stories = await _db.ReadingProgresses
             .AsNoTracking()
             .Include(r => r.Story)
@@ -147,7 +148,13 @@ public class ProfileController : ControllerBase
                 r.Story.Status,
                 r.Story.AccessPolicy,
                 r.Story.ViewCount,
-                r.Story.Type, r.Story.Chapters.Count, r.Story.Chapters.OrderByDescending(c => c.ChapterNumber).Select(c => (int?)c.ChapterNumber).FirstOrDefault()
+                r.Story.Type,
+                r.Story.Chapters.Count(c => c.PublishAt == null || c.PublishAt <= now),
+                r.Story.Chapters
+                    .Where(c => c.PublishAt == null || c.PublishAt <= now)
+                    .OrderByDescending(c => c.ChapterNumber)
+                    .Select(c => (int?)c.ChapterNumber)
+                    .FirstOrDefault()
             ))
             .ToListAsync();
 
@@ -157,6 +164,7 @@ public class ProfileController : ControllerBase
     [HttpGet("bookmarks")]
     public async Task<IActionResult> GetBookmarks()
     {
+        var now = DateTime.UtcNow;
         var stories = await _db.StoryFollows
             .AsNoTracking()
             .Include(f => f.Story)
@@ -170,7 +178,13 @@ public class ProfileController : ControllerBase
                 f.Story.Status,
                 f.Story.AccessPolicy,
                 f.Story.ViewCount,
-                f.Story.Type, f.Story.Chapters.Count, f.Story.Chapters.OrderByDescending(c => c.ChapterNumber).Select(c => (int?)c.ChapterNumber).FirstOrDefault()
+                f.Story.Type,
+                f.Story.Chapters.Count(c => c.PublishAt == null || c.PublishAt <= now),
+                f.Story.Chapters
+                    .Where(c => c.PublishAt == null || c.PublishAt <= now)
+                    .OrderByDescending(c => c.ChapterNumber)
+                    .Select(c => (int?)c.ChapterNumber)
+                    .FirstOrDefault()
             ))
             .ToListAsync();
 
@@ -180,6 +194,7 @@ public class ProfileController : ControllerBase
     [HttpGet("purchased")]
     public async Task<IActionResult> GetPurchasedStories()
     {
+        var now = DateTime.UtcNow;
         var stories = await _db.Purchases
             .AsNoTracking()
             .Include(p => p.Story)
@@ -193,7 +208,13 @@ public class ProfileController : ControllerBase
                 p.Story.Status,
                 p.Story.AccessPolicy,
                 p.Story.ViewCount,
-                p.Story.Type, p.Story.Chapters.Count, p.Story.Chapters.OrderByDescending(c => c.ChapterNumber).Select(c => (int?)c.ChapterNumber).FirstOrDefault()
+                p.Story.Type,
+                p.Story.Chapters.Count(c => c.PublishAt == null || c.PublishAt <= now),
+                p.Story.Chapters
+                    .Where(c => c.PublishAt == null || c.PublishAt <= now)
+                    .OrderByDescending(c => c.ChapterNumber)
+                    .Select(c => (int?)c.ChapterNumber)
+                    .FirstOrDefault()
             ))
             .ToListAsync();
 

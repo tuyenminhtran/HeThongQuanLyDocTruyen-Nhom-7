@@ -758,6 +758,7 @@ function EditChapterModal({
             .slice(0, 16)
         : null,
       partName: chapter.partName || "",
+      renderAsImages: story.type !== 1 && !!(chapterDetail?.imageUrls && chapterDetail.imageUrls.length > 0),
     },
   });
 
@@ -766,7 +767,7 @@ function EditChapterModal({
       updateChapter(story.id, chapter.id, {
         ...data,
         chapterNumber: Number(data.chapterNumber),
-        renderAsImages: story.type !== 1,
+        renderAsImages: story.type !== 1 ? !!data.renderAsImages : false,
         publishAt: data.publishAt ? new Date(data.publishAt).toISOString() : null,
         partName: data.partName?.trim() || null,
       }),
@@ -899,10 +900,26 @@ function EditChapterModal({
               </p>
             </div>
 
+            {story.type !== 1 && (
+              <label className="flex items-start gap-2.5 p-3 rounded-xl bg-ink-bg border border-ink-border cursor-pointer select-none">
+                <input
+                  {...register("renderAsImages")}
+                  type="checkbox"
+                  className="mt-0.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+                />
+                <span className="text-xs text-ink-text leading-relaxed">
+                  <strong className="font-semibold">Render chữ thành ảnh PNG chống copy</strong>
+                  <span className="block text-[11px] text-ink-muted mt-0.5">
+                    Chỉ bật nếu muốn xuất thành ảnh bảo vệ bản quyền (sẽ tắt Audio TTS và tùy chỉnh cỡ chữ/nền).
+                  </span>
+                </span>
+              </label>
+            )}
+
             {mutation.isError && (
               <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                <i className="fa-solid fa-circle-exclamation text-red-400 text-lg shrink-0" />
-                <p className="text-red-400 text-sm">
+                <i className="fa-solid fa-circle-exclamation text-red-600 text-lg shrink-0" />
+                <p className="text-red-600 text-sm">
                   Không thể lưu chỉnh sửa chương. Vui lòng thử lại.
                 </p>
               </div>
@@ -954,6 +971,7 @@ function AddChapterModal({
     defaultValues: {
       chapterNumber: story.chapters.length + 1,
       publishAt: "",
+      renderAsImages: false,
     },
   });
 
@@ -962,14 +980,19 @@ function AddChapterModal({
       addChapter(story.id, {
         ...data,
         chapterNumber: Number(data.chapterNumber),
-        renderAsImages: story.type !== 1,
+        renderAsImages: story.type !== 1 ? !!data.renderAsImages : false,
         publishAt: data.publishAt ? new Date(data.publishAt).toISOString() : null,
         partName: data.partName?.trim() || null,
       }),
     onSuccess: () => {
-      reset();
+      reset({
+        chapterNumber: story.chapters.length + 2,
+        publishAt: "",
+        renderAsImages: false,
+      });
       queryClient.invalidateQueries({ queryKey: ["storyDetail", story.id] });
       queryClient.invalidateQueries({ queryKey: ["stories"] });
+      queryClient.invalidateQueries({ queryKey: ["adminSchedules"] });
     },
   });
 
@@ -1095,20 +1118,36 @@ function AddChapterModal({
             </p>
           </div>
 
+          {story.type !== 1 && (
+            <label className="flex items-start gap-2.5 p-3 rounded-xl bg-ink-bg border border-ink-border cursor-pointer select-none">
+              <input
+                {...register("renderAsImages")}
+                type="checkbox"
+                className="mt-0.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+              />
+              <span className="text-xs text-ink-text leading-relaxed">
+                <strong className="font-semibold">Render chữ thành ảnh PNG chống copy</strong>
+                <span className="block text-[11px] text-ink-muted mt-0.5">
+                  Chỉ bật nếu muốn xuất thành ảnh bảo vệ bản quyền (sẽ tắt Audio TTS và tùy chỉnh cỡ chữ/nền).
+                </span>
+              </span>
+            </label>
+          )}
+
           {/* Success message */}
           {mutation.isSuccess && (
-            <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3">
-              <i className="fa-solid fa-circle-check text-green-400 text-lg shrink-0" />
-              <p className="text-green-400 text-sm">
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+              <i className="fa-solid fa-circle-check text-emerald-700 text-lg shrink-0" />
+              <p className="text-emerald-700 text-sm font-medium">
                 Thêm chương thành công! Bạn có thể tiếp tục thêm chương khác.
               </p>
             </div>
           )}
 
           {mutation.isError && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-              <i className="fa-solid fa-circle-exclamation text-red-400 text-lg shrink-0" />
-              <p className="text-red-400 text-sm">
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <i className="fa-solid fa-circle-exclamation text-red-600 text-lg shrink-0" />
+              <p className="text-red-600 text-sm font-medium">
                 Không thể thêm chương. Kiểm tra lại số chương có bị trùng không.
               </p>
             </div>
@@ -1267,7 +1306,7 @@ function StoryDetailPanel({
                   <button
                     onClick={handleDeleteStory}
                     disabled={deleteStoryMutation.isPending}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-all flex items-center gap-1.5 cursor-pointer"
                     title="Xóa truyện"
                   >
                     <i className="fa-solid fa-trash-can text-xs" />
@@ -1340,11 +1379,11 @@ function StoryDetailPanel({
                         {accessPolicyLabel[story.accessPolicy] ?? "N/A"}
                       </span>
                       {story.type === 1 ? (
-                        <span className="text-xs px-2.5 py-0.5 rounded-full border text-sky-400 bg-sky-400/10 border-sky-400/20 font-medium">
+                        <span className="text-xs px-2.5 py-0.5 rounded-full border text-sky-700 bg-sky-50 border-sky-200 font-medium">
                           Truyện tranh (Manga)
                         </span>
                       ) : (
-                        <span className="text-xs px-2.5 py-0.5 rounded-full border text-amber-400 bg-amber-400/10 border-amber-400/20 font-medium">
+                        <span className="text-xs px-2.5 py-0.5 rounded-full border text-amber-700 bg-amber-50 border-amber-200 font-medium">
                           Truyện chữ
                         </span>
                       )}
@@ -1465,7 +1504,7 @@ function StoryDetailPanel({
                                     <button
                                       onClick={() => handleDeleteChapter(c)}
                                       disabled={deleteChapterMutation.isPending}
-                                      className="p-1.5 rounded-lg text-ink-muted hover:text-red-400 hover:bg-ink-bg transition-colors"
+                                      className="p-1.5 rounded-lg text-ink-muted hover:text-red-600 hover:bg-ink-bg transition-colors"
                                       title="Xóa chương"
                                     >
                                       <i className="fa-solid fa-trash-can text-xs" />
@@ -1525,7 +1564,7 @@ function StoryDetailPanel({
                                       <button
                                         onClick={() => handleDeleteChapter(c)}
                                         disabled={deleteChapterMutation.isPending}
-                                        className="p-1.5 rounded-lg text-ink-muted hover:text-red-400 hover:bg-ink-bg transition-colors"
+                                        className="p-1.5 rounded-lg text-ink-muted hover:text-red-600 hover:bg-ink-bg transition-colors"
                                         title="Xóa chương"
                                       >
                                         <i className="fa-solid fa-trash-can text-xs" />
@@ -1622,11 +1661,11 @@ function StoryRow({
                 {story.title}
               </p>
               {story.type === 1 ? (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 shrink-0 font-medium">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200 shrink-0 font-medium">
                   Tranh
                 </span>
               ) : (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0 font-medium">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 shrink-0 font-medium">
                   Chữ
                 </span>
               )}

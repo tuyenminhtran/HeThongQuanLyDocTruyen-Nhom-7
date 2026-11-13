@@ -52,10 +52,23 @@ public class AdminUsersController : ControllerBase
             .Distinct()
             .ToListAsync();
 
+        var userIds = users.Select(u => u.Id).ToList();
+        var userRoleLookup = await (
+            from ur in _db.UserRoles.AsNoTracking()
+            join r in _db.Roles.AsNoTracking() on ur.RoleId equals r.Id
+            where userIds.Contains(ur.UserId)
+            select new { ur.UserId, RoleName = r.Name ?? "Member" }
+        ).ToListAsync();
+
+        var roleByUserId = userRoleLookup
+            .GroupBy(x => x.UserId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Any(x => x.RoleName == "Admin") ? "Admin" : g.First().RoleName);
+
         foreach (var user in users)
         {
-            var roles = await _userManager.GetRolesAsync(user);
-            string role = roles.FirstOrDefault() ?? "Member";
+            string role = roleByUserId.GetValueOrDefault(user.Id, "Member");
 
             // Nếu không phải Admin nhưng có gói subscription còn hạn thì đánh dấu VIP
             if (role != "Admin" && activeSubUserIds.Contains(user.Id))

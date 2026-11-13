@@ -37,11 +37,26 @@ public class StoryService : IStoryService
             _ => query.OrderByDescending(s => s.UpdatedAt)
         };
 
+        var now = DateTime.UtcNow;
         return await query
 
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(s => new StoryListItemDto(s.Id, s.Title, s.CoverImageUrl, s.Author, s.Status, s.AccessPolicy, s.ViewCount, s.Type, s.Chapters.Count, s.Chapters.OrderByDescending(c => c.ChapterNumber).Select(c => (int?)c.ChapterNumber).FirstOrDefault()))
+            .Select(s => new StoryListItemDto(
+                s.Id,
+                s.Title,
+                s.CoverImageUrl,
+                s.Author,
+                s.Status,
+                s.AccessPolicy,
+                s.ViewCount,
+                s.Type,
+                s.Chapters.Count(c => c.PublishAt == null || c.PublishAt <= now),
+                s.Chapters
+                    .Where(c => c.PublishAt == null || c.PublishAt <= now)
+                    .OrderByDescending(c => c.ChapterNumber)
+                    .Select(c => (int?)c.ChapterNumber)
+                    .FirstOrDefault()))
             .ToListAsync();
     }
 
@@ -199,6 +214,9 @@ public class StoryService : IStoryService
             }
         }
 
+        var publishAtUtc = ChapterPublicationHelper.NormalizeUtc(dto.PublishAt);
+        var isPublishedNow = publishAtUtc is null || publishAtUtc <= DateTime.UtcNow;
+
         var chapter = new Chapter
         {
             Id = chapterId,
@@ -207,17 +225,22 @@ public class StoryService : IStoryService
             Title = dto.Title,
             Content = content,
             PartName = dto.PartName,
-            PublishAt = dto.PublishAt
+            PublishAt = publishAtUtc
         };
         _db.Chapters.Add(chapter);
-        story.UpdatedAt = DateTime.UtcNow;
+        if (isPublishedNow)
+        {
+            story.UpdatedAt = DateTime.UtcNow;
+        }
         await _db.SaveChangesAsync();
 
-        // Kích hoạt thông báo cho các độc giả đang theo dõi truyện này
-        var followerUserIds = await _db.StoryFollows
-            .Where(f => f.StoryId == storyId)
-            .Select(f => f.UserId)
-            .ToListAsync();
+        // Kích hoạt thông báo cho các độc giả đang theo dõi truyện này (chỉ gửi khi chương đã xuất bản)
+        var followerUserIds = isPublishedNow
+            ? await _db.StoryFollows
+                .Where(f => f.StoryId == storyId)
+                .Select(f => f.UserId)
+                .ToListAsync()
+            : new List<Guid>();
 
         if (followerUserIds.Count > 0)
         {
@@ -255,7 +278,7 @@ public class StoryService : IStoryService
         chapter.ChapterNumber = dto.ChapterNumber;
         chapter.Title = dto.Title;
         chapter.Content = content;
-        chapter.PublishAt = dto.PublishAt;
+        chapter.PublishAt = ChapterPublicationHelper.NormalizeUtc(dto.PublishAt);
         chapter.UpdatedAt = DateTime.UtcNow;
 
         if (story != null) story.UpdatedAt = DateTime.UtcNow;

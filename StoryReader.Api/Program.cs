@@ -129,6 +129,7 @@ builder.Services.AddRateLimiter(opt =>
             }));
 });
 
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStoryService, StoryService>();
 builder.Services.AddScoped<IChapterAccessService, ChapterAccessService>();

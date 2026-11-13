@@ -8,6 +8,7 @@ import {
   type ScheduledChapterItem,
 } from "../../api/adminSchedules";
 import { searchStories, type StoryListItem } from "../../api/stories";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
 function formatDateTime(dateStr: string | null): string {
   if (!dateStr) return "Chưa hẹn giờ";
@@ -91,12 +92,24 @@ export default function AdminSchedulesPage() {
     queryFn: () => searchStories(),
   });
 
+  const getErrorMsg = (err: unknown, fallback: string) =>
+    (err as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
+
+  const invalidateScheduleRelated = () => {
+    queryClient.invalidateQueries({ queryKey: ["adminSchedules"] });
+    queryClient.invalidateQueries({ queryKey: ["stories"] });
+    queryClient.invalidateQueries({ queryKey: ["storyDetail"] });
+  };
+
   // Mutation: Đăng ngay
   const publishNowMutation = useMutation({
     mutationFn: (chapterId: string) => publishChapterNow(chapterId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminSchedules"] });
+      invalidateScheduleRelated();
       showNotification("Đã xuất bản chương thành công");
+    },
+    onError: (err: unknown) => {
+      alert(getErrorMsg(err, "Không thể xuất bản chương truyện."));
     },
   });
 
@@ -105,9 +118,12 @@ export default function AdminSchedulesPage() {
     mutationFn: ({ chapterId, publishAt }: { chapterId: string; publishAt: string | null }) =>
       rescheduleChapter(chapterId, publishAt),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminSchedules"] });
+      invalidateScheduleRelated();
       setSelectedChapter(null);
       showNotification("Đã cập nhật lịch đăng chương thành công");
+    },
+    onError: (err: unknown) => {
+      alert(getErrorMsg(err, "Không thể cập nhật lịch đăng chương."));
     },
   });
 
@@ -115,8 +131,11 @@ export default function AdminSchedulesPage() {
   const cancelMutation = useMutation({
     mutationFn: (chapterId: string) => cancelSchedule(chapterId, false),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminSchedules"] });
+      invalidateScheduleRelated();
       showNotification("Đã hủy lịch hẹn và xuất bản chương");
+    },
+    onError: (err: unknown) => {
+      alert(getErrorMsg(err, "Không thể hủy lịch hẹn."));
     },
   });
 
@@ -338,7 +357,10 @@ export default function AdminSchedulesPage() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2.5">
                           <img
-                            src={chap.storyCoverImageUrl || "https://placehold.co/40x55?text=Cover"}
+                            src={resolveImageUrl(chap.storyCoverImageUrl) || "https://placehold.co/40x55?text=Cover"}
+                            onError={(e) => {
+                              e.currentTarget.src = "https://placehold.co/40x55?text=Cover";
+                            }}
                             alt={chap.storyTitle}
                             className="w-8 h-10 rounded object-cover border border-slate-200 shrink-0"
                           />

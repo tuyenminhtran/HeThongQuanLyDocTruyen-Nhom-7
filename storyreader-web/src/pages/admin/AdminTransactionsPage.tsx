@@ -29,17 +29,17 @@ function formatDate(dateStr: string): string {
 const statusBadge: Record<string, { label: string; class: string; icon: string }> = {
   Pending: {
     label: "Chờ xử lý",
-    class: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    class: "bg-amber-50 text-amber-700 border-amber-200",
     icon: "fa-regular fa-clock",
   },
   Success: {
     label: "Thành công",
-    class: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    class: "bg-emerald-50 text-emerald-700 border-emerald-200",
     icon: "fa-solid fa-check",
   },
   Failed: {
     label: "Thất bại",
-    class: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+    class: "bg-rose-50 text-rose-700 border-rose-200",
     icon: "fa-solid fa-xmark",
   },
 };
@@ -70,8 +70,11 @@ export default function AdminTransactionsPage() {
       queryClient.invalidateQueries({ queryKey: ["adminTransactions"] });
       queryClient.invalidateQueries({ queryKey: ["adminDashboardOverview"] });
     },
-    onError: (err: any) => {
-      alert(err.response?.data?.message || "Lỗi khi kích hoạt giao dịch.");
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Lỗi khi kích hoạt giao dịch.";
+      alert(msg);
     },
   });
 
@@ -82,8 +85,11 @@ export default function AdminTransactionsPage() {
       queryClient.invalidateQueries({ queryKey: ["adminTransactions"] });
       queryClient.invalidateQueries({ queryKey: ["adminDashboardOverview"] });
     },
-    onError: (err: any) => {
-      alert(err.response?.data?.message || "Lỗi khi cập nhật giao dịch.");
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Lỗi khi cập nhật giao dịch.";
+      alert(msg);
     },
   });
 
@@ -215,7 +221,7 @@ export default function AdminTransactionsPage() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-red-400">
+                  <td colSpan={7} className="py-8 text-center text-red-600 font-medium">
                     Không thể tải dữ liệu giao dịch. Vui lòng thử lại sau.
                   </td>
                 </tr>
@@ -258,11 +264,11 @@ export default function AdminTransactionsPage() {
                       {/* Type */}
                       <td className="py-3.5 px-4">
                         {tx.type === "Subscription" ? (
-                          <span className="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
+                          <span className="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium">
                             Gói Hội Viên VIP
                           </span>
                         ) : (
-                          <span className="text-xs px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-medium">
+                          <span className="text-xs px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-medium">
                             Mua Truyện Lẻ
                           </span>
                         )}
@@ -289,7 +295,7 @@ export default function AdminTransactionsPage() {
                       <td className="py-3.5 px-4 text-xs text-ink-muted">
                         <div>{formatDate(tx.createdAt)}</div>
                         {tx.completedAt && (
-                          <div className="text-[10px] text-emerald-400/80 mt-0.5">
+                          <div className="text-[10px] text-emerald-700 font-medium mt-0.5">
                             Xong: {formatDate(tx.completedAt)}
                           </div>
                         )}
@@ -302,7 +308,7 @@ export default function AdminTransactionsPage() {
                             <button
                               onClick={() => handleForceActivate(tx)}
                               disabled={forceActivateMutation.isPending}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all flex items-center gap-1.5"
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-all flex items-center gap-1.5 cursor-pointer"
                               title="Kích hoạt bù quyền lợi cho người dùng (PB28)"
                             >
                               <i className="fa-solid fa-bolt text-[11px]" />
@@ -311,19 +317,19 @@ export default function AdminTransactionsPage() {
                             <button
                               onClick={() => handleMarkFailed(tx)}
                               disabled={markFailedMutation.isPending}
-                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all"
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-all cursor-pointer"
                               title="Hủy bỏ giao dịch"
                             >
                               Hủy
                             </button>
                           </div>
                         ) : tx.status === "Success" ? (
-                          <span className="text-xs text-emerald-400 flex items-center justify-end gap-1 font-medium">
+                          <span className="text-xs text-emerald-700 flex items-center justify-end gap-1 font-medium">
                             <i className="fa-solid fa-circle-check text-xs" />
                             Đã hoàn tất
                           </span>
                         ) : (
-                          <span className="text-xs text-rose-400 flex items-center justify-end gap-1">
+                          <span className="text-xs text-rose-700 flex items-center justify-end gap-1 font-medium">
                             <i className="fa-solid fa-ban text-xs" />
                             Đã hủy
                           </span>

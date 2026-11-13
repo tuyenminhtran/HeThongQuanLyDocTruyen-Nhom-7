@@ -16,6 +16,13 @@ export default function AdminUsersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
       queryClient.invalidateQueries({ queryKey: ["adminDashboardOverview"] });
+      queryClient.invalidateQueries({ queryKey: ["adminReportedComments"] });
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Không thể cập nhật trạng thái tài khoản.";
+      alert(msg);
     },
   });
 
@@ -99,7 +106,7 @@ export default function AdminUsersPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-sm text-slate-300">
+                    <td className="py-3.5 px-4 text-sm text-slate-600 font-medium">
                       {new Date(user.createdAt).toLocaleDateString("vi-VN", {
                         day: "2-digit",
                         month: "2-digit",
@@ -110,10 +117,10 @@ export default function AdminUsersPage() {
                       <span
                         className={`text-xs px-2.5 py-1 rounded-full border font-medium ${
                           user.role === "Admin"
-                            ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                            ? "bg-purple-50 text-purple-700 border-purple-200"
                             : user.role === "VIP"
-                            ? "bg-gold/10 text-gold border-gold/20"
-                            : "bg-ink-bg text-ink-muted border-ink-border"
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-slate-100 text-slate-700 border-slate-200"
                         }`}
                       >
                         {user.role}
@@ -123,11 +130,11 @@ export default function AdminUsersPage() {
                       <span
                         className={`text-xs px-2.5 py-1 rounded-full border inline-flex items-center gap-1.5 font-medium ${
                           !user.isRestricted
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                            : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-rose-50 text-rose-700 border-rose-200"
                         }`}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full ${!user.isRestricted ? "bg-emerald-400" : "bg-rose-400"}`} />
+                        <span className={`w-1.5 h-1.5 rounded-full ${!user.isRestricted ? "bg-emerald-500" : "bg-rose-500"}`} />
                         {!user.isRestricted ? "Hoạt động" : "Đã khóa"}
                       </span>
                     </td>
@@ -138,10 +145,10 @@ export default function AdminUsersPage() {
                         <button
                           onClick={() => handleToggle(user)}
                           disabled={toggleMutation.isPending}
-                          className={`text-sm font-medium transition-colors px-3 py-1 rounded-lg border ${
+                          className={`text-sm font-medium transition-colors px-3 py-1 rounded-lg border cursor-pointer ${
                             user.isRestricted
-                              ? "text-emerald-400 hover:bg-emerald-500/10 border-emerald-500/30"
-                              : "text-rose-400 hover:bg-rose-500/10 border-rose-500/30"
+                              ? "text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100 border-emerald-200"
+                              : "text-rose-700 bg-rose-50/70 hover:bg-rose-100 border-rose-200"
                           }`}
                         >
                           {user.isRestricted ? "Mở khóa" : "Khóa"}

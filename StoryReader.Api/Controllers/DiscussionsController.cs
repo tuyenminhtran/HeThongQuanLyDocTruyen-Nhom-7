@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using StoryReader.Api.Data;
 using StoryReader.Api.Models.Entities;
 
@@ -15,10 +16,12 @@ public record ReportDiscussionDto(string? Reason);
 public class DiscussionsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IMemoryCache _cache;
 
-    public DiscussionsController(AppDbContext db)
+    public DiscussionsController(AppDbContext db, IMemoryCache cache)
     {
         _db = db;
+        _cache = cache;
     }
 
     private Guid? CurrentUserId =>
@@ -99,11 +102,21 @@ public class DiscussionsController : ControllerBase
             reason = reason[..300];
         }
 
+        var reporterKey = CurrentUserId.Value.ToString();
+        var reportCacheKey = $"discussion-report:{d.Id}:{reporterKey}";
+
+        if (_cache.TryGetValue(reportCacheKey, out _))
+        {
+            return BadRequest(new { message = "Bạn đã báo cáo bình luận này trước đó." });
+        }
+
         d.ReportCount++;
         if (d.Status == DiscussionStatus.Visible)
         {
             d.Status = DiscussionStatus.Reported;
         }
+
+        _cache.Set(reportCacheKey, true, TimeSpan.FromHours(24));
 
         // Tự động tạm ẩn nếu bị báo cáo từ 5 lần trở lên trước khi Admin xử lý
         if (d.ReportCount >= 5)

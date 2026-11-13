@@ -8,6 +8,7 @@ export interface ChapterContent {
   content: string;
   storyType?: number;
   imageUrls?: string[];
+  partName?: string | null;
 }
 
 export async function getChapterContent(id: string) {

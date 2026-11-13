@@ -74,12 +74,12 @@ export default function DashboardPage() {
           )}
           <div className="text-xs mt-2 flex items-center gap-1 font-medium">
             {overview && overview.revenueGrowthPercent >= 0 ? (
-              <span className="text-emerald-400 flex items-center gap-1">
+              <span className="text-emerald-700 flex items-center gap-1">
                 <i className="fa-solid fa-arrow-trend-up text-xs mr-0.5" />
                 +{overview.revenueGrowthPercent}% so với hôm qua
               </span>
             ) : (
-              <span className="text-rose-400 flex items-center gap-1">
+              <span className="text-rose-700 flex items-center gap-1">
                 <i className="fa-solid fa-arrow-trend-down text-xs mr-0.5" />
                 {overview?.revenueGrowthPercent ?? 0}% so với hôm qua
               </span>
@@ -91,7 +91,7 @@ export default function DashboardPage() {
         <div className="bg-ink-card border border-ink-border rounded-2xl p-5 shadow-xl shadow-black/20 hover:border-ink-border-light transition-colors">
           <div className="flex items-center justify-between mb-3">
             <span className="text-ink-muted text-xs font-semibold uppercase tracking-wider">Người dùng</span>
-            <div className="w-8 h-8 rounded-lg bg-sky-500/15 flex items-center justify-center text-sky-400">
+            <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center text-sky-600 border border-sky-200">
               <i className="fa-solid fa-users text-sm" />
             </div>
           </div>
@@ -102,7 +102,7 @@ export default function DashboardPage() {
               {(overview?.totalUsers ?? 0).toLocaleString("vi-VN")}
             </div>
           )}
-          <div className="text-xs text-sky-400 mt-2 flex items-center gap-1 font-medium">
+          <div className="text-xs text-sky-700 mt-2 flex items-center gap-1 font-medium">
             <span>+{overview?.newUsersThisWeek ?? 0} tài khoản tuần này</span>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function DashboardPage() {
         <div className="bg-ink-card border border-ink-border rounded-2xl p-5 shadow-xl shadow-black/20 hover:border-ink-border-light transition-colors">
           <div className="flex items-center justify-between mb-3">
             <span className="text-ink-muted text-xs font-semibold uppercase tracking-wider">Truyện theo dõi</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400">
+            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-200">
               <i className="fa-solid fa-bookmark text-sm" />
             </div>
           </div>
@@ -123,7 +123,7 @@ export default function DashboardPage() {
             </div>
           )}
           <div className="text-xs text-ink-muted mt-2">
-            Trên tổng số <span className="text-slate-200 font-semibold">{overview?.totalStories ?? 0}</span> truyện
+            Trên tổng số <span className="text-slate-800 font-semibold">{overview?.totalStories ?? 0}</span> truyện
           </div>
         </div>
 
@@ -131,7 +131,7 @@ export default function DashboardPage() {
         <div className="bg-ink-card border border-ink-border rounded-2xl p-5 shadow-xl shadow-black/20 hover:border-ink-border-light transition-colors">
           <div className="flex items-center justify-between mb-3">
             <span className="text-ink-muted text-xs font-semibold uppercase tracking-wider">Lượt đọc chương</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center text-purple-400">
+            <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 border border-purple-200">
               <i className="fa-solid fa-eye text-sm" />
             </div>
           </div>
@@ -142,7 +142,7 @@ export default function DashboardPage() {
               {(overview?.totalChapterViews ?? 0).toLocaleString("vi-VN")}
             </div>
           )}
-          <div className="text-xs text-purple-400 mt-2 flex items-center gap-1 font-medium">
+          <div className="text-xs text-purple-700 mt-2 flex items-center gap-1 font-medium">
             <span>Tổng lượt xem toàn hệ thống</span>
           </div>
         </div>
@@ -196,12 +196,12 @@ export default function DashboardPage() {
                       +{formatCurrency(tx.amount)}
                     </div>
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full inline-block mt-0.5 border ${
+                      className={`text-[10px] px-2 py-0.5 rounded-full inline-block mt-0.5 border font-medium ${
                         tx.status === "Success"
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                           : tx.status === "Pending"
-                          ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                          : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-rose-50 text-rose-700 border-rose-200"
                       }`}
                     >
                       {tx.status === "Success" ? "Thành công" : tx.status === "Pending" ? "Chờ xử lý" : "Thất bại"}
@@ -241,8 +241,8 @@ export default function DashboardPage() {
                       act.type === "chapter_added"
                         ? "bg-gold/15 text-gold border-gold/30"
                         : act.type === "user_registered"
-                        ? "bg-sky-500/15 text-sky-400 border-sky-500/30"
-                        : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                        ? "bg-sky-50 text-sky-600 border-sky-200"
+                        : "bg-emerald-50 text-emerald-600 border-emerald-200"
                     }`}
                   >
                     {act.type === "chapter_added" ? (

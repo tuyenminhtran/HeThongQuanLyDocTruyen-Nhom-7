@@ -166,7 +166,7 @@ export default function ChapterReadPage() {
     queryFn: async () => {
       try {
         const res = await getChapterContent(id!);
-        if (res.storyType === 1) {
+        if (res.storyType === 1 || (res.imageUrls && res.imageUrls.length > 0)) {
           setShowAudioPlayer(false);
         }
         return res;
@@ -282,7 +282,7 @@ export default function ChapterReadPage() {
   const isComic = chapter?.storyType === 1;
   const isProtectedNovel = !isComic && !!(chapter?.imageUrls && chapter.imageUrls.length > 0);
   const hasImages = isComic || isProtectedNovel;
-  const isAudioActive = !!(showAudioPlayer && !error && !isComic && chapter?.content);
+  const isAudioActive = !!(showAudioPlayer && !error && !hasImages && chapter?.content);
 
   // Phát sự kiện để linh vật Jiji tự né vị trí thanh Audio Player trên màn hình nhỏ
   useEffect(() => {
@@ -303,7 +303,7 @@ export default function ChapterReadPage() {
         goToChapter(prevChapter.id);
       } else if (e.key === "ArrowRight" && nextChapter) {
         goToChapter(nextChapter.id);
-      } else if ((e.key === "a" || e.key === "A") && !e.ctrlKey && !e.metaKey && !e.altKey && !isComic && chapter?.content) {
+      } else if ((e.key === "a" || e.key === "A") && !e.ctrlKey && !e.metaKey && !e.altKey && !hasImages && chapter?.content) {
         e.preventDefault();
         setShowAudioPlayer((prev) => !prev);
       } else if (e.key === "Escape") {
@@ -313,7 +313,7 @@ export default function ChapterReadPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [prevChapter, nextChapter, goToChapter, isComic, chapter?.content]);
+  }, [prevChapter, nextChapter, goToChapter, hasImages, chapter?.content]);
 
   // Theme styling
   const themeClasses: Record<Theme, string> = {
@@ -467,7 +467,7 @@ export default function ChapterReadPage() {
             </button>
 
             {/* Nút Nghe Truyện Audio Player */}
-            {!isComic && chapter?.content && (
+            {!hasImages && chapter?.content && (
               <button
                 onClick={() => setShowAudioPlayer(!showAudioPlayer)}
                 className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${

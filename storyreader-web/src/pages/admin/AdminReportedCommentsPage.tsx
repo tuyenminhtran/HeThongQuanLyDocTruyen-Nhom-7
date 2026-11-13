@@ -50,12 +50,18 @@ export default function AdminReportedCommentsPage() {
       }),
   });
 
+  const getErrorMsg = (err: unknown, fallback: string) =>
+    (err as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
+
   // Mutation: Duyệt bình luận (Hợp lệ)
   const approveMutation = useMutation({
     mutationFn: approveReportedComment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminReportedComments"] });
       showNotification("Đã duyệt bình luận hợp lệ");
+    },
+    onError: (err: unknown) => {
+      alert(getErrorMsg(err, "Không thể duyệt bình luận. Vui lòng thử lại."));
     },
   });
 
@@ -66,6 +72,9 @@ export default function AdminReportedCommentsPage() {
       queryClient.invalidateQueries({ queryKey: ["adminReportedComments"] });
       showNotification("Đã ẩn bình luận khỏi chương truyện");
     },
+    onError: (err: unknown) => {
+      alert(getErrorMsg(err, "Không thể ẩn bình luận. Vui lòng thử lại."));
+    },
   });
 
   // Mutation: Xóa vĩnh viễn
@@ -75,6 +84,9 @@ export default function AdminReportedCommentsPage() {
       queryClient.invalidateQueries({ queryKey: ["adminReportedComments"] });
       showNotification("Đã xóa vĩnh viễn bình luận");
     },
+    onError: (err: unknown) => {
+      alert(getErrorMsg(err, "Không thể xóa bình luận. Vui lòng thử lại."));
+    },
   });
 
   // Mutation: Khóa tài khoản
@@ -82,7 +94,12 @@ export default function AdminReportedCommentsPage() {
     mutationFn: restrictUserFromComment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminReportedComments"] });
+      queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
+      queryClient.invalidateQueries({ queryKey: ["adminDashboardOverview"] });
       showNotification("Đã khóa quyền bình luận của người dùng");
+    },
+    onError: (err: unknown) => {
+      alert(getErrorMsg(err, "Không thể khóa tài khoản người dùng."));
     },
   });
 
@@ -381,7 +398,7 @@ export default function AdminReportedCommentsPage() {
                     <button
                       onClick={() => {
                         if (confirm(`Bạn có chắc muốn khóa quyền bình luận của người dùng "${comment.userName || comment.userEmail}"?`)) {
-                          restrictMutation.mutate(comment.userId);
+                          restrictMutation.mutate(comment.id);
                         }
                       }}
                       disabled={restrictMutation.isPending}

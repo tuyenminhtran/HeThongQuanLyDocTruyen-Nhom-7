@@ -123,6 +123,8 @@ public class AdminReportedCommentsController : ControllerBase
         if (d is null) return NotFound(new { message = "Không tìm thấy bình luận" });
 
         d.Status = DiscussionStatus.Visible;
+        d.ReportCount = 0;
+        d.ReportReason = null;
         await _db.SaveChangesAsync();
 
         return Ok(new { message = "Đã duyệt bình luận hợp lệ!", id });

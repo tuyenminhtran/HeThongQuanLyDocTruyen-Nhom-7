@@ -1,5 +1,5 @@
 import { useForm, useWatch } from "react-hook-form";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { register as registerApi } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
 import { useState, useMemo } from "react";
@@ -24,6 +24,8 @@ export default function RegisterPage() {
     },
   });
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from || "/";
   const setAuth = useAuthStore((s) => s.setAuth);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -68,8 +70,8 @@ export default function RegisterPage() {
         data.password,
         data.displayName
       );
-      setAuth(result.accessToken, data.email, data.displayName);
-      navigate("/");
+      setAuth(result.accessToken, result.email || data.email, result.displayName || data.displayName);
+      navigate(from);
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       if (!axiosErr?.response) {

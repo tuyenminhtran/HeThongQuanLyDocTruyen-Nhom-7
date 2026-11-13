@@ -112,12 +112,22 @@ public class AdminSchedulesController : ControllerBase
     [HttpPost("{chapterId:guid}/publish-now")]
     public async Task<IActionResult> PublishNow(Guid chapterId)
     {
-        var chapter = await _db.Chapters.FindAsync(chapterId);
+        var chapter = await _db.Chapters
+            .Include(c => c.Story)
+            .FirstOrDefaultAsync(c => c.Id == chapterId);
         if (chapter is null) return NotFound(new { message = "Không tìm thấy chương truyện" });
 
-        chapter.PublishAt = DateTime.UtcNow;
-        chapter.UpdatedAt = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
+        var wasUnpublished = chapter.PublishAt.HasValue && chapter.PublishAt.Value > now;
+        chapter.PublishAt = now;
+        chapter.UpdatedAt = now;
+        chapter.Story.UpdatedAt = now;
         await _db.SaveChangesAsync();
+
+        if (wasUnpublished)
+        {
+            await StoryReader.Api.Services.ChapterPublicationHelper.NotifyFollowersAsync(_db, chapter.Story, chapter);
+        }
 
         return Ok(new { message = "Đã xuất bản chương truyện thành công!", chapterId, publishAt = chapter.PublishAt });
     }
@@ -126,12 +136,29 @@ public class AdminSchedulesController : ControllerBase
     [HttpPut("{chapterId:guid}/reschedule")]
     public async Task<IActionResult> Reschedule(Guid chapterId, [FromBody] RescheduleDto dto)
     {
-        var chapter = await _db.Chapters.FindAsync(chapterId);
+        var chapter = await _db.Chapters
+            .Include(c => c.Story)
+            .FirstOrDefaultAsync(c => c.Id == chapterId);
         if (chapter is null) return NotFound(new { message = "Không tìm thấy chương truyện" });
 
-        chapter.PublishAt = dto.PublishAt;
-        chapter.UpdatedAt = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
+        var publishAtUtc = StoryReader.Api.Services.ChapterPublicationHelper.NormalizeUtc(dto.PublishAt);
+        var wasUnpublished = chapter.PublishAt.HasValue && chapter.PublishAt.Value > now;
+        var isNowPublished = publishAtUtc is null || publishAtUtc <= now;
+
+        chapter.PublishAt = publishAtUtc;
+        chapter.UpdatedAt = now;
+        if (wasUnpublished && isNowPublished)
+        {
+            chapter.Story.UpdatedAt = now;
+        }
+
         await _db.SaveChangesAsync();
+
+        if (wasUnpublished && isNowPublished)
+        {
+            await StoryReader.Api.Services.ChapterPublicationHelper.NotifyFollowersAsync(_db, chapter.Story, chapter);
+        }
 
         return Ok(new { message = "Đã cập nhật lịch đăng chương thành công!", chapterId, publishAt = chapter.PublishAt });
     }
@@ -140,8 +167,13 @@ public class AdminSchedulesController : ControllerBase
     [HttpDelete("{chapterId:guid}")]
     public async Task<IActionResult> CancelSchedule(Guid chapterId, [FromQuery] bool deleteChapter = false)
     {
-        var chapter = await _db.Chapters.FindAsync(chapterId);
+        var chapter = await _db.Chapters
+            .Include(c => c.Story)
+            .FirstOrDefaultAsync(c => c.Id == chapterId);
         if (chapter is null) return NotFound(new { message = "Không tìm thấy chương truyện" });
+
+        var now = DateTime.UtcNow;
+        var wasUnpublished = !deleteChapter && chapter.PublishAt.HasValue && chapter.PublishAt.Value > now;
 
         if (deleteChapter)
         {
@@ -150,10 +182,19 @@ public class AdminSchedulesController : ControllerBase
         else
         {
             chapter.PublishAt = null; // Xuất bản công khai luôn
-            chapter.UpdatedAt = DateTime.UtcNow;
+            chapter.UpdatedAt = now;
+            if (wasUnpublished)
+            {
+                chapter.Story.UpdatedAt = now;
+            }
         }
 
         await _db.SaveChangesAsync();
+
+        if (wasUnpublished)
+        {
+            await StoryReader.Api.Services.ChapterPublicationHelper.NotifyFollowersAsync(_db, chapter.Story, chapter);
+        }
         return Ok(new { message = deleteChapter ? "Đã xóa chương truyện" : "Đã hủy lịch hẹn và xuất bản chương ngay" });
     }
 }

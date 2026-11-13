@@ -1,335 +1,158 @@
-# 🎓 BỘ CÂU HỎI & CÂU TRẢ LỜI VẤN ĐÁP BẢO VỆ ĐỒ ÁN (TOÀN DIỆN)
-> **Đề tài:** Hệ Thống Quản Lý & Nền Tảng Đọc Truyện Đa Nền Tảng (StoryReader / StoryNest)  
-> **Nhóm thực hiện:** Nhóm 7  
-> **Tài liệu chuẩn bị vấn đáp:** Bao quát từ Tổng quan, Kiến trúc, Backend, Frontend, Database, Bảo mật, Caching đến Kỹ thuật Crawler.
+# BỘ CÂU HỎI VẤN ĐÁP & BẢO VỆ ĐỒ ÁN — STORYREADER (NHÓM 7)
+
+Tài liệu tổng hợp câu hỏi thường gặp của Hội đồng phản biện khi chấm đồ án, bám sát **100% thiết kế và mã nguồn thực tế** trong dự án.
 
 ---
 
-## 📑 DANH MỤC CÁC PHẦN HỎI ĐÁP
-- [PHẦN 1: TỔNG QUAN ĐỀ TÀI & NGHIỆP VỤ (BUSINESS LOGIC)](#phần-1-tổng-quan-đề-tài--nghiệp-vụ-business-logic)
-- [PHẦN 2: KIẾN TRÚC HỆ THỐNG & CÔNG NGHỆ (ARCHITECTURE & TECH STACK)](#phần-2-kiến-trúc-hệ-thống--công-nghệ-architecture--tech-stack)
-- [PHẦN 3: CƠ SỞ DỮ LIỆU & ENTITY FRAMEWORK CORE (DATABASE & ORM)](#phần-3-cơ-sở-dữ-liệu--entity-framework-core-database--orm)
-- [PHẦN 4: XÁC THỰC, PHÂN QUYỀN & BẢO MẬT (AUTH & SECURITY)](#phần-4-xác-thực-phân-quyền--bảo-mật-auth--security)
-- [PHẦN 5: HIỆU NĂNG, CACHING & TỐI ƯU GIAO DIỆN (PERFORMANCE & CACHING)](#phần-5-hiệu-năng-caching--tối-ưu-giao-diện-performance--caching)
-- [PHẦN 6: KỸ THUẬT CÀO DỮ LIỆU & XỬ LÝ TRUYỆN TRANH (CRAWLER & CDN)](#phần-6-kỹ-thuật-cào-dữ-liệu--xử-lý-truyện-tranh-crawler--cdn)
-- [PHẦN 7: DEVOPS, DEPLOYMENT & KHẢ NĂNG MỞ RỘNG (DEPLOYMENT & SCALABILITY)](#phần-7-devops-deployment--khả-năng-mở-rộng-deployment--scalability)
-- [PHẦN 8: XỬ LÝ TÌNH HUỐNG HỎI XOÁY ĐÁP XOAY CỦA HỘI ĐỒNG](#phần-8-xử-lý-tình-huống-hỏi-xoáy-đáp-xoay-của-hội-đồng)
+## PHẦN 1: KIẾN TRÚC HỆ THỐNG & CÔNG NGHỆ (ARCHITECTURE & TECH STACK)
 
----
-
-## PHẦN 1: TỔNG QUAN ĐỀ TÀI & NGHIỆP VỤ (BUSINESS LOGIC)
-
-### Câu 1: Hãy giới thiệu tổng quan về đề tài của nhóm? Mục tiêu và đối tượng hướng đến là ai?
+### Câu 1: Hãy trình bày kiến trúc tổng thể và các công nghệ cốt lõi của hệ thống?
 **Trả lời:**
-- **Mục tiêu:** Xây dựng một nền tảng đọc truyện trực tuyến hiện đại, mượt mà, hỗ trợ song song 2 hình thức xuất bản: **Truyện chữ (Novel)** và **Truyện tranh (Comic/Manga/Webtoon)** trên cả 2 nền tảng Web và Mobile.
-- **Đối tượng:**
-  - *Độc giả (Reader):* Tìm kiếm, đọc truyện, theo dõi tiến độ đọc, đánh giá, bình luận, mua chương VIP hoặc gói hội viên.
-  - *Quản trị viên (Admin):* Quản lý kho truyện, duyệt chương, phân quyền người dùng, quản lý giao dịch nạp coin và thống kê doanh thu/lượt xem.
-- **Giá trị thực tế:** Giải quyết bài toán phân mảnh của các web truyện hiện nay (thường chỉ chuyên truyện chữ hoặc truyện tranh), đồng thời áp dụng kiến trúc Micro-ready với Caching đa tầng giúp hệ thống chịu tải cao.
+Hệ thống áp dụng kiến trúc **Client-Server tách biệt (Decoupled RESTful API)** gồm 3 phần:
+- **Backend (`StoryReader.Api`):** Xây dựng trên **.NET 8.0 (ASP.NET Core Web API)** theo mô hình phân lớp (`Controllers -> Services -> AppDbContext -> PostgreSQL 16`). Sử dụng **EF Core 8.0.10**, **ASP.NET Core Identity**, **JWT Bearer Authentication**, **SkiaSharp 2.88.8** (render văn bản sang PNG watermark) và **IMemoryCache**.
+- **Web Frontend (`storyreader-web`):** Xây dựng bằng **React 19** (`^19.2.8`), **TypeScript 6**, **Vite 8**, **Tailwind CSS 3.4**, quản lý server state với **TanStack Query** và auth state với **Zustand**.
+- **Mobile App (`Storyreader_mobile`):** Xây dựng bằng **Flutter** (Dart SDK `^3.12.2`), dùng **Riverpod**, **GoRouter** và **Dio**, dùng chung toàn bộ REST API với Web.
 
 ---
 
-### Câu 2: Hệ thống có những phân hệ và vai trò người dùng (Roles) nào?
+### Câu 2: Vì sao nhóm tách riêng bảng `Stories` (Truyện) và `Chapters` (Chương), đồng thời hỗ trợ cả Truyện chữ và Truyện tranh trên cùng một mô hình?
 **Trả lời:**
-Hệ thống sử dụng mô hình Phân quyền theo vai trò (Role-Based Access Control - RBAC) gồm 3 nhóm chính:
-1. **Khách vãng lai (Guest / Anonymous):**
-   - Xem trang chủ, tìm kiếm, lọc truyện theo thể loại, xem bảng xếp hạng.
-   - Đọc các chương miễn phí (`AccessPolicy = 0` hoặc nằm trong số chương `FreeChapterCount`).
-2. **Người dùng đã đăng ký (Regular User):**
-   - Lưu lịch sử đọc tự động, theo dõi truyện yêu thích (Favorites).
-   - Đánh giá (Rating), bình luận (Comments).
-   - Nạp Coin vào tài khoản để mở khóa chương trả phí lẻ.
-3. **Người dùng VIP (VIP User):**
-   - Đọc không giới hạn tất cả các chương VIP có gắn nhãn bảo vệ.
-   - Nhận huy hiệu VIP trên giao diện và bình luận.
-4. **Quản trị viên (Admin):**
-   - Quản trị toàn diện: Thêm, sửa, xóa truyện, duyệt và xuất bản chương mới.
-   - Hỗ trợ công cụ thêm nhanh truyện chữ và truyện tranh (nhập danh sách link ảnh).
-   - Quản lý người dùng, khóa/mở tài khoản, quản lý cấu hình hệ thống.
+1. **Tối ưu truy vấn danh sách:** Trang chủ (`GET /api/stories`) chỉ cần lấy metadata nhẹ của `Stories` và số lượng chương đã phát hành (`TotalChapters`), không phải tải hàng megabyte nội dung `Chapters.Content`.
+2. **Thống nhất nghiệp vụ đọc & trả phí:** Trường `Stories.Type` phân biệt `0 = Novel` (Truyện chữ) và `1 = Comic` (Truyện tranh). Nhờ vậy, các nghiệp vụ `FreeChapterCount`, mua lẻ (`Purchases`), VIP (`UserSubscriptions`), theo dõi (`StoryFollows`), tiến độ đọc (`ReadingProgresses`) và lịch đăng (`PublishAt`) dùng chung một cấu trúc bảng sạch sẽ, không dư thừa.
 
 ---
 
-### Câu 3: Chính sách khóa chương (Access Policy) và kiếm tiền (Monetization) hoạt động như thế nào?
+## PHẦN 2: BẢO MẬT, XÁC THỰC & PHÂN QUYỀN (SECURITY & ACCESS CONTROL)
+
+### Câu 3: Hệ thống xác thực người dùng và phân quyền như thế nào?
 **Trả lời:**
-Hệ thống định nghĩa Enum `AccessPolicy`:
-- `0 - Free (Miễn phí):` Mọi độc giả đều có thể đọc toàn bộ các chương.
-- `1 - Paid (Trả phí / VIP):` Cho phép tác giả/admin thiết lập số chương đọc thử miễn phí (`FreeChapterCount`, ví dụ 3 chương đầu). Từ chương thứ 4 trở đi:
-  - Nếu độc giả có gói VIP còn hạn $\rightarrow$ Đọc trực tiếp.
-  - Nếu không có VIP $\rightarrow$ Cần dùng Coin để mở khóa chương đó.
-- Logic kiểm tra được đóng gói tập trung trong Service `IChapterAccessService.CanReadChapterAsync()`, đảm bảo tính nhất quán giữa Web và Mobile.
+1. **Lưu mật khẩu an toàn:** Sử dụng `ASP.NET Core Identity` (`UserManager<AppUser>`) băm mật khẩu chuẩn PBKDF2 kèm salt ngẫu nhiên.
+2. **Stateless JWT Bearer Token:** Khi đăng nhập/đăng ký (`POST /api/auth/login`, `POST /api/auth/register`), server cấp Access Token ký bằng `HMAC-SHA256` chứa `NameIdentifier`, `Email`, `displayName` và `Role` (`Admin` / `Member`).
+3. **Phân quyền ở Backend & Frontend:**
+   - Các API quản trị đều gắn `[Authorize(Roles = "Admin")]`.
+   - Tài khoản bị Admin khóa (`IsRestricted = true`) bị chặn bình luận, chặn mua gói/mua truyện và bị từ chối quyền đọc chương trả phí trong `ChapterAccessService`.
 
 ---
 
-## PHẦN 2: KIẾN TRÚC HỆ THỐNG & CÔNG NGHỆ (ARCHITECTURE & TECH STACK)
-
-### Câu 4: Tại sao nhóm chọn .NET 8 (ASP.NET Core) làm Backend thay vì Node.js hay Spring Boot?
+### Câu 4: Cơ chế kiểm tra quyền đọc chương trả phí (`Paid` / `Mixed`) hoạt động ra sao để tránh người dùng sửa JS/URL vượt rào?
 **Trả lời:**
-Nhóm lựa chọn .NET 8 vì 4 ưu điểm vượt trội:
-1. **Hiệu năng & Tối ưu luồng (Throughput & Concurrency):** .NET 8 liên tục nằm trong top đầu bảng xếp hạng TechEmpower Benchmarks về khả năng xử lý HTTP requests/giây nhờ Kestrel Web Server và cơ chế `async/await` tối ưu.
-2. **Kiểu dữ liệu tĩnh mạnh mẽ (Strongly Typed):** C# 12 kết hợp với Record Types, LINQ và Pattern Matching giúp phát hiện lỗi ngay lúc compile time, giảm thiểu tối đa runtime bugs.
-3. **Entity Framework Core 8:** ORM mạnh mẽ hàng đầu hiện nay, hỗ trợ LINQ-to-Entities, migration tự động, tracking queries và compiled queries tốc độ cao.
-4. **Hệ sinh thái đồng nhất:** Tích hợp sẵn Dependency Injection, Authentication/Authorization, Logging và Configuration chuẩn mà không cần cài thêm quá nhiều thư viện bên thứ ba như Node.js.
+Toàn bộ kiểm tra quyền đọc nằm ở **Backend** tại `ChapterAccessService.CanReadChapterAsync`:
+1. Khi client gọi `GET /api/chapters/{id}`, API kiểm tra tuần tự trên PostgreSQL:
+   - Nếu `User.IsRestricted == true`: trả `403 Forbidden`.
+   - Nếu chương chưa tới giờ `PublishAt` và người gọi không phải `Admin`: trả `403 Forbidden`.
+   - Nếu `Story.AccessPolicy == Free` hoặc `ChapterNumber <= Story.FreeChapterCount`: cho đọc ngay.
+   - Ngược lại, bắt buộc người dùng phải thuộc 1 trong 3 trường hợp: có role `Admin`, có bản ghi sở hữu trong bảng `Purchases`, hoặc có gói `UserSubscriptions` còn hạn (`EndAt > DateTime.UtcNow`).
+2. Nếu không đủ điều kiện, server tuyệt đối không trả về `Content` hay `ImageUrls` mà trả mã lỗi `403 Forbidden`.
 
 ---
 
-### Câu 5: Tại sao Frontend lại dùng React 19 + TypeScript + Vite mà không dùng Next.js hay Vue?
+### Câu 5: Cơ chế chống sao chép nội dung chữ và bảo vệ ảnh chương hoạt động thế nào?
 **Trả lời:**
-1. **Mô hình Single Page Application (SPA):** Nền tảng đọc truyện chú trọng trải nghiệm đọc liền mạch, chuyển chương tức thì không bị giật/nhấp nháy toàn bộ trang. SPA với React Router v7 đáp ứng hoàn hảo yêu cầu này.
-2. **React 19 & TypeScript:** Đảm bảo khả năng bảo trì (maintainability) lâu dài với định kiểu chặt chẽ cho toàn bộ DTOs từ Backend gửi sang Frontend.
-3. **Vite 8:** Sử dụng kiến trúc Native ES Modules (ESM) và build bằng Rolldown/esbuild, thời gian khởi động server chỉ mất chưa đến 300ms, HMR (Hot Module Replacement) cập nhật code tức thì trong 10ms.
-4. **Tại sao không dùng Next.js (SSR)?** Vì hệ thống đã tích hợp Redis Caching ở Backend và TanStack Query ở Client, tốc độ tải dữ liệu đạt dưới 50ms, trong khi SPA đơn giản hóa việc deploy qua Nginx/Docker mà không cần duy trì Node.js server render SSR phức tạp.
+1. **Chế độ render ảnh watermark (`TextToImageService` + `SkiaSharp`):** Khi Admin bật tùy chọn *"Render chữ thành ảnh PNG chống copy"* cho chương Novel, Backend ngắt dòng văn bản và vẽ thành các trang ảnh PNG nền tối kèm watermark mờ và tên file chứa token ngẫu nhiên (`page_001_{randomHex}.png`), ngăn việc bôi đen copy text hoặc đoán đường dẫn ảnh.
+2. **Chế độ văn bản thuần + Nghe Audio:** Đối với các chương tiểu thuyết không bật xuất PNG, người dùng vừa có thể tùy chỉnh Theme Sáng/Tối/Sepia, cỡ chữ, vừa sử dụng trình đọc Audio TTS.
 
 ---
 
-### Câu 6: Kiến trúc Backend được tổ chức theo mô hình nào?
+### Câu 6: Hệ thống xử lý chống spam báo cáo bình luận vi phạm ra sao?
 **Trả lời:**
-Backend được thiết kế theo hướng **Separation of Concerns (Phân tách mối quan tâm)**:
-```text
-StoryReader.Api/
-├── Controllers/         # Tầng tiếp nhận HTTP Request, Validate ModelState, trả về DTO
-├── Services/            # Tầng Business Logic (Access Control, Token, Payments)
-│   └── Interfaces/      # Khai báo Contract để Dependency Injection (DIP trong SOLID)
-├── Models/
-│   ├── Entities/        # Thực thể Database (Stories, Chapters, Users, ReadingProgress)
-│   ├── Dtos/            # Data Transfer Objects (Request/Response phân tách khỏi Entities)
-│   └── Enums/           # StoryType, AccessPolicy, ReleaseStatus, UserRole
-└── Data/                # DbContext, Migrations, Fluent API Configurations
-```
-- **Lợi ích:** Bộ điều khiển (Controller) hoàn toàn "mỏng" (Thin Controller), không chứa logic nghiệp vụ phức tạp. Khi cần thay đổi logic thanh toán hay kiểm tra VIP, chỉ cần sửa đổi trong Service tương ứng mà không làm ảnh hưởng tầng API.
+- Tại `DiscussionsController.Report`: mỗi lượt báo cáo được đánh dấu trên `IMemoryCache` theo khóa `discussion-report:{discussionId}:{userId}` trong 24 giờ, nên một người dùng không thể bấm Report 5 lần liên tiếp để tự ẩn bình luận hợp lệ của người khác.
+- Tại cổng Admin (`AdminReportedCommentsController.Approve`): khi Admin xác nhận bình luận hợp lệ, hệ thống đưa `Status` về `Visible`, đồng thời reset `ReportCount = 0` và `ReportReason = null` để tránh một báo cáo mới làm nhảy lại ngưỡng tự ẩn.
 
 ---
 
-## PHẦN 3: CƠ SỞ DỮ LIỆU & ENTITY FRAMEWORK CORE (DATABASE & ORM)
+## PHẦN 3: NGHIỆP VỤ THANH TOÁN, VIP & HẸN GIỜ XUẤT BẢN
 
-### Câu 7: Trình bày cấu trúc Cơ sở dữ liệu của dự án? Các bảng chính và quan hệ giữa chúng?
+### Câu 7: Luồng thanh toán mua truyện lẻ (`StoryPurchase`) và gói VIP (`Subscription`) đảm bảo tính toàn vẹn dữ liệu thế nào?
 **Trả lời:**
-Hệ thống sử dụng PostgreSQL 16 với các bảng cốt lõi:
-1. `Users`: Lưu thông tin tài khoản, mật khẩu băm, Role, số dư Coin, trạng thái VIP (`VipExpirationDate`).
-2. `Stories`: Thông tin truyện (Title, Author, CoverImageUrl, Description, Type, AccessPolicy, ViewCount).
-3. `Chapters`: Từng chương truyện (StoryId, ChapterNumber, Title, Content, PublishAt, ViewCount).
-   - Quan hệ: `Stories` (1) - `Chapters` (N), xóa Story sẽ xóa liên hoàn (Cascade Delete) các Chapters.
-4. `Genres` & `StoryGenres`: Quản lý danh mục thể loại truyện.
-   - Quan hệ: N-N giữa `Stories` và `Genres` thông qua bảng trung gian `StoryGenres` (`StoryId`, `GenreId`).
-5. `ReadingProgresses`: Lưu lịch sử và tiến độ đọc của từng User với từng Story (`UserId`, `StoryId`, `LastChapterId`, `UpdatedAt`).
-6. `StoryReviews` & `Favorites`: Quản lý đánh giá sao, bình luận và danh sách theo dõi.
-
-```mermaid
-erDiagram
-    Users ||--o{ ReadingProgresses : "tracks"
-    Users ||--o{ StoryReviews : "writes"
-    Users ||--o{ Favorites : "bookmarks"
-    Stories ||--|{ Chapters : "contains"
-    Stories ||--o{ StoryGenres : "categorized"
-    Genres ||--o{ StoryGenres : "belongs"
-    Stories ||--o{ ReadingProgresses : "tracked_in"
-    Stories ||--o{ StoryReviews : "reviewed_in"
-```
+Trong `PaymentService`:
+1. Mọi yêu cầu thanh toán đều tạo trước 1 bản ghi trong bảng `Transactions` với `Status = Pending`, lưu `TargetId` (`StoryId` hoặc `PlanId`), `Amount` lấy trực tiếp từ database (không tin số tiền client gửi) và mã `ProviderTransactionRef` duy nhất.
+2. Ngoài môi trường Development, endpoint `POST /api/payments/callback` yêu cầu header `X-Payment-Callback-Secret` và đối chiếu theo thời gian hằng (`CryptographicOperations.FixedTimeEquals`) chống giả mạo callback.
+3. Khi callback báo thành công (`HandleGatewayCallbackAsync`) hoặc Admin kích hoạt bù (`ForceActivateTransactionAsync` - PB28), giao dịch chuyển sang `Success` và mới tạo bản ghi quyền lợi trong `Purchases` (có unique index `(UserId, StoryId)`) hoặc cộng dồn ngày sử dụng vào `UserSubscriptions`.
 
 ---
 
-### Câu 8: Tại sao nhóm không tách 2 bảng riêng: `NovelStories` và `ComicStories`?
+### Câu 8: Khi người dùng đang có gói VIP hoặc đã mua truyện, nếu mua lại hoặc chưa đủ điều kiện thì xử lý thế nào?
 **Trả lời:**
-Nhóm đã cân nhắc kỹ và quyết định **dùng chung một bảng `Stories` với trường phân loại `Type` (Single Table Inheritance pattern)** vì:
-1. **Tính tương đồng nghiệp vụ cao (>90%):** Dù là truyện chữ hay truyện tranh, chúng đều có chung các thuộc tính: Tiêu đề, Tác giả, Ảnh bìa, Tóm tắt, Danh sách thể loại, Lượt xem, Đánh giá, Số chương, và Lịch sử đọc.
-2. **Tối ưu hóa các câu truy vấn phức hợp:**
-   - Khi hiển thị trang chủ, bảng xếp hạng Top View, hoặc tìm kiếm toàn trang, hệ thống chỉ cần truy vấn một bảng duy nhất `Stories` thay vì phải `UNION` hai bảng riêng biệt.
-3. **Linh hoạt hiển thị:** Khi lọc thể loại hoặc tab "Tất cả", "Truyện chữ", "Truyện tranh", chỉ cần thêm điều kiện `WHERE "Type" = @type`.
-4. **Nội dung chương (`Chapters.Content`):**
-   - Với truyện chữ: lưu text thuần.
-   - Với truyện tranh: lưu danh sách URL ảnh phân tách bằng dấu `\n`.
-   - Cấu trúc này tối giản, không tạo cột thừa (sparse columns) và đạt chuẩn chuẩn hóa cơ sở dữ liệu (Database Normalization).
+`PaymentService` chặn từ backend với thông báo tiếng Việt rõ ràng (`HTTP 400`):
+- Truyện `Free`, truyện `Paid/Mixed` chưa có giá hợp lệ (`Price <= 0`), hoặc tài khoản `Admin` đều bị chặn tạo giao dịch thừa.
+- Nếu đã mua truyện rồi hoặc đang có gói VIP còn hiệu lực (`EndAt > UtcNow`), hệ thống từ chối tạo giao dịch mua lẻ trùng lặp.
+- Gói VIP mới khi mua thành công sẽ nối tiếp hạn từ `currentActive.EndAt` hiện tại (gia hạn nối đuôi, không làm mất ngày còn lại của người dùng).
 
 ---
 
-### Câu 9: Tại sao dùng UUID (Guid) làm Khóa chính (Primary Key) thay vì Auto Increment ID (1, 2, 3...)?
+### Câu 9: Cơ chế hẹn giờ đăng chương (`PublishAt`) xử lý múi giờ và thông báo người theo dõi ra sao?
 **Trả lời:**
-Nhóm sử dụng `Guid.NewGuid()` / `gen_random_uuid()` vì 3 lý do bảo mật và kiến trúc:
-1. **Chống tấn công thu thập dữ liệu (ID Enumeration / Scraping Attack):** Nếu dùng ID tăng dần `1, 2, 3`, đối thủ có thể dễ dàng đoán URL `api/stories/1`, `api/stories/2` để cào trộm toàn bộ database hoặc biết được hệ thống có tổng cộng bao nhiêu người dùng. Với UUID ngẫu nhiên (ví dụ `3d7c4b6e-3d00-4133-9ccf-d5ab06fcd33b`), việc đoán ID là bất khả thi ($2^{128}$ khả năng).
-2. **Khả năng phân tán (Distributed System):** Client hoặc Service nền có thể tự sinh ID trước mà không cần chờ DB trả về kết quả `INSERT`.
-3. **An toàn khi Merge dữ liệu:** Khi chuyển dữ liệu giữa các môi trường Test và Production không bao giờ lo trùng khóa chính.
+1. PostgreSQL `timestamp with time zone` qua Npgsql yêu cầu `DateTimeKind.Utc`. Mọi điểm lưu `PublishAt` (`StoryService.AddChapterAsync`, `UpdateChapterAsync`, `AdminSchedulesController.Reschedule`) đều qua `ChapterPublicationHelper.NormalizeUtc` để tránh lỗi 500 khi nhận timestamp `Local`/`Unspecified`.
+2. Chương hẹn giờ tương lai (`PublishAt > UtcNow`) bị ẩn khỏi danh sách chương công khai, bị ẩn khỏi bộ đếm tổng số chương / chương mới nhất trên Trang chủ và Hồ sơ (`ProfileController`, `StoryService.SearchAsync`), và **không gửi thông báo sớm** cho follower.
+3. Chỉ khi chương tới giờ phát hành hoặc Admin bấm **Đăng ngay** / **Hủy hẹn giờ để xuất bản**, hệ thống mới cập nhật `Story.UpdatedAt` và gọi `ChapterPublicationHelper.NotifyFollowersAsync` (kèm kiểm tra trùng `LinkUrl` để không gửi thông báo lặp).
 
 ---
 
-### Câu 10: Làm thế nào để giải quyết vấn đề tranh chấp (Concurrency) khi tăng lượt xem hoặc trừ Coin của User?
+## PHẦN 4: AUDIO TEXT-TO-SPEECH (TTS), CACHING & HIỆU NĂNG
+
+### Câu 10: Tính năng Nghe Truyện Audio Tiếng Việt hoạt động như thế nào và xử lý ra sao khi offline?
 **Trả lời:**
-1. **Lượt xem chương (View Counting):**
-   - Không thực hiện ghi trực tiếp đè giá trị tĩnh mà sử dụng biểu thức tăng nguyên tử (Atomic Increment) hoặc đưa qua Redis Cache (`INCR story:{id}:views`), sau đó có Background Worker gom dữ liệu (Batching) cập nhật định kỳ vào DB.
-2. **Giao dịch trừ Coin (Payment Transaction):**
-   - Sử dụng `IDbContextTransaction` của EF Core với mức cô lập giao dịch (Transaction Isolation Level).
-   - Kiểm tra điều kiện số dư: `UPDATE "Users" SET "Coins" = "Coins" - @price WHERE "Id" = @userId AND "Coins" >= @price`. Nếu số dòng ảnh hưởng = 0 nghĩa là số dư không đủ, hệ thống tự động Rollback giao dịch.
+1. `AudioReaderPlayer.tsx` tách nội dung văn bản thành các câu hợp lý (`< 180` ký tự, bỏ qua dòng chỉ có dấu phân cách).
+2. Ở chế độ mặc định (`Google Engine`), player gọi `GET /api/tts?text=...`. Backend `TtsController` đứng làm proxy gọi Google Translate TTS tiếng Việt (`tl=vi`) để tránh trình duyệt bị chặn CORS/Referer, đồng thời cache mảng byte MP3 trên `IMemoryCache` để các đoạn đọc lại hoặc nhiều người cùng nghe không gọi lại mạng ngoài.
+3. Nếu trình duyệt không có mạng hoặc proxy lỗi, player tự động Fallback sang **Web Speech API** (`window.speechSynthesis`). Trên chương truyện tranh (`Type = 1`) hoặc chương ảnh PNG chống copy, giao diện tự động ẩn nút nghe Audio.
 
 ---
 
-## PHẦN 4: XÁC THỰC, PHÂN QUYỀN & BẢO MẬT (AUTH & SECURITY)
-
-### Câu 11: Cơ chế Authentication của hệ thống hoạt động như thế nào?
+### Câu 11: Vai trò của `IMemoryCache` và container `redis:7` trong dự án hiện tại là gì?
 **Trả lời:**
-Hệ thống sử dụng cơ chế **JWT (JSON Web Token) kết hợp Token Rotation**:
-1. **Khi đăng nhập thành công:**
-   - Backend phát hành:
-     - `AccessToken`: Thời hạn ngắn (15 - 60 phút), chứa Claims (`sub`, `name`, `role`). Dùng để gửi kèm Header `Authorization: Bearer <token>` trong mỗi request.
-     - `RefreshToken`: Thời hạn dài (7 - 30 ngày), mã ngẫu nhiên bảo mật lưu trong database gắn với User.
-2. **Khi Access Token hết hạn:**
-   - Axios Interceptor trên Frontend bắt mã lỗi `401 Unauthorized`.
-   - Tự động gọi endpoint `POST /api/auth/refresh-token` gửi Refresh Token lên.
-   - Backend kiểm tra hợp lệ $\rightarrow$ cấp Access Token mới $\rightarrow$ Frontend tự động thực hiện lại request dang dở mà người dùng không hề bị gián đoạn hay bị đăng xuất.
+*(Trả lời trung thực theo mã nguồn thực tế)*:
+- Hiện tại, ứng dụng single-instance của nhóm dùng **`IMemoryCache` tích hợp sẵn của ASP.NET Core** (đã kích hoạt `AddMemoryCache()` trong `Program.cs`) để cache audio TTS tại `TtsController` và chống spam báo cáo tại `DiscussionsController`, giúp hệ thống gọn nhẹ, không phụ thuộc thêm service ngoài khi demo local.
+- Trong [`docker-compose.yml`](./docker-compose.yml), nhóm cũng đã khai báo sẵn container **`redis:7`** (cổng `6379`) để khi hệ thống nâng cấp lên nhiều node API (Load Balancing) chỉ cần chuyển `IDistributedCache` sang StackExchange.Redis là dùng chung cache toàn cụm.
 
 ---
 
-### Câu 12: Mật khẩu người dùng được lưu trữ như thế nào? Có an toàn không?
+### Câu 12: Tại sao nhóm dùng TanStack Query ở Frontend thay vì `useEffect` + `useState` thuần?
 **Trả lời:**
-- Mật khẩu **tuyệt đối không bao giờ lưu dưới dạng văn bản thuần (plaintext)**.
-- Hệ thống sử dụng thuật toán băm chậm có muối (Salted Slow Hashing Algorithm) như **BCrypt** hoặc **PBKDF2 with HMAC-SHA256**:
-  - Mỗi tài khoản có một chuỗi muối (Salt) ngẫu nhiên riêng biệt, ngăn chặn hoàn toàn tấn công dùng Bảng cầu vồng (Rainbow Table).
-  - Thuật toán có yếu tố độ phức tạp (Work Factor), làm chậm quá trình thử của kẻ tấn công (Brute-force) xuống hàng triệu lần.
+- Tự động cache kết quả API theo `queryKey` (ví dụ `["stories"]`, `["storyDetail", id]`, `["adminSchedules"]`), tránh gọi lại mạng thừa khi chuyển trang.
+- Khi Admin cập nhật truyện, duyệt báo cáo hay kích hoạt giao dịch, chỉ cần `queryClient.invalidateQueries` để giao diện đồng bộ tức thì mà không phải tự quản lý nhiều biến state thủ công.
 
 ---
 
-### Câu 13: Hệ thống phòng chống các lỗ hổng bảo mật phổ biến (OWASP Top 10) như thế nào?
+### Câu 13: Trình đọc truyện tranh Webtoon được tối ưu thế nào khi chương có nhiều trang ảnh?
 **Trả lời:**
-1. **SQL Injection:**
-   - 100% các câu truy vấn thông qua Entity Framework Core đều được tham số hóa tự động (Parameterized Queries).
-2. **Cross-Site Scripting (XSS):**
-   - React tự động mã hóa (escape) tất cả các biến chuỗi khi render ra DOM.
-   - Nội dung mô tả truyện được làm sạch thẻ HTML nguy hiểm trước khi lưu và hiển thị.
-3. **Cross-Origin Resource Sharing (CORS):**
-   - Backend cấu hình `CorsPolicy` nghiêm ngặt trong `Program.cs`, chỉ cho phép các domain Frontend được phê duyệt truy cập API.
-4. **Bảo vệ bản quyền nội dung truyện chữ (Content Leech Protection):**
-   - Giao diện đọc truyện khóa sự kiện chuột phải (`contextmenu`), chặn bôi đen văn bản (`user-select: none`), vô hiệu hóa các phím tắt sao chép `Ctrl+C`, `Ctrl+U`, `F12`.
+1. Ảnh trang truyện dùng `loading="lazy"` của trình duyệt nên chỉ tải các ảnh gần vùng cuộn màn hình.
+2. Ảnh được phân phối từ CDN (ví dụ MangaDex CDN) hoặc URL ngoài, giảm tải băng thông trực tiếp cho Backend `.NET`.
 
 ---
 
-## PHẦN 5: HIỆU NĂNG, CACHING & TỐI ƯU GIAO DIỆN (PERFORMANCE & CACHING)
+## PHẦN 5: CRAWLER DỮ LIỆU, DOCKER & MỞ RỘNG (DEVOPS & SCALABILITY)
 
-### Câu 14: Vai trò của Redis trong hệ thống là gì? Dữ liệu nào được lưu trong Redis?
+### Câu 14: Hãy giải thích luồng hoạt động của script cào truyện tranh (`tools/crawl_manga.js`)?
 **Trả lời:**
-Redis đóng vai trò là **In-Memory Cache Layer**, nằm giữa Backend API và PostgreSQL:
-1. **Dữ liệu được Cache:**
-   - Danh sách thể loại (`genres_list`): Rất ít khi thay đổi, cache với thời gian dài.
-   - Bảng xếp hạng Top truyện hot / Xem nhiều (`ranking:views:weekly`): Dữ liệu tính toán nặng, được cache 15-30 phút.
-   - Chi tiết truyện cơ bản của các bộ đang "Hot".
-2. **Chiến lược Cache (Cache Strategy):**
-   - Áp dụng mô hình **Cache-Aside (Lazy Loading)**:
-     - Ứng dụng kiểm tra Redis trước. Nếu có (Cache Hit) $\rightarrow$ trả về ngay (thời gian phản hồi < 2ms).
-     - Nếu không có (Cache Miss) $\rightarrow$ truy vấn PostgreSQL $\rightarrow$ lưu kết quả vào Redis với thời hạn TTL $\rightarrow$ trả về cho client.
-   - **Cache Invalidation:** Khi Admin cập nhật thông tin truyện, hệ thống tự động xóa khóa cache liên quan để đảm bảo dữ liệu không bị cũ (Stale Data).
+1. Tìm kiếm bộ truyện trên MangaDex API v5 (lọc bỏ bản Doujinshi).
+2. Lấy Metadata, URL ảnh bìa và danh sách chương tiếng Việt (`translatedLanguage[]=vi`).
+3. Với mỗi chương (tối đa 5 chương mẫu), gọi `/at-home/server/{chapId}` để lấy hash + danh sách file ảnh, ghép thành các URL CDN ngăn cách bởi `\n`.
+4. Với cờ `--import`, script sinh câu lệnh SQL chuẩn schema PostgreSQL (`Stories` với `Type = 1`, `StoryGenres`, `Chapters`) và nạp trực tiếp qua `docker exec ... psql`.
 
 ---
 
-### Câu 15: Tại sao nhóm dùng TanStack Query (React Query) ở Frontend thay vì `useEffect` thông thường?
+### Câu 15: Dự án dùng Docker Compose như thế nào?
 **Trả lời:**
-Nếu chỉ dùng `useEffect` + `useState`:
-- Gây hiện tượng request waterfall, tải lại dữ liệu liên tục mỗi khi chuyển trang dù dữ liệu không đổi.
-- Khó quản lý trạng thái loading, error, pagination và re-fetching.
-Với **TanStack Query v5**:
-1. **Client-side Caching tự động:** Khi người dùng đọc lướt qua lại giữa Trang chủ và Chi tiết truyện, dữ liệu lấy từ cache tức thì (0ms).
-2. **Stale-While-Revalidate:** Hiển thị dữ liệu cũ ngay lập tức trong khi âm thầm tải dữ liệu mới dưới nền.
-3. **Deduplication:** Tự động gom nhiều component gọi chung 1 API thành 1 request duy nhất lên server.
+Root [`docker-compose.yml`](./docker-compose.yml) định nghĩa sẵn hai service hạ tầng:
+- `postgres`: image `postgres:16` (cổng `5432`, DB `storyreader`, user `storynest`, volume `pgdata` bền vững).
+- `redis`: image `redis:7` (cổng `6379`, phục vụ định hướng Distributed Cache).
+Chỉ với `docker compose up -d`, bất kỳ máy nào cũng dựng xong môi trường DB đồng nhất mà không cần cài PostgreSQL thủ công.
 
 ---
 
-### Câu 16: Trình đọc truyện tranh Webtoon được tối ưu như thế nào khi một chương có tới 100 trang ảnh?
+### Câu 16: Nếu hệ thống có lượng truy cập lớn, nhóm sẽ nâng cấp tiếp thế nào?
 **Trả lời:**
-1. **Không tải toàn bộ ảnh cùng lúc:** Thuộc tính `loading="lazy"` của trình duyệt kết hợp với `IntersectionObserver` chỉ tải những hình ảnh sắp cuộn tới màn hình.
-2. **CDN phân tán (Content Delivery Network):** Ảnh được kéo trực tiếp từ các CDN server phân tán gần người dùng nhất, không đi qua server Backend, giúp máy chủ API không bị nghẽn băng thông.
-3. **Tự động giải phóng bộ nhớ (Virtual DOM):** Trình duyệt render ảnh mượt mà, hỗ trợ bộ chọn chương nhanh không cần cuộn lại từ đầu.
+1. **API Layer (Stateless):** Do sử dụng JWT Stateless, có thể chạy nhiều instance `StoryReader.Api` phía sau Nginx/Reverse Proxy và chuyển `IMemoryCache` sang container **Redis 7** (`IDistributedCache`) để đồng bộ cache TTS và rate-limit/report dedupe giữa các instance.
+2. **Database:** Dùng PostgreSQL Primary + Read Replicas cho các truy vấn đọc (`GET /api/stories`, `GET /api/chapters`).
+3. **Media & CDN:** Đưa toàn bộ ảnh bìa và ảnh PNG chương từ `wwwroot/uploads` lên Object Storage (S3 / Cloudflare R2) kèm CDN.
 
 ---
 
-## PHẦN 6: KỸ THUẬT CÀO DỮ LIỆU & XỬ LÝ TRUYỆN TRANH (CRAWLER & CDN)
+## PHẦN 6: TÌNH HUỐNG THỰC TẾ ĐÃ GẶP & KHẮC PHỤC KHI LÀM ĐỒ ÁN
 
-### Câu 17: Hãy giải thích luồng hoạt động của Script cào truyện tranh (`tools/crawl_manga.js`)?
+### Câu 17: Trong quá trình kiểm thử thực tế, nhóm đã phát hiện và sửa những lỗi đáng chú ý nào?
 **Trả lời:**
-Script cào truyện tranh hoạt động theo chu trình khép kín:
-1. **Tìm kiếm:** Gửi request lên MangaDex API v5 với từ khóa tên truyện (lọc bỏ các bản Doujinshi, ưu tiên bản chính thức).
-2. **Lấy Metadata & Ảnh bìa:** Trích xuất Tiêu đề, Tác giả, Tóm tắt và URL ảnh bìa.
-3. **Lấy danh sách chương Tiếng Việt:** Gọi endpoint lấy các chapter có mã ngôn ngữ `vi` (`translatedLanguage[]=vi`).
-4. **Trích xuất link ảnh từng trang:** Với mỗi chương, gọi máy chủ `@home server` để lấy danh sách tên file ảnh và mã hash, sau đó ghép thành mảng URL CDN hoàn chỉnh.
-5. **Nạp tự động vào Database (`--import`):**
-   - Script tự động sinh mã UUID cho truyện.
-   - Sinh câu lệnh SQL `INSERT INTO "Stories"` với `Type = 1` (Comic).
-   - Sinh câu lệnh `INSERT INTO "Chapters"` với nội dung `Content` là các link ảnh ngắt dòng bằng `\n`.
-   - Kết nối trực tiếp vào Docker Container PostgreSQL để thực thi, truyện xuất hiện trên web ngay tức khắc.
-
----
-
-### Câu 18: Tại sao trước đó script OTruyen bị lỗi và việc chuyển sang MangaDex mang lại lợi ích gì?
-**Trả lời:**
-- **Nguyên nhân lỗi OTruyen:** Tên miền `otruyenapi.com` bị ngắt kết nối trên hệ thống aaPanel của họ (máy chủ trả về HTTP 404 Domain Unbound).
-- **Lợi ích khi đổi sang MangaDex API:**
-  - MangaDex là nền tảng mở quốc tế phi lợi nhuận lớn nhất thế giới, hạ tầng server cực kỳ ổn định.
-  - Hỗ trợ CORS đầy đủ (trình duyệt không bị lỗi chặn ảnh).
-  - Ảnh nguyên gốc chất lượng cao, không bị đóng dấu watermark hay chèn quảng cáo cờ bạc như các trang web lậu tại Việt Nam.
-
----
-
-### Câu 19: Lưu danh sách link ảnh trong database có rủi ro chết link (Broken Links) không? Cách khắc phục?
-**Trả lời:**
-- **Rủi ro:** Nếu bên thứ ba đổi cấu trúc CDN hoặc xóa file, link ảnh có thể bị lỗi 404.
-- **Cách hệ thống của nhóm xử lý:**
-  1. *Ngắn hạn:* MangaDex sử dụng hệ thống CDN phân tán toàn cầu bền vững với mạng lưới server dự phòng.
-  2. *Dài hạn (Hướng mở rộng):* Hệ thống có thể bổ sung một Background Service chạy định kỳ tải ảnh về lưu trữ trên **Cloud Object Storage (như AWS S3, Cloudflare R2 hoặc MinIO)** của chính hệ thống, vừa chủ động 100% dữ liệu vừa tối ưu chi phí lưu trữ.
-
----
-
-## PHẦN 7: DEVOPS, DEPLOYMENT & KHẢ NĂNG MỞ RỘNG (DEPLOYMENT & SCALABILITY)
-
-### Câu 20: Dự án sử dụng Docker như thế nào? Tại sao lại dùng Docker Compose?
-**Trả lời:**
-Dự án sử dụng `docker-compose.yml` để đóng gói toàn bộ môi trường phụ thuộc:
-- **Service 1:** `postgres:16-alpine` (Cổng 5432, mount volume để lưu trữ dữ liệu bền vững).
-- **Service 2:** `redis:7-alpine` (Cổng 6379, in-memory cache).
-- **Lợi ích:**
-  - Khắc phục triệt để lỗi kinh điển: *"Chạy được trên máy em nhưng không chạy được trên máy thầy cô"*.
-  - Bất kỳ thành viên nào trong nhóm hoặc giám khảo chỉ cần cài Docker và chạy duy nhất lệnh `docker compose up -d` là toàn bộ cơ sở dữ liệu và cache sẵn sàng trong 10 giây.
-
----
-
-### Câu 21: Nếu hệ thống có 100.000 người truy cập cùng lúc (High Concurrency), nhóm sẽ nâng cấp hệ thống như thế nào?
-**Trả lời:**
-Để mở rộng quy mô (Scale-up & Scale-out), nhóm đề xuất chiến lược:
-1. **Tầng API (Stateless Service):** Do Backend sử dụng JWT (không lưu session trong bộ nhớ server), ta có thể triển khai nhiều instance API đằng sau một **Load Balancer (Nginx / HAProxy)**.
-2. **Tầng Database:**
-   - Cấu hình **PostgreSQL Replication (Master - Slave / Read Replicas)**: Master chuyên nhận ghi (Write), 2-3 Read Replicas chuyên phục vụ đọc (Read) để giảm tải 80% áp lực cho Master.
-3. **Tầng Caching & Static Assets:**
-   - Đưa Redis lên cụm **Redis Cluster**.
-   - Phân phối toàn bộ mã nguồn Frontend (HTML, CSS, JS) và Ảnh bìa qua **Cloudflare CDN**.
-
----
-
-## PHẦN 8: XỬ LÝ TÌNH HUỐNG HỎI XOÁY ĐÁP XOAY CỦA HỘI ĐỒNG
-
-### Câu 22: "Tôi thấy nút Cuộn lên đầu trang và Con mèo linh vật lúc trước nằm đè lên nhau, nhóm đã phát hiện và xử lý như thế nào?"
-**Trả lời:**
-- **Vấn đề thực tế:** Ở góc dưới bên phải (`bottom-right`), cả nút `ScrollToTop` và `InteractiveMascot` đều sử dụng lớp CSS `fixed bottom-6 right-6 z-40`, dẫn đến tình trạng nút cuộn trang bị che khuất hoàn toàn phía sau chú mèo.
-- **Giải pháp xử lý:**
-  - Nhóm đã điều chỉnh vị trí nút `ScrollToTop` dịch chuyển sang bên trái với tọa độ `fixed bottom-4 right-20 sm:bottom-5 sm:right-24`.
-  - Kết quả tạo thành một cụm tiện ích nổi (Floating Utility Dock) khoa học: nút mũi tên nằm ngay ngắn bên cạnh chú mèo, không còn xung đột click hay bị bong bóng thoại của mèo che mất.
-
----
-
-### Câu 23: "Nếu tác giả cập nhật chương mới nhưng người đọc vẫn thấy danh sách chương cũ, nguyên nhân do đâu và cách sửa?"
-**Trả lời:**
-- **Nguyên nhân:** Do dữ liệu danh sách chương của Story đó đang được cache tại Redis hoặc trong bộ nhớ cache của TanStack Query ở trình duyệt.
-- **Cách xử lý:**
-  - Tại Backend: Khi API `POST /api/stories/{id}/chapters` thêm chương thành công, kích hoạt hàm `_cache.RemoveAsync($"story:{id}:chapters")`.
-  - Tại Frontend: Sau khi gọi API thành công, gọi `queryClient.invalidateQueries({ queryKey: ['story', storyId] })` để React Query tự động refetch dữ liệu mới nhất.
-
----
-
-### Câu 24: "Điểm yếu lớn nhất hiện tại của hệ thống là gì và nhóm dự định khắc phục thế nào?"
-**Trả lời:**
-*(Trả lời chân thành, khiêm tốn nhưng thể hiện tầm nhìn kỹ thuật rõ ràng)*:
-- **Hạn chế:** Hệ thống hiện tại đang phụ thuộc vào link ảnh CDN của nguồn MangaDex bên ngoài. Nếu MangaDex thay đổi chính sách truy cập, một số chương truyện tranh có thể bị gián đoạn.
-- **Hướng giải quyết:** Nhóm dự kiến tích hợp **Worker tải ảnh nền (Background Processing via Hangfire / RabbitMQ)** để tự động tải các trang ảnh về lưu trữ trực tiếp trên dịch vụ Cloudflare R2 / AWS S3 của hệ thống, giúp chủ động 100% dữ liệu truyện.
-
----
-
-## 🎯 BẢNG TỔNG KẾT TỪ KHÓA ĐẮT GIÁ KHI TRẢ LỜI VẤN ĐÁP
-| Khái niệm kỹ thuật | Từ khóa chuyên ngành nên dùng |
-| :--- | :--- |
-| Kiến trúc API | *Stateless, Layered Architecture, RESTful, DTO Pattern, Dependency Injection* |
-| Cơ sở dữ liệu | *PostgreSQL, Entity Framework Core, Atomic Update, UUID Primary Key, Cascade Delete* |
-| Bảo mật | *JWT Bearer Token, Token Rotation, BCrypt Hashing, RBAC, Parameterized Query, XSS Prevention* |
-| Hiệu năng & Cache | *Redis In-Memory, Cache-Aside Pattern, TTL, TanStack Query, Lazy-loading, Webtoon Vertical Scroll* |
-| Triển khai | *Docker Compose, Containerization, Environment Variables, Volume Persistence* |
+1. **Lỗi nút "Khóa tài khoản" ở trang Báo cáo vi phạm (`/admin/reports`) trả về 404:** Frontend truyền `comment.userId` trong khi endpoint `POST /api/admin/reported-comments/{id}/restrict-user` nhận `Discussion.Id`. Nhóm đã sửa Frontend truyền đúng `comment.id` và invalidate thêm cache danh sách users.
+2. **Lỗi Npgsql `DateTimeKind` & gửi thông báo sớm cho chương hẹn giờ:** Chuẩn hóa toàn bộ `PublishAt` về UTC bằng `ChapterPublicationHelper.NormalizeUtc`, hoãn gửi thông báo follower tới đúng thời điểm chương được công bố (`PublishNow` / `CancelSchedule`) và lọc bỏ chương tương lai khỏi bộ đếm chương công khai.
+3. **Nút Nghe Audio xuất hiện trên chương ảnh PNG:** Chương Novel bật render ảnh PNG chỉ chứa URL ảnh (`/uploads/chapters/...`) trong `Content`, dẫn đến nếu bật Audio sẽ đọc nhầm URL. Nhóm đã bổ sung checkbox tùy chọn render PNG (mặc định tắt với Novel mới để ưu tiên Text + Audio) và ẩn nút/phím tắt Audio đối với mọi chương hiển thị bằng ảnh (`hasImages`).
+4. **Lỗi chồng lấn UI cụm nút nổi & độ tương phản Light Theme:** Tinh chỉnh vị trí cụm `ScrollToTop`, linh vật `Jiji` và `AudioReaderPlayer` theo sự kiện DOM để không đè lên nhau trên mọi kích thước màn hình; chuyển các class chữ/badge mờ `*-400` / `slate-300` trên nền thẻ trắng Admin sang hệ màu tương phản cao `*-700` / `slate-600`.

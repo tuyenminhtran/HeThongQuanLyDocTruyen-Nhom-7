@@ -14,6 +14,9 @@ export default function AdminCategoriesPage() {
     queryFn: getGenres,
   });
 
+  const getErrMessage = (err: unknown, fallback: string) =>
+    (err as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
+
   const createMutation = useMutation({
     mutationFn: (name: string) => createGenre(name),
     onSuccess: () => {
@@ -22,8 +25,8 @@ export default function AdminCategoriesPage() {
       setGenreName("");
       setErrorMsg("");
     },
-    onError: (err: any) => {
-      setErrorMsg(err.response?.data?.message || "Có lỗi xảy ra khi tạo thể loại.");
+    onError: (err: unknown) => {
+      setErrorMsg(getErrMessage(err, "Có lỗi xảy ra khi tạo thể loại."));
     },
   });
 
@@ -35,8 +38,8 @@ export default function AdminCategoriesPage() {
       setGenreName("");
       setErrorMsg("");
     },
-    onError: (err: any) => {
-      setErrorMsg(err.response?.data?.message || "Có lỗi xảy ra khi cập nhật thể loại.");
+    onError: (err: unknown) => {
+      setErrorMsg(getErrMessage(err, "Có lỗi xảy ra khi cập nhật thể loại."));
     },
   });
 
@@ -45,8 +48,8 @@ export default function AdminCategoriesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["genres"] });
     },
-    onError: (err: any) => {
-      alert(err.response?.data?.message || "Không thể xóa thể loại này.");
+    onError: (err: unknown) => {
+      alert(getErrMessage(err, "Không thể xóa thể loại này."));
     },
   });
 
@@ -125,7 +128,7 @@ export default function AdminCategoriesPage() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-red-400">
+                  <td colSpan={4} className="py-8 text-center text-red-600 font-medium">
                     Không thể tải danh sách thể loại. Vui lòng thử lại.
                   </td>
                 </tr>
@@ -158,7 +161,7 @@ export default function AdminCategoriesPage() {
                       <button
                         onClick={() => handleDelete(cat)}
                         disabled={deleteMutation.isPending}
-                        className="text-sm font-medium text-rose-400 hover:text-rose-500 transition-colors inline-flex items-center gap-1"
+                        className="text-sm font-medium text-rose-600 hover:text-rose-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
                       >
                         <i className="fa-solid fa-trash text-xs" />
                         Xóa
@@ -181,7 +184,7 @@ export default function AdminCategoriesPage() {
             <form onSubmit={handleSubmitAdd} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">
-                  Tên thể loại <span className="text-red-400">*</span>
+                  Tên thể loại <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
@@ -194,7 +197,7 @@ export default function AdminCategoriesPage() {
               </div>
 
               {errorMsg && (
-                <p className="text-rose-400 text-xs">{errorMsg}</p>
+                <p className="text-rose-600 text-xs font-medium">{errorMsg}</p>
               )}
 
               <div className="flex justify-end gap-3 pt-2">
@@ -227,7 +230,7 @@ export default function AdminCategoriesPage() {
             <form onSubmit={handleSubmitEdit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">
-                  Tên thể loại <span className="text-red-400">*</span>
+                  Tên thể loại <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
@@ -239,7 +242,7 @@ export default function AdminCategoriesPage() {
               </div>
 
               {errorMsg && (
-                <p className="text-rose-400 text-xs">{errorMsg}</p>
+                <p className="text-rose-600 text-xs font-medium">{errorMsg}</p>
               )}
 
               <div className="flex justify-end gap-3 pt-2">
