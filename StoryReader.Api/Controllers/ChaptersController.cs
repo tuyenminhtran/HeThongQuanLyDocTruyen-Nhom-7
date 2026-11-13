@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using StoryReader.Api.Data;
 using StoryReader.Api.Models.Dtos;
 using StoryReader.Api.Models.Entities;
+using StoryReader.Api.Services;
 using StoryReader.Api.Services.Interfaces;
 
 namespace StoryReader.Api.Controllers;
@@ -29,12 +30,14 @@ public class ChaptersController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> GetContent(Guid id)
     {
-        var canRead = await _access.CanReadChapterAsync(CurrentUserId, id);
-        if (!canRead)
-            return Forbid();
-
         var chapter = await _db.Chapters.Include(c => c.Story).FirstOrDefaultAsync(c => c.Id == id);
-        if (chapter is null || !chapter.IsPublished) return NotFound();
+        if (chapter is null) return NotFound();
+
+        var accessState = await _access.GetStoryAccessStateAsync(CurrentUserId, chapter.StoryId);
+        if (!chapter.IsPublished && !accessState.IsAdmin) return NotFound();
+
+        if (!ChapterAccessService.CanReadStoryChapter(chapter.Story, chapter.ChapterNumber, accessState))
+            return Forbid();
 
         chapter.ViewCount++;
         if (chapter.Story is not null)

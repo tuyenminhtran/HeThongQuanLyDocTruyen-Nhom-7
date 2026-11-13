@@ -10,7 +10,8 @@ public record StoryListItemDto(Guid Id, string Title, string CoverImageUrl, stri
 public record StoryDetailDto(Guid Id, string Title, string CoverImageUrl, string Description,
     string Author, ReleaseStatus Status, AccessPolicy AccessPolicy, decimal? Price,
     int FreeChapterCount, IEnumerable<string> Genres, IEnumerable<ChapterListItemDto> Chapters,
-    StoryType Type = StoryType.Novel);
+    StoryType Type = StoryType.Novel,
+    bool HasPurchased = false, bool HasActiveVip = false, bool HasFullAccess = false);
 
 public record ChapterListItemDto(Guid Id, int ChapterNumber, string Title, bool RequiresAccess, string? PartName = null);
 
@@ -42,7 +43,11 @@ public record CreateStoryDto(
     int FreeChapterCount,
 
     List<Guid> GenreIds,
-    StoryType Type = StoryType.Novel);
+    StoryType Type = StoryType.Novel) : IValidatableObject
+{
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        => StoryValidationHelper.ValidateAccessPricing(AccessPolicy, Price);
+}
 
 public record UpdateStoryDto(
     [Required(ErrorMessage = "Tiêu đề truyện không được để trống")]
@@ -70,7 +75,24 @@ public record UpdateStoryDto(
     int FreeChapterCount,
 
     List<Guid> GenreIds,
-    StoryType Type = StoryType.Novel);
+    StoryType Type = StoryType.Novel) : IValidatableObject
+{
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        => StoryValidationHelper.ValidateAccessPricing(AccessPolicy, Price);
+}
+
+internal static class StoryValidationHelper
+{
+    public static IEnumerable<ValidationResult> ValidateAccessPricing(AccessPolicy accessPolicy, decimal? price)
+    {
+        if (accessPolicy != AccessPolicy.Free && (!price.HasValue || price.Value <= 0))
+        {
+            yield return new ValidationResult(
+                "Truyện trả phí hoặc hỗn hợp phải có giá lớn hơn 0 VNĐ.",
+                new[] { nameof(CreateStoryDto.Price) });
+        }
+    }
+}
 
 public record CreateChapterDto(
     [Range(1, 100000, ErrorMessage = "Số thứ tự chương phải từ 1 đến 100.000")]

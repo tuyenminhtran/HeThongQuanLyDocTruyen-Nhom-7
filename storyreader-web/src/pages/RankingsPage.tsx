@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { searchStories } from "../api/stories";
 import { getGenres } from "../api/genres";
 import { resolveImageUrl } from "../utils/imageUrl";
+import { getAccessPolicy } from "../constants/story";
 
 type TimeRange = "all" | "month" | "week" | "day";
 
@@ -408,8 +409,10 @@ export default function RankingsPage() {
                           {story.title}
                         </Link>
                         {story.accessPolicy > 0 && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-400 text-slate-950">
-                            {story.accessPolicy === 2 ? "VIP" : "PRO"}
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border ${getAccessPolicy(story.accessPolicy).badgeClass}`}
+                          >
+                            {getAccessPolicy(story.accessPolicy).badgeLabel}
                           </span>
                         )}
                         {story.type === 1 && (

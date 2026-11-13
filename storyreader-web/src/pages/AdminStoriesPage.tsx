@@ -659,15 +659,24 @@ function EditStoryModal({
           {Number(accessPolicy) !== 0 && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelClass}>Giá (VNĐ)</label>
+                <label className={labelClass}>
+                  Giá (VNĐ) <span className="text-red-400">*</span>
+                </label>
                 <input
                   {...register("price", {
                     valueAsNumber: true,
+                    validate: (v) =>
+                      Number(accessPolicy) === 0 ||
+                      (v != null && !Number.isNaN(Number(v)) && Number(v) > 0) ||
+                      "Vui lòng nhập giá (> 0đ)",
                   })}
                   type="number"
-                  min={0}
+                  min={1}
                   className={inputClass}
                 />
+                {errors.price && (
+                  <p className="text-red-400 text-xs mt-1">{errors.price.message}</p>
+                )}
               </div>
               <div>
                 <label className={labelClass}>Số chương miễn phí</label>

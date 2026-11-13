@@ -5,6 +5,7 @@ import { searchStories, type StoryListItem } from "../api/stories";
 import { getGenres } from "../api/genres";
 import StoryCard from "../components/StoryCard";
 import { resolveImageUrl } from "../utils/imageUrl";
+import { getAccessPolicy } from "../constants/story";
 
 function LeaderboardItem({ story, rank }: { story: StoryListItem; rank: number }) {
   const formattedRank = rank < 10 ? `0${rank}` : `${rank}`;
@@ -257,8 +258,10 @@ export default function HomePage() {
                   {/* Phí VIP nếu có */}
                   {story.accessPolicy > 0 && (
                     <div className="absolute bottom-2 left-2 z-10">
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-400 text-slate-950 shadow-xs">
-                        {story.accessPolicy === 2 ? "VIP" : "PRO"}
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shadow-xs border ${getAccessPolicy(story.accessPolicy).badgeClass}`}
+                      >
+                        {getAccessPolicy(story.accessPolicy).badgeLabel}
                       </span>
                     </div>
                   )}

@@ -404,6 +404,7 @@ export default function ChapterReadPage() {
                 {activeStoryId && (
                   <Link
                     to={`/stories/${activeStoryId}`}
+                    state={{ fromChapterId: id }}
                     className="px-5 py-2.5 rounded-xl font-semibold bg-gold text-ink-bg hover:bg-gold-dim transition-all shadow-md shadow-gold/20 text-sm flex items-center gap-1.5"
                   >
                     <i className="fa-solid fa-cart-shopping text-xs" />
@@ -421,6 +422,7 @@ export default function ChapterReadPage() {
             ) : (
               <Link
                 to="/login"
+                state={{ from: `/chapters/${id}` }}
                 className="px-6 py-2.5 rounded-xl font-semibold bg-gold text-ink-bg hover:bg-gold-dim transition-all shadow-md shadow-gold/20 text-sm"
               >
                 Đăng nhập
@@ -482,7 +484,7 @@ export default function ChapterReadPage() {
                       : "fa-headphones text-orange-500"
                   } text-xs`}
                 />
-                <span>{showAudioPlayer ? "Đang phát Audio" : "Nghe Audio"}</span>
+                <span>{showAudioPlayer ? "Đang mở Audio" : "Nghe Audio"}</span>
               </button>
             )}
           </div>

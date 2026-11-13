@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getStoryDetail, getIsFollowing, toggleFollowStory } from "../api/stories";
 import { buyStory, simulatePaymentCallback } from "../api/payments";
@@ -10,6 +10,7 @@ import { groupChaptersByPart } from "../utils/chapterGrouping";
 import type { ChapterListItem } from "../api/stories";
 import { getFallbackStoryDetail } from "../data/mockDetails";
 import { fireConfetti } from "../utils/confetti";
+import { getAccessPolicy } from "../constants/story";
 
 interface StoryReview {
   id: string;
@@ -18,12 +19,6 @@ interface StoryReview {
   content: string;
   createdAt: string;
 }
-
-const accessPolicyLabel: Record<number, string> = {
-  0: "Miễn phí",
-  1: "Trả phí",
-  2: "Hỗn hợp",
-};
 
 function ChapterCard({ chapter, storyId }: { chapter: ChapterListItem; storyId: string }) {
   return (
@@ -51,7 +46,13 @@ function ChapterCard({ chapter, storyId }: { chapter: ChapterListItem; storyId: 
 
 export default function StoryDetailPage() {
   const { id } = useParams<{ id: string }>();
+  return <StoryDetailContent key={id} id={id} />;
+}
+
+function StoryDetailContent({ id }: { id?: string }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromChapterId = (location.state as { fromChapterId?: string } | null)?.fromChapterId;
   const isAdmin = useIsAdmin();
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
   const displayName = useAuthStore((s) => s.displayName);
@@ -145,8 +146,10 @@ export default function StoryDetailPage() {
       });
       setPaymentSuccess(false);
     },
-    onError: (err: any) => {
-      const msg = err.response?.data?.message || "Không thể khởi tạo giao dịch. Vui lòng thử lại.";
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Không thể khởi tạo giao dịch. Vui lòng thử lại.";
       setBuyError(msg);
     },
   });
@@ -159,6 +162,8 @@ export default function StoryDetailPage() {
       setPaymentSuccess(true);
       fireConfetti();
       queryClient.invalidateQueries({ queryKey: ["story", id] });
+      queryClient.invalidateQueries({ queryKey: ["chapter"] });
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       queryClient.invalidateQueries({ queryKey: ["user-library"] });
       queryClient.invalidateQueries({ queryKey: ["adminDashboardOverview"] });
     } catch {
@@ -372,13 +377,13 @@ export default function StoryDetailPage() {
                 <span
                   className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
                     story.accessPolicy === 0
-                      ? "text-green-400 bg-green-400/10 border-green-400/20"
+                      ? "text-emerald-600 bg-emerald-50 border-emerald-200"
                       : story.accessPolicy === 1
-                      ? "text-gold bg-gold/10 border-gold/20"
-                      : "text-blue-400 bg-blue-400/10 border-blue-400/20"
+                      ? "text-orange-600 bg-orange-50 border-orange-200"
+                      : "text-blue-600 bg-blue-50 border-blue-200"
                   }`}
                 >
-                  {accessPolicyLabel[story.accessPolicy] ?? "Không xác định"}
+                  {getAccessPolicy(story.accessPolicy).label}
                 </span>
 
                 {isAdmin && (
@@ -435,37 +440,125 @@ export default function StoryDetailPage() {
 
             {/* Pricing & CTA */}
             <div className="mt-auto pt-6 border-t border-ink-border/50">
-              {story.accessPolicy !== 0 && (
-                <div className="mb-5 bg-ink-card border border-ink-border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <p className="text-gold font-bold text-xl">
-                      {story.price?.toLocaleString()}đ
-                    </p>
-                    <p className="text-xs text-ink-muted mt-0.5">
-                      {story.freeChapterCount > 0 ? `${story.freeChapterCount} chương đầu đọc miễn phí` : "Mua một lần mở khóa vĩnh viễn"}
-                    </p>
-                  </div>
-                  {isLoggedIn ? (
-                    <button
-                      onClick={() => buyMutation.mutate()}
-                      disabled={buyMutation.isPending}
-                      className="px-6 py-2.5 rounded-xl font-medium bg-gradient-to-r from-gold to-gold/90 text-ink-bg hover:shadow-lg hover:shadow-gold/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-sm"
-                    >
-                      {buyMutation.isPending && (
-                        <i className="fa-solid fa-spinner fa-spin text-sm" />
+              {story.accessPolicy !== 0 && (() => {
+                const sortedChapters = [...story.chapters].sort((a, b) => a.chapterNumber - b.chapterNumber);
+                const targetUnlockChapter =
+                  (fromChapterId && sortedChapters.find((c) => c.id === fromChapterId)) ||
+                  sortedChapters.find((c) => c.chapterNumber > (story.freeChapterCount || 0)) ||
+                  sortedChapters[0];
+                const hasValidPrice = story.price != null && story.price > 0;
+
+                if (story.hasPurchased) {
+                  return (
+                    <div className="mb-5 bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <p className="text-emerald-700 font-bold text-base flex items-center gap-2">
+                          <i className="fa-solid fa-circle-check text-emerald-600" />
+                          <span>Bạn đã mua truyện này (Mở khóa vĩnh viễn)</span>
+                        </p>
+                        <p className="text-xs text-emerald-700/80 mt-0.5">
+                          Toàn bộ {story.chapters.length} chương đã sẵn sàng để đọc không giới hạn.
+                        </p>
+                      </div>
+                      {targetUnlockChapter && (
+                        <Link
+                          to={`/chapters/${targetUnlockChapter.id}`}
+                          state={{ storyId: story.id }}
+                          className="px-5 py-2.5 rounded-xl font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all text-center text-sm shrink-0"
+                        >
+                          Đọc tiếp ngay
+                        </Link>
                       )}
-                      {buyMutation.isPending ? "Đang xử lý..." : "Mua truyện ngay"}
-                    </button>
-                  ) : (
-                    <Link
-                      to="/login"
-                      className="px-6 py-2.5 rounded-xl font-medium border border-gold text-gold hover:bg-gold/10 transition-all text-center text-sm"
-                    >
-                      Đăng nhập để mua
-                    </Link>
-                  )}
-                </div>
-              )}
+                    </div>
+                  );
+                }
+
+                if (story.hasActiveVip) {
+                  return (
+                    <div className="mb-5 bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <p className="text-amber-800 font-bold text-base flex items-center gap-2">
+                          <i className="fa-solid fa-crown text-amber-500" />
+                          <span>Đang mở khóa bằng gói Hội Viên VIP</span>
+                        </p>
+                        <p className="text-xs text-amber-800/80 mt-0.5">
+                          Tài khoản VIP của bạn đọc được toàn bộ các chương trả phí của tác phẩm này.
+                        </p>
+                      </div>
+                      {targetUnlockChapter && (
+                        <Link
+                          to={`/chapters/${targetUnlockChapter.id}`}
+                          state={{ storyId: story.id }}
+                          className="px-5 py-2.5 rounded-xl font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-all text-center text-sm shrink-0"
+                        >
+                          Đọc chương VIP
+                        </Link>
+                      )}
+                    </div>
+                  );
+                }
+
+                if (story.hasFullAccess) {
+                  return (
+                    <div className="mb-5 bg-sky-50 border border-sky-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sky-800 font-bold text-base flex items-center gap-2">
+                          <i className="fa-solid fa-shield-halved text-sky-600" />
+                          <span>Quyền truy cập đầy đủ (Quản trị viên)</span>
+                        </p>
+                        <p className="text-xs text-sky-800/80 mt-0.5">
+                          Bạn có toàn quyền đọc và kiểm duyệt tất cả chương trong tác phẩm này.
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="mb-5 bg-amber-50/70 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <p className="text-orange-600 font-bold text-xl">
+                        {hasValidPrice ? `${story.price!.toLocaleString("vi-VN")}đ` : "Chưa định giá"}
+                      </p>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        {story.freeChapterCount > 0 ? `${story.freeChapterCount} chương đầu đọc miễn phí · ` : ""}
+                        Mua một lần mở khóa vĩnh viễn
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Hoặc{" "}
+                        <Link to="/pricing" className="text-orange-600 font-semibold hover:underline">
+                          đăng ký gói VIP từ 49.000đ/tháng
+                        </Link>{" "}
+                        để đọc toàn bộ kho truyện
+                      </p>
+                    </div>
+                    {isLoggedIn ? (
+                      <button
+                        onClick={() => buyMutation.mutate()}
+                        disabled={buyMutation.isPending || !hasValidPrice}
+                        className="px-6 py-2.5 rounded-xl font-semibold bg-orange-600 hover:bg-orange-700 text-white hover:shadow-lg hover:shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-sm shrink-0 cursor-pointer"
+                      >
+                        {buyMutation.isPending && (
+                          <i className="fa-solid fa-spinner fa-spin text-sm" />
+                        )}
+                        {buyMutation.isPending
+                          ? "Đang xử lý..."
+                          : hasValidPrice
+                          ? "Mua truyện ngay"
+                          : "Tạm ngừng bán"}
+                      </button>
+                    ) : (
+                      <Link
+                        to="/login"
+                        state={{ from: `/stories/${id}` }}
+                        className="px-6 py-2.5 rounded-xl font-semibold border border-orange-500 text-orange-600 hover:bg-orange-50 transition-all text-center text-sm shrink-0"
+                      >
+                        Đăng nhập để mua
+                      </Link>
+                    )}
+                  </div>
+                );
+              })()}
 
               {buyError && (
                 <div className="mb-4 flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
@@ -800,17 +893,22 @@ export default function StoryDetailPage() {
                   <button
                     onClick={() => {
                       setPaymentModal(null);
-                      if (story.chapters.length > 0) {
-                        navigate(`/chapters/${story.chapters[0].id}`, { state: { storyId: story.id } });
+                      const sorted = [...story.chapters].sort((a, b) => a.chapterNumber - b.chapterNumber);
+                      const target =
+                        (fromChapterId && sorted.find((c) => c.id === fromChapterId)) ||
+                        sorted.find((c) => c.chapterNumber > (story.freeChapterCount || 0)) ||
+                        sorted[0];
+                      if (target) {
+                        navigate(`/chapters/${target.id}`, { state: { storyId: story.id } });
                       }
                     }}
-                    className="px-6 py-2.5 rounded-xl text-sm font-bold bg-orange-600 text-white hover:bg-orange-700 transition-all shadow-xs"
+                    className="px-6 py-2.5 rounded-xl text-sm font-bold bg-orange-600 text-white hover:bg-orange-700 transition-all shadow-xs cursor-pointer"
                   >
-                    Bắt đầu đọc ngay
+                    {fromChapterId ? "Đọc tiếp chương đã chọn" : "Bắt đầu đọc ngay"}
                   </button>
                   <button
                     onClick={() => setPaymentModal(null)}
-                    className="px-5 py-2.5 rounded-xl text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all"
+                    className="px-5 py-2.5 rounded-xl text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
                   >
                     Đóng
                   </button>
@@ -838,7 +936,9 @@ export default function StoryDetailPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Giá bán:</span>
-                    <span className="text-orange-600 font-bold text-base">{story.price?.toLocaleString()}đ</span>
+                    <span className="text-orange-600 font-bold text-base">
+                      {story.price != null ? `${story.price.toLocaleString("vi-VN")}đ` : "0đ"}
+                    </span>
                   </div>
                 </div>
 

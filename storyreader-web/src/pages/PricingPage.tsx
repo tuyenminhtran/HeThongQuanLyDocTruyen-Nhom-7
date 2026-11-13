@@ -16,12 +16,6 @@ function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
 }
 
-// Fallback plans nếu chưa kết nối được CSDL
-const fallbackPlans: SubscriptionPlan[] = [
-  { id: "p1", name: "Gói 1 tháng", price: 49000, durationDays: 30, scope: "all" },
-  { id: "p2", name: "Gói 3 tháng", price: 129000, durationDays: 90, scope: "all" },
-  { id: "p3", name: "Gói 12 tháng", price: 399000, durationDays: 365, scope: "all" },
-];
 
 export default function PricingPage() {
   const { accessToken } = useAuthStore();
@@ -42,13 +36,12 @@ export default function PricingPage() {
   });
 
   // Lấy danh sách gói từ Backend API
-  const { data: apiPlans, isLoading } = useQuery({
+  const { data: apiPlans, isLoading, isError, refetch } = useQuery({
     queryKey: ["subscriptionPlans"],
     queryFn: getSubscriptionPlans,
   });
 
-  const rawPlans = (apiPlans && apiPlans.length > 0) ? apiPlans : fallbackPlans;
-  const plans = [...rawPlans].sort((a, b) => a.durationDays - b.durationDays);
+  const plans = [...(apiPlans ?? [])].sort((a, b) => a.durationDays - b.durationDays);
 
   // Mutation khởi tạo thanh toán
   const buyMutation = useMutation({
@@ -73,8 +66,9 @@ export default function PricingPage() {
       });
       setPaymentSuccess(false);
     },
-    onError: (err: any) => {
-      alert(err.response?.data?.message || "Không thể khởi tạo giao dịch. Vui lòng thử lại sau.");
+    onError: (err: unknown) => {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      alert(message || "Không thể khởi tạo giao dịch. Vui lòng thử lại sau.");
     },
   });
 
@@ -96,6 +90,8 @@ export default function PricingPage() {
       fireConfetti();
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       queryClient.invalidateQueries({ queryKey: ["adminDashboardOverview"] });
+      queryClient.invalidateQueries({ queryKey: ["story"] });
+      queryClient.invalidateQueries({ queryKey: ["chapter"] });
     } catch {
       alert("Không thể hoàn tất mô phỏng thanh toán. Vui lòng thử lại.");
     } finally {
@@ -140,8 +136,8 @@ export default function PricingPage() {
 
         {/* Trạng thái VIP hiện tại nếu có */}
         {profile?.activePlanName && (
-          <div className="mt-6 inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-amber-500/10 border border-amber-500/30 text-amber-300 text-sm font-medium shadow-sm">
-            <i className="fa-solid fa-circle-check text-emerald-400" />
+          <div className="mt-6 inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-amber-500/10 border border-amber-500/30 text-amber-800 text-sm font-medium shadow-sm">
+            <i className="fa-solid fa-circle-check text-emerald-600" />
             <span>
               Bạn hiện đang là hội viên <strong>{profile.activePlanName}</strong>
               {profile.subscriptionEndAt && ` (hết hạn: ${new Date(profile.subscriptionEndAt).toLocaleDateString("vi-VN")})`}
@@ -156,6 +152,25 @@ export default function PricingPage() {
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="h-96 bg-white border border-slate-200 rounded-3xl animate-pulse shadow-sm" />
           ))}
+        </div>
+      ) : isError || plans.length === 0 ? (
+        <div className="max-w-lg mx-auto my-8 p-8 rounded-3xl bg-white border border-slate-200 shadow-sm text-center">
+          <i className="fa-solid fa-triangle-exclamation text-3xl text-amber-500 mb-3" />
+          <h3 className="text-lg font-bold text-slate-900 mb-2">
+            {isError ? "Không thể tải danh sách gói VIP" : "Hiện chưa có gói VIP khả dụng"}
+          </h3>
+          <p className="text-sm text-slate-500 mb-5">
+            {isError
+              ? "Kết nối máy chủ thanh toán đang gián đoạn. Vui lòng thử tải lại."
+              : "Hệ thống đang cập nhật gói nâng cấp. Vui lòng quay lại sau."}
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm transition-colors cursor-pointer"
+          >
+            Thử lại
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch pt-6 relative z-10">

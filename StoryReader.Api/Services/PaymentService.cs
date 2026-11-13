@@ -30,6 +30,16 @@ public class PaymentService : IPaymentService
         if (story.AccessPolicy == AccessPolicy.Free)
             throw new InvalidOperationException("Truyện này miễn phí, không cần mua.");
 
+        if (!story.Price.HasValue || story.Price.Value <= 0)
+            throw new InvalidOperationException("Truyện trả phí chưa được thiết lập giá bán hợp lệ.");
+
+        var isAdmin = await _db.UserRoles
+            .AsNoTracking()
+            .AnyAsync(ur => ur.UserId == userId &&
+                _db.Roles.Any(r => r.Id == ur.RoleId && r.Name == "Admin"));
+        if (isAdmin)
+            throw new InvalidOperationException("Tài khoản Quản trị viên đã có quyền đọc toàn bộ truyện.");
+
         var alreadyOwned = await _db.Purchases.AnyAsync(p => p.UserId == userId && p.StoryId == storyId);
         if (alreadyOwned)
             throw new InvalidOperationException("Bạn đã sở hữu quyền đọc truyện này.");
@@ -44,7 +54,7 @@ public class PaymentService : IPaymentService
             UserId = userId,
             Type = TransactionType.StoryPurchase,
             TargetId = storyId,
-            Amount = story.Price ?? 0,
+            Amount = story.Price.Value,
             Provider = "VNPay",
             ProviderTransactionRef = Guid.NewGuid().ToString("N")
         };
@@ -96,44 +106,7 @@ public class PaymentService : IPaymentService
 
         if (success)
         {
-            if (tx.Type == TransactionType.StoryPurchase)
-            {
-                var alreadyOwned = await _db.Purchases
-                    .AnyAsync(p => p.UserId == tx.UserId && p.StoryId == tx.TargetId);
-
-                if (!alreadyOwned)
-                {
-                    _db.Purchases.Add(new Purchase
-                    {
-                        UserId = tx.UserId,
-                        StoryId = tx.TargetId,
-                        PricePaid = tx.Amount,
-                        TransactionId = tx.Id
-                    });
-                }
-            }
-            else if (tx.Type == TransactionType.Subscription)
-            {
-                var plan = await _db.SubscriptionPlans.FindAsync(tx.TargetId);
-                if (plan is not null)
-                {
-                    var currentActive = await _db.UserSubscriptions
-                        .Where(s => s.UserId == tx.UserId && s.EndAt > DateTime.UtcNow)
-                        .OrderByDescending(s => s.EndAt)
-                        .FirstOrDefaultAsync();
-
-                    var startAt = currentActive?.EndAt ?? DateTime.UtcNow;
-
-                    _db.UserSubscriptions.Add(new UserSubscription
-                    {
-                        UserId = tx.UserId,
-                        PlanId = plan.Id,
-                        StartAt = startAt,
-                        EndAt = startAt.AddDays(plan.DurationDays),
-                        TransactionId = tx.Id
-                    });
-                }
-            }
+            await GrantEntitlementForTransactionAsync(tx);
         }
 
         await _db.SaveChangesAsync();
@@ -144,9 +117,18 @@ public class PaymentService : IPaymentService
         var tx = await _db.Transactions.FirstOrDefaultAsync(t => t.Id == transactionId)
             ?? throw new InvalidOperationException("Không tìm thấy giao dịch.");
 
+        if (tx.Status == TransactionStatus.Success)
+            throw new InvalidOperationException("Giao dịch này đã hoàn tất trước đó, không thể kích hoạt lại.");
+
         tx.Status = TransactionStatus.Success;
         tx.CompletedAt = DateTime.UtcNow;
 
+        await GrantEntitlementForTransactionAsync(tx);
+        await _db.SaveChangesAsync();
+    }
+
+    private async Task GrantEntitlementForTransactionAsync(Transaction tx)
+    {
         if (tx.Type == TransactionType.StoryPurchase)
         {
             var alreadyOwned = await _db.Purchases
@@ -162,30 +144,35 @@ public class PaymentService : IPaymentService
                     TransactionId = tx.Id
                 });
             }
+            return;
         }
-        else if (tx.Type == TransactionType.Subscription)
+
+        if (tx.Type == TransactionType.Subscription)
         {
+            var alreadyGranted = await _db.UserSubscriptions
+                .AnyAsync(s => s.TransactionId == tx.Id);
+            if (alreadyGranted)
+                return;
+
             var plan = await _db.SubscriptionPlans.FindAsync(tx.TargetId);
-            if (plan is not null)
+            if (plan is null)
+                return;
+
+            var currentActive = await _db.UserSubscriptions
+                .Where(s => s.UserId == tx.UserId && s.EndAt > DateTime.UtcNow)
+                .OrderByDescending(s => s.EndAt)
+                .FirstOrDefaultAsync();
+
+            var startAt = currentActive?.EndAt ?? DateTime.UtcNow;
+
+            _db.UserSubscriptions.Add(new UserSubscription
             {
-                var currentActive = await _db.UserSubscriptions
-                    .Where(s => s.UserId == tx.UserId && s.EndAt > DateTime.UtcNow)
-                    .OrderByDescending(s => s.EndAt)
-                    .FirstOrDefaultAsync();
-
-                var startAt = currentActive?.EndAt ?? DateTime.UtcNow;
-
-                _db.UserSubscriptions.Add(new UserSubscription
-                {
-                    UserId = tx.UserId,
-                    PlanId = plan.Id,
-                    StartAt = startAt,
-                    EndAt = startAt.AddDays(plan.DurationDays),
-                    TransactionId = tx.Id
-                });
-            }
+                UserId = tx.UserId,
+                PlanId = plan.Id,
+                StartAt = startAt,
+                EndAt = startAt.AddDays(plan.DurationDays),
+                TransactionId = tx.Id
+            });
         }
-
-        await _db.SaveChangesAsync();
     }
 }

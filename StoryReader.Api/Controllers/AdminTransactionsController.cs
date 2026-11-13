@@ -99,6 +99,12 @@ public class AdminTransactionsController : ControllerBase
         var tx = await _db.Transactions.FindAsync(id);
         if (tx is null) return NotFound(new { message = "Không tìm thấy giao dịch." });
 
+        if (tx.Status == TransactionStatus.Success)
+            return BadRequest(new { message = "Không thể đánh dấu thất bại cho giao dịch đã hoàn tất." });
+
+        if (tx.Status == TransactionStatus.Failed)
+            return BadRequest(new { message = "Giao dịch này đã ở trạng thái thất bại trước đó." });
+
         tx.Status = TransactionStatus.Failed;
         tx.CompletedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();

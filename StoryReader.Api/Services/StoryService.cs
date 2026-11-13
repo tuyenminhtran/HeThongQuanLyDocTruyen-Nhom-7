@@ -54,20 +54,32 @@ public class StoryService : IStoryService
 
         if (story is null) return null;
 
-        var chapterDtos = new List<ChapterListItemDto>();
-        foreach (var c in story.Chapters.Where(c => c.IsPublished).OrderBy(c => c.ChapterNumber))
-        {
-            var canRead = await _access.CanReadChapterAsync(currentUserId, c.Id);
-            chapterDtos.Add(new ChapterListItemDto(c.Id, c.ChapterNumber, c.Title, RequiresAccess: !canRead, c.PartName));
-        }
+        var accessState = await _access.GetStoryAccessStateAsync(currentUserId, storyId);
+        var chapterDtos = story.Chapters
+            .Where(c => c.IsPublished || accessState.IsAdmin)
+            .OrderBy(c => c.ChapterNumber)
+            .Select(c =>
+            {
+                var canRead = ChapterAccessService.CanReadStoryChapter(story, c.ChapterNumber, accessState);
+                return new ChapterListItemDto(c.Id, c.ChapterNumber, c.Title, RequiresAccess: !canRead, c.PartName);
+            })
+            .ToList();
 
         return new StoryDetailDto(story.Id, story.Title, story.CoverImageUrl, story.Description,
             story.Author, story.Status, story.AccessPolicy, story.Price, story.FreeChapterCount,
-            story.StoryGenres.Select(sg => sg.Genre.Name), chapterDtos, story.Type);
+            story.StoryGenres.Select(sg => sg.Genre.Name), chapterDtos, story.Type,
+            HasPurchased: accessState.HasPurchased,
+            HasActiveVip: accessState.HasActiveSubscription,
+            HasFullAccess: accessState.HasFullAccess);
     }
 
     public async Task<Guid> CreateAsync(CreateStoryDto dto)
     {
+        var normalizedPrice = dto.AccessPolicy == AccessPolicy.Free ? null : dto.Price;
+        var normalizedFreeCount = dto.AccessPolicy == AccessPolicy.Free ? 0 : Math.Max(0, dto.FreeChapterCount);
+        if (dto.AccessPolicy != AccessPolicy.Free && (!normalizedPrice.HasValue || normalizedPrice.Value <= 0))
+            throw new InvalidOperationException("Truyện trả phí hoặc hỗn hợp phải có giá lớn hơn 0 VNĐ.");
+
         var story = new Story
         {
             Title = dto.Title,
@@ -76,8 +88,8 @@ public class StoryService : IStoryService
             Description = dto.Description,
             Author = dto.Author,
             AccessPolicy = dto.AccessPolicy,
-            Price = dto.Price,
-            FreeChapterCount = dto.FreeChapterCount
+            Price = normalizedPrice,
+            FreeChapterCount = normalizedFreeCount
         };
 
         if (dto.GenreIds?.Any() == true)
@@ -103,6 +115,11 @@ public class StoryService : IStoryService
             .FirstOrDefaultAsync(s => s.Id == storyId)
             ?? throw new InvalidOperationException("Không tìm thấy truyện.");
 
+        var normalizedPrice = dto.AccessPolicy == AccessPolicy.Free ? null : dto.Price;
+        var normalizedFreeCount = dto.AccessPolicy == AccessPolicy.Free ? 0 : Math.Max(0, dto.FreeChapterCount);
+        if (dto.AccessPolicy != AccessPolicy.Free && (!normalizedPrice.HasValue || normalizedPrice.Value <= 0))
+            throw new InvalidOperationException("Truyện trả phí hoặc hỗn hợp phải có giá lớn hơn 0 VNĐ.");
+
         story.Title = dto.Title;
         story.Type = dto.Type;
         story.CoverImageUrl = dto.CoverImageUrl;
@@ -110,8 +127,8 @@ public class StoryService : IStoryService
         story.Author = dto.Author;
         story.Status = dto.Status;
         story.AccessPolicy = dto.AccessPolicy;
-        story.Price = dto.Price;
-        story.FreeChapterCount = dto.FreeChapterCount;
+        story.Price = normalizedPrice;
+        story.FreeChapterCount = normalizedFreeCount;
         story.UpdatedAt = DateTime.UtcNow;
 
         story.StoryGenres.Clear();

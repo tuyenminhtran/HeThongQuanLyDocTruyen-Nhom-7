@@ -125,10 +125,14 @@ export default function AudioReaderPlayer({
     rateRef.current = rate;
   }, [rate]);
 
-  // Lưu vị trí câu đang nghe vào localStorage
+  // Lưu vị trí câu đang nghe vào localStorage (xóa key nếu quay về đầu chương)
   useEffect(() => {
-    if (chunks.length > 0 && currentChunkIndex > 0) {
-      localStorage.setItem(`storyreader-audio-pos-${chapterId}`, String(currentChunkIndex));
+    if (chunks.length === 0) return;
+    const key = `storyreader-audio-pos-${chapterId}`;
+    if (currentChunkIndex > 0) {
+      localStorage.setItem(key, String(currentChunkIndex));
+    } else {
+      localStorage.removeItem(key);
     }
   }, [chapterId, currentChunkIndex, chunks.length]);
 
@@ -469,7 +473,14 @@ export default function AudioReaderPlayer({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+      const isRangeInput =
+        target instanceof HTMLInputElement && target.type === "range";
+      if (
+        target &&
+        ((target.tagName === "INPUT" && !(isRangeInput && e.code === "Space")) ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
         return;
       }
 

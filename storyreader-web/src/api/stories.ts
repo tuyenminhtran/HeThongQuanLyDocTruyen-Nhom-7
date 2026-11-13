@@ -36,6 +36,9 @@ export interface StoryDetail {
   chapters: ChapterListItem[];
   viewCount?: number;
   type?: number;
+  hasPurchased?: boolean;
+  hasActiveVip?: boolean;
+  hasFullAccess?: boolean;
 }
 
 export interface CreateStoryInput {

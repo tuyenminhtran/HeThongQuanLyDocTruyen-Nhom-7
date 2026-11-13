@@ -44,8 +44,15 @@ public class StoriesController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateStoryDto dto)
     {
-        var id = await _stories.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetDetail), new { id }, new { id });
+        try
+        {
+            var id = await _stories.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetDetail), new { id }, new { id });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("upload-cover")]
@@ -93,8 +100,15 @@ public class StoriesController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStoryDto dto)
     {
-        await _stories.UpdateAsync(id, dto);
-        return NoContent();
+        try
+        {
+            await _stories.UpdateAsync(id, dto);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id:guid}")]
