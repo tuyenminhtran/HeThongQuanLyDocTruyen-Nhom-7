@@ -11,6 +11,8 @@ import type { ChapterListItem } from "../api/stories";
 import { getFallbackStoryDetail } from "../data/mockDetails";
 import { fireConfetti } from "../utils/confetti";
 import { getAccessPolicy } from "../constants/story";
+import { getApiErrorMessage } from "../utils/apiError";
+import { useCollapsibleFolders } from "../hooks/useCollapsibleFolders";
 
 interface StoryReview {
   id: string;
@@ -127,11 +129,11 @@ function StoryDetailContent({ id }: { id?: string }) {
   // Sử dụng dữ liệu API nếu có, ngược lại dùng fallback data để đảm bảo luôn hiển thị
   const story = apiStory || (id ? getFallbackStoryDetail(id) : null);
 
-  const buyMutation = useMutation({
+    const buyMutation = useMutation({
     mutationFn: () => buyStory(id!),
     onSuccess: (result) => {
       setBuyError(null);
-      let ref = "";
+      let ref: string;
       try {
         const urlObj = new URL(result.paymentUrl);
         ref = urlObj.searchParams.get("ref") || "";
@@ -248,8 +250,8 @@ function StoryDetailContent({ id }: { id?: string }) {
         await reportChapterDiscussion(story.chapters[0].id, reportingReview.id, finalReason);
       }
       setCommentNotice({ type: "success", text: "Đã gửi báo cáo vi phạm thành công! Ban quản trị sẽ kiểm duyệt." });
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || "Đã ghi nhận báo cáo bình luận. Cảm ơn bạn đã đóng góp!";
+    } catch (err: unknown) {
+      const msg = getApiErrorMessage(err, "Đã ghi nhận báo cáo bình luận. Cảm ơn bạn đã đóng góp!");
       setCommentNotice({ type: "success", text: msg });
     } finally {
       setIsSubmittingReport(false);
@@ -284,25 +286,14 @@ function StoryDetailContent({ id }: { id?: string }) {
   }, [story?.chapters, chapterSearch, sortAsc]);
 
   const chapterGroups = useMemo(() => groupChaptersByPart(filteredChapters), [filteredChapters]);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (chapterGroups.length > 0) {
-      setExpandedFolders(new Set(chapterGroups.map((g) => g.partName)));
-    }
-  }, [story?.id, chapterSearch]);
-
-  const toggleFolder = (partName: string) => {
-    setExpandedFolders((prev) => {
-      const next = new Set(prev);
-      if (next.has(partName)) next.delete(partName);
-      else next.add(partName);
-      return next;
-    });
-  };
+  const {
+    isExpanded: isFolderExpanded,
+    allExpanded,
+    toggleFolder,
+    toggleAll: toggleAllFolders,
+  } = useCollapsibleFolders(chapterGroups, `${story?.id ?? ""}::${chapterSearch}`);
 
   const hasMultipleFolders = chapterGroups.some((g) => g.isFolder);
-  const allExpanded = chapterGroups.length > 0 && chapterGroups.every((g) => expandedFolders.has(g.partName));
 
   if (isLoading) {
     return (
@@ -612,13 +603,7 @@ function StoryDetailContent({ id }: { id?: string }) {
               {hasMultipleFolders && (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (allExpanded) {
-                      setExpandedFolders(new Set());
-                    } else {
-                      setExpandedFolders(new Set(chapterGroups.map((g) => g.partName)));
-                    }
-                  }}
+                  onClick={toggleAllFolders}
                   className="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:text-orange-600 hover:border-orange-400 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
                 >
                   <i className={`fa-solid ${allExpanded ? "fa-folder-minus" : "fa-folder-tree"} text-xs`} />
@@ -666,7 +651,7 @@ function StoryDetailContent({ id }: { id?: string }) {
                   );
                 }
 
-                const isExpanded = expandedFolders.has(group.partName);
+                const isExpanded = isFolderExpanded(group.partName);
                 return (
                   <div
                     key={group.partName}

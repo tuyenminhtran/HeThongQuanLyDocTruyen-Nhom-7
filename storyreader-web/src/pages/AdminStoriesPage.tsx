@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useMemo } from "react";
+import { getApiErrorMessage } from "../utils/apiError";
+import { useCollapsibleFolders } from "../hooks/useCollapsibleFolders";
 import { useForm, useWatch } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -81,10 +83,8 @@ function CoverImageUploadField({
       setUploadError(null);
       const res = await uploadStoryCover(file);
       onChange(res.url);
-    } catch (err: any) {
-      setUploadError(
-        err.response?.data?.message || err.message || "Tải ảnh lên thất bại."
-      );
+    } catch (err: unknown) {
+      setUploadError(getApiErrorMessage(err, "Tải ảnh lên thất bại."));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -412,7 +412,7 @@ function CreateStoryModal({
             <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
               <i className="fa-solid fa-circle-exclamation text-red-400 text-lg shrink-0" />
               <p className="text-red-400 text-sm">
-                {(mutation.error as any)?.response?.data?.message || (mutation.error as any)?.message || "Không tạo được truyện. Kiểm tra lại dữ liệu."}
+                {getApiErrorMessage(mutation.error, "Không tạo được truyện. Kiểm tra lại dữ liệu.")}
               </p>
             </div>
           )}
@@ -694,7 +694,7 @@ function EditStoryModal({
             <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
               <i className="fa-solid fa-circle-exclamation text-red-400 text-lg shrink-0" />
               <p className="text-red-400 text-sm">
-                {(mutation.error as any)?.response?.data?.message || (mutation.error as any)?.message || "Không thể cập nhật truyện. Vui lòng kiểm tra lại."}
+                {getApiErrorMessage(mutation.error, "Không thể cập nhật truyện. Vui lòng kiểm tra lại.")}
               </p>
             </div>
           )}
@@ -1193,11 +1193,15 @@ function StoryDetailPanel({
   const queryClient = useQueryClient();
   const [showAddChapter, setShowAddChapter] = useState(false);
   const [showEditStory, setShowEditStory] = useState(initialEdit);
+  const [prevInitialEdit, setPrevInitialEdit] = useState(initialEdit);
   const [editingChapter, setEditingChapter] = useState<ChapterListItem | null>(null);
 
-  useEffect(() => {
-    if (initialEdit) setShowEditStory(true);
-  }, [initialEdit]);
+  if (initialEdit !== prevInitialEdit) {
+    setPrevInitialEdit(initialEdit);
+    if (initialEdit) {
+      setShowEditStory(true);
+    }
+  }
 
   const { data: story, isLoading } = useQuery({
     queryKey: ["storyDetail", storyId],
@@ -1206,24 +1210,9 @@ function StoryDetailPanel({
 
   const chapterGroups = useMemo<ChapterGroup[]>(() => {
     return story?.chapters ? groupChaptersByPart(story.chapters) : [];
-  }, [story?.chapters]);
+  }, [story]);
 
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (chapterGroups.length > 0) {
-      setExpandedFolders(new Set(chapterGroups.map((g: ChapterGroup) => g.partName)));
-    }
-  }, [storyId, chapterGroups.length]);
-
-  const toggleFolder = (partName: string) => {
-    setExpandedFolders((prev) => {
-      const next = new Set(prev);
-      if (next.has(partName)) next.delete(partName);
-      else next.add(partName);
-      return next;
-    });
-  };
+  const { isExpanded: isFolderExpanded, toggleFolder } = useCollapsibleFolders(chapterGroups, storyId);
 
   const deleteStoryMutation = useMutation({
     mutationFn: () => deleteStory(storyId),
@@ -1516,7 +1505,7 @@ function StoryDetailPanel({
                           );
                         }
 
-                        const isExpanded = expandedFolders.has(group.partName);
+                        const isExpanded = isFolderExpanded(group.partName);
                         return (
                           <div key={group.partName} className="border border-ink-border rounded-xl overflow-hidden">
                             <button

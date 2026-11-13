@@ -51,7 +51,7 @@ export default function PricingPage() {
       setSelectedPlan(plan);
 
       // Trích xuất mã ref từ paymentUrl
-      let ref = "";
+      let ref: string;
       try {
         const urlObj = new URL(data.paymentUrl);
         ref = urlObj.searchParams.get("ref") || "";

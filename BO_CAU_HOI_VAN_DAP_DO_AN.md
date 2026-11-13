@@ -84,7 +84,7 @@ Trong `PaymentService`:
 **Trả lời:**
 1. PostgreSQL `timestamp with time zone` qua Npgsql yêu cầu `DateTimeKind.Utc`. Mọi điểm lưu `PublishAt` (`StoryService.AddChapterAsync`, `UpdateChapterAsync`, `AdminSchedulesController.Reschedule`) đều qua `ChapterPublicationHelper.NormalizeUtc` để tránh lỗi 500 khi nhận timestamp `Local`/`Unspecified`.
 2. Chương hẹn giờ tương lai (`PublishAt > UtcNow`) bị ẩn khỏi danh sách chương công khai, bị ẩn khỏi bộ đếm tổng số chương / chương mới nhất trên Trang chủ và Hồ sơ (`ProfileController`, `StoryService.SearchAsync`), và **không gửi thông báo sớm** cho follower.
-3. Chỉ khi chương tới giờ phát hành hoặc Admin bấm **Đăng ngay** / **Hủy hẹn giờ để xuất bản**, hệ thống mới cập nhật `Story.UpdatedAt` và gọi `ChapterPublicationHelper.NotifyFollowersAsync` (kèm kiểm tra trùng `LinkUrl` để không gửi thông báo lặp).
+3. Khi chương tới giờ phát hành (worker chạy nền `ScheduledChapterPublisherWorker` kiểm tra định kỳ mỗi 1 phút các chương có `PublishAt <= UtcNow` và `UpdatedAt < PublishAt`) hoặc khi Admin bấm **Đăng ngay** / **Hủy hẹn giờ để xuất bản** / chỉnh sửa bỏ hẹn giờ, hệ thống cập nhật `Story.UpdatedAt` và gọi `ChapterPublicationHelper.NotifyFollowersAsync` (kèm kiểm tra trùng `LinkUrl` để không gửi thông báo lặp).
 
 ---
 

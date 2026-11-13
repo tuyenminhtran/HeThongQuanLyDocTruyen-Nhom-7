@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { searchStories, type StoryListItem } from "../api/stories";
 import { getGenres } from "../api/genres";
@@ -57,35 +57,23 @@ export default function HomePage() {
   const keyword = searchParams.get("q") || "";
   const genreParam = searchParams.get("genre") || "all";
 
-  const [genreFilter, setGenreFilter] = useState<string>(genreParam);
+  const genreFilter = genreParam;
   const [statusFilter, setStatusFilter] = useState<number | "all">("all");
   const [accessFilter, setAccessFilter] = useState<number | "all">("all");
   const [typeFilter, setTypeFilter] = useState<number | "all">("all");
   const [pageSize, setPageSize] = useState<number>(50);
 
   const pageParam = parseInt(searchParams.get("page") || "1", 10);
-  const [currentPage, setCurrentPage] = useState<number>(isNaN(pageParam) || pageParam < 1 ? 1 : pageParam);
-
-  useEffect(() => {
-    setGenreFilter(genreParam);
-  }, [genreParam]);
-
-  useEffect(() => {
-    const p = parseInt(searchParams.get("page") || "1", 10);
-    const validP = isNaN(p) || p < 1 ? 1 : p;
-    if (validP !== currentPage) {
-      setCurrentPage(validP);
-    }
-  }, [searchParams]);
+  const currentPage = isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
 
   const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-    if (newPage === 1) {
-      searchParams.delete("page");
+    const nextParams = new URLSearchParams(searchParams);
+    if (newPage <= 1) {
+      nextParams.delete("page");
     } else {
-      searchParams.set("page", String(newPage));
+      nextParams.set("page", String(newPage));
     }
-    setSearchParams(searchParams);
+    setSearchParams(nextParams);
     const target = document.getElementById("story-grid-section");
     if (target) {
       target.scrollIntoView({ behavior: "smooth" });
@@ -95,15 +83,14 @@ export default function HomePage() {
   };
 
   const handleGenreChange = (newGenre: string) => {
-    setGenreFilter(newGenre);
+    const nextParams = new URLSearchParams(searchParams);
     if (newGenre === "all") {
-      searchParams.delete("genre");
+      nextParams.delete("genre");
     } else {
-      searchParams.set("genre", newGenre);
+      nextParams.set("genre", newGenre);
     }
-    searchParams.delete("page");
-    setCurrentPage(1);
-    setSearchParams(searchParams);
+    nextParams.delete("page");
+    setSearchParams(nextParams);
   };
 
   // Lấy danh sách thể loại từ backend
@@ -137,12 +124,11 @@ export default function HomePage() {
     : [];
 
   const handleClearSearch = () => {
-    searchParams.delete("q");
-    searchParams.delete("genre");
-    searchParams.delete("page");
-    setSearchParams(searchParams);
-    setGenreFilter("all");
-    setCurrentPage(1);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("q");
+    nextParams.delete("genre");
+    nextParams.delete("page");
+    setSearchParams(nextParams);
   };
 
   const totalPages = Math.ceil(filteredStories.length / pageSize) || 1;

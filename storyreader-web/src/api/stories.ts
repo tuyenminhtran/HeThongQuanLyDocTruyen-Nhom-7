@@ -63,7 +63,7 @@ export interface CreateChapterInput {
 }
 
 export async function searchStories(keyword?: string, genreId?: string, pageSize: number = 100, sortBy?: string) {
-  const params: Record<string, any> = { pageSize };
+  const params: Record<string, string | number> = { pageSize };
   if (keyword) params.keyword = keyword.trim();
   if (genreId && genreId !== "all") params.genreId = genreId;
   if (sortBy) params.sortBy = sortBy;

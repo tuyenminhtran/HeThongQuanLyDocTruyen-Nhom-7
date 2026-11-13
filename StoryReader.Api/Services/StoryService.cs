@@ -235,25 +235,9 @@ public class StoryService : IStoryService
         await _db.SaveChangesAsync();
 
         // Kích hoạt thông báo cho các độc giả đang theo dõi truyện này (chỉ gửi khi chương đã xuất bản)
-        var followerUserIds = isPublishedNow
-            ? await _db.StoryFollows
-                .Where(f => f.StoryId == storyId)
-                .Select(f => f.UserId)
-                .ToListAsync()
-            : new List<Guid>();
-
-        if (followerUserIds.Count > 0)
+        if (isPublishedNow)
         {
-            var notifications = followerUserIds.Select(uid => new Notification
-            {
-                UserId = uid,
-                Title = $"Chương mới: {story.Title}",
-                Message = $"Chương {dto.ChapterNumber}: {dto.Title} vừa được công bố!",
-                LinkUrl = $"/chapters/{chapter.Id}",
-                CreatedAt = DateTime.UtcNow
-            });
-            _db.Notifications.AddRange(notifications);
-            await _db.SaveChangesAsync();
+            await ChapterPublicationHelper.NotifyFollowersAsync(_db, story, chapter);
         }
     }
 
@@ -274,16 +258,29 @@ public class StoryService : IStoryService
             }
         }
 
+        var now = DateTime.UtcNow;
+        var wasUnpublished = chapter.PublishAt.HasValue && chapter.PublishAt.Value > now;
+        var publishAtUtc = ChapterPublicationHelper.NormalizeUtc(dto.PublishAt);
+        var isPublishedNow = publishAtUtc is null || publishAtUtc <= now;
+
         chapter.PartName = dto.PartName;
         chapter.ChapterNumber = dto.ChapterNumber;
         chapter.Title = dto.Title;
         chapter.Content = content;
-        chapter.PublishAt = ChapterPublicationHelper.NormalizeUtc(dto.PublishAt);
-        chapter.UpdatedAt = DateTime.UtcNow;
+        chapter.PublishAt = publishAtUtc;
+        chapter.UpdatedAt = now;
 
-        if (story != null) story.UpdatedAt = DateTime.UtcNow;
+        if (story != null && isPublishedNow)
+        {
+            story.UpdatedAt = now;
+        }
 
         await _db.SaveChangesAsync();
+
+        if (story != null && wasUnpublished && isPublishedNow)
+        {
+            await ChapterPublicationHelper.NotifyFollowersAsync(_db, story, chapter);
+        }
     }
 
     public async Task DeleteChapterAsync(Guid storyId, Guid chapterId)

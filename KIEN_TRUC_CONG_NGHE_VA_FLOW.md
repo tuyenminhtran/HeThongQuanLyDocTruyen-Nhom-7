@@ -259,7 +259,7 @@ sequenceDiagram
         API->>DB: Cập nhật Story.UpdatedAt & gửi Notifications cho StoryFollows
     else PublishAt > UtcNow (Hẹn giờ tương lai)
         API->>DB: Chỉ lưu Chapter, KHÔNG gửi thông báo sớm & ẩn khỏi danh sách công khai
-        Note over Web,DB: Khi Admin bấm "Đăng ngay" tại /admin/schedules,\nAPI đặt PublishAt = UtcNow, cập nhật Story.UpdatedAt và gửi Notifications
+        Note over Web,DB: Khi tới giờ PublishAt (ScheduledChapterPublisherWorker quét mỗi phút)\nhoặc Admin bấm "Đăng ngay" tại /admin/schedules,\nAPI cập nhật Story.UpdatedAt và gửi Notifications idempotent cho follower
     end
 ```
 

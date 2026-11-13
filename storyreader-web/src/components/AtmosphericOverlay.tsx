@@ -292,7 +292,7 @@ export default function AtmosphericOverlay({ type }: AtmosphericOverlayProps) {
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", handleResize);
     };
-  }, [type]);
+  }, [type, isAdmin]);
 
   if (type === "none") return null;
 

@@ -36,7 +36,7 @@ Nền tảng đọc truyện chữ (Novel), truyện tranh (Manga/Comic) và ngh
 ### Dành cho Quản trị viên (`/admin` — Yêu cầu quyền `Admin`)
 - **Dashboard (`/admin`):** Thống kê doanh thu hôm nay (% tăng trưởng), người dùng mới, lượt theo dõi, tổng lượt xem chương, giao dịch gần đây và hoạt động hệ thống.
 - **Quản lý Truyện & Chương (`/admin/stories`):** Thêm/sửa/xóa truyện (`Novel` hoặc `Comic`), upload ảnh bìa hoặc URL, nhóm chương theo Tập/Phần (`PartName`), chọn xuất bản ngay hoặc hẹn giờ tương lai (`PublishAt`), tùy chọn bật/tắt render PNG chống copy cho từng chương Novel.
-- **Lịch đăng chương (`/admin/schedules`):** Theo dõi chương hẹn giờ / sắp ra mắt / đã xuất bản, hỗ trợ **Đăng ngay**, **Đổi lịch**, hoặc **Hủy hẹn giờ** (tự động cập nhật `UpdatedAt` của truyện và gửi thông báo tới người theo dõi).
+- **Lịch đăng chương (`/admin/schedules`):** Theo dõi chương hẹn giờ / sắp ra mắt / đã xuất bản, hỗ trợ **Đăng ngay**, **Đổi lịch**, hoặc **Hủy hẹn giờ**; tích hợp worker chạy nền `ScheduledChapterPublisherWorker` (`BackgroundService`) tự động quét mỗi phút để xuất bản đúng hạn, cập nhật `UpdatedAt` của truyện và gửi thông báo tới người theo dõi.
 - **Kiểm duyệt Bình luận bị báo cáo (`/admin/reports`):** Duyệt hợp lệ (reset lượt báo cáo), Ẩn bình luận, Xóa vĩnh viễn, hoặc Khóa quyền bình luận của tài khoản vi phạm ngay trên dòng báo cáo.
 - **Quản lý Người dùng (`/admin/users`):** Tìm kiếm tài khoản, xem vai trò (`Admin` / `VIP` / `Member`), Khóa / Mở khóa quyền truy cập & bình luận.
 - **Quản lý Giao dịch (`/admin/transactions`):** Lọc giao dịch `Pending` / `Success` / `Failed`, hỗ trợ **Kích hoạt bù (PB28)** hoặc đánh dấu thất bại khi cổng thanh toán gặp sự cố.
@@ -88,7 +88,12 @@ npm install
 npm run dev
 ```
 - Web App chạy tại: `http://localhost:5173`
-- Kiểm tra build production: `npm run build --prefix storyreader-web`
+- Kiểm tra chất lượng & build production:
+  ```bash
+  dotnet test StoryReader.Tests
+  npm run lint --prefix storyreader-web
+  npm run build --prefix storyreader-web
+  ```
 
 ### Bước 4: Nạp thêm dữ liệu truyện (Tùy chọn)
 - Nạp thêm bộ truyện tranh tiếng Việt từ MangaDex API:

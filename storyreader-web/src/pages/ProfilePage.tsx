@@ -11,6 +11,7 @@ import {
 } from "../api/users";
 import StoryCard from "../components/StoryCard";
 import { Navigate, Link } from "react-router-dom";
+import { getApiErrorMessage } from "../utils/apiError";
 
 export default function ProfilePage() {
   const { accessToken, displayName, email, setDisplayName } = useAuthStore();
@@ -63,8 +64,8 @@ export default function ProfilePage() {
       setIsEditingProfile(false);
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
     },
-    onError: (err: any) => {
-      setUpdateError(err.response?.data?.message || "Không thể cập nhật tên hiển thị. Vui lòng thử lại.");
+    onError: (err: unknown) => {
+      setUpdateError(getApiErrorMessage(err, "Không thể cập nhật tên hiển thị. Vui lòng thử lại."));
     },
   });
 
@@ -81,8 +82,8 @@ export default function ProfilePage() {
         setPasswordSuccess(null);
       }, 1500);
     },
-    onError: (err: any) => {
-      setPasswordError(err.response?.data?.message || "Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại.");
+    onError: (err: unknown) => {
+      setPasswordError(getApiErrorMessage(err, "Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại."));
     },
   });
 

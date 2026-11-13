@@ -137,6 +137,7 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<ITextToImageService, TextToImageService>();
+builder.Services.AddHostedService<ScheduledChapterPublisherWorker>();
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? new[]

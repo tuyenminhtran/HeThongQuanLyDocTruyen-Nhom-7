@@ -13,7 +13,7 @@ Tài liệu ghi nhận lịch sử hoàn thiện chức năng, sửa lỗi và x
 | **Giai đoạn 3** | Chính sách Trả phí / Hỗn hợp / Gói VIP, luồng giao dịch `Transactions -> Purchases / UserSubscriptions`, trang `/pricing`, Admin Force Activate (PB28) | Hoàn thành | Xác thực callback payment ngoài Dev bằng header `X-Payment-Callback-Secret` |
 | **Giai đoạn 4** | Đồng bộ Mobile App (`Storyreader_mobile`) Light Theme & thanh điều hướng, API hồ sơ, lịch sử đọc, theo dõi & thông báo | Hoàn thành | Đồng bộ hai nhánh `Darling` và `main` |
 | **Giai đoạn 5** | Tính năng Nghe Truyện Audio Tiếng Việt (`AudioReaderPlayer` + Backend TTS Proxy `/api/tts` + `IMemoryCache` + Web Speech API fallback) | Hoàn thành | Tự động tách câu tiếng Việt, phím tắt `A`/`Esc`, lưu vị trí câu & tốc độ đọc |
-| **Giai đoạn 6** | Rà soát & sửa toàn diện cổng Admin, quyền đọc trả phí, bảo mật chống spam Report, hẹn giờ xuất bản & tài liệu | Hoàn thành | Đã build, lint sạch các file cập nhật và kiểm thử E2E trực tiếp trên trình duyệt |
+| **Giai đoạn 6** | Rà soát & sửa toàn diện cổng Admin, quyền đọc trả phí, bảo mật chống spam Report, worker tự động xuất bản chương (`ScheduledChapterPublisherWorker`), xUnit test (`StoryReader.Tests`) & Code Splitting / ESLint Web | Hoàn thành | Đã chạy 13 xUnit tests (`StoryReader.Tests`), 0 lỗi/cảnh báo ESLint trên toàn `storyreader-web`, tách chunk `React.lazy` & kiểm thử E2E trên trình duyệt |
 
 ---
 
@@ -32,7 +32,8 @@ Tài liệu ghi nhận lịch sử hoàn thiện chức năng, sửa lỗi và x
 
 ### C. Cổng Quản Trị Admin & Tương Tác Độc Giả
 - **Kiểm duyệt bình luận (`/admin/reports`):** Sửa lỗi gọi `restrictMutation` truyền nhầm `userId` thay vì `comment.id` (khiến API `restrict-user` trả 404); reset `ReportCount = 0` và `ReportReason = null` khi Admin duyệt hợp lệ; chặn 1 tài khoản spam bấm Report nhiều lần lên cùng bình luận (`IMemoryCache`).
-- **Lịch đăng chương (`/admin/schedules` & `StoryService`):** Chuẩn hóa `DateTimeKind.Utc` cho `PublishAt` để tránh lỗi Npgsql `timestamp with time zone`; không gửi thông báo tới follower đối với chương hẹn giờ tương lai; bổ sung gửi thông báo & cập nhật `Story.UpdatedAt` khi Admin bấm **Đăng ngay** / **Hủy lịch (Xuất bản)**; lọc bỏ chương tương lai chưa tới giờ công bố khỏi bộ đếm chương trên Trang chủ & Hồ sơ (`ProfileController`).
+- **Lịch đăng chương (`/admin/schedules`, `StoryService` & Worker nền):** Chuẩn hóa `DateTimeKind.Utc` cho `PublishAt` để tránh lỗi Npgsql `timestamp with time zone`; không gửi thông báo tới follower đối với chương hẹn giờ tương lai; bổ sung `ScheduledChapterPublisherWorker` (`BackgroundService`, chu kỳ 1 phút) tự động cập nhật `Story.UpdatedAt` & gửi thông báo idempotent khi chương tới hạn (bên cạnh thao tác **Đăng ngay** / **Hủy lịch (Xuất bản)** của Admin); lọc bỏ chương tương lai chưa tới giờ công bố khỏi bộ đếm chương trên Trang chủ & Hồ sơ (`ProfileController`).
+- **Chất lượng mã nguồn & Automated Test:** Xây dựng bộ kiểm thử tự động `StoryReader.Tests` (xUnit + EF Core InMemory) bao phủ `ChapterAccessService`, `PaymentService`, `ScheduledChapterPublisherWorker`, `StoryService`, `ChapterPublicationHelper` và `DiscussionsController.Report`; dọn sạch toàn bộ 23 cảnh báo/lỗi ESLint trên `storyreader-web` và tách chunk động `React.lazy` + `Suspense` giảm kích thước JS bundle chính xuống ~407 kB.
 - **Tối ưu truy vấn & Giao diện Light Theme:** Thay N+1 `GetRolesAsync` bằng join SQL đơn trên `AdminUsersController`; khắc phục triệt để lỗi chữ mờ / chữ trắng trên nền thẻ trắng (`#FFFFFF`) tại Dashboard, Users, Transactions, Categories, Stories; phân biệt chính xác huy hiệu `VIP` và CTA `Gói VIP` trên Header; sửa chuyển hướng `from` khi đăng ký tài khoản mới (`RegisterPage`).
 
 ---

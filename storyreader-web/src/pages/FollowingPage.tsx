@@ -132,7 +132,7 @@ export default function FollowingPage() {
             <span className="text-xs text-slate-500 font-medium shrink-0">Sắp xếp:</span>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              onChange={(e) => setSortBy(e.target.value as "newest" | "views" | "title")}
               className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-orange-500 cursor-pointer"
             >
               <option value="newest">Mới cập nhật</option>
