@@ -8,6 +8,7 @@ import 'api_error.dart';
 class DioClient {
   static Dio? _instance;
   static VoidCallback? onUnauthorized;
+  static Future<String?>? _refreshInFlight;
 
   static Dio get instance {
     _instance ??= _createDio();
@@ -17,7 +18,50 @@ class DioClient {
   /// Khởi tạo lại instance nếu đổi cấu hình Base URL
   static void reset() {
     _instance = null;
+    _refreshInFlight = null;
   }
+
+  static Future<String?> _refreshAccessToken(Dio dio) {
+    _refreshInFlight ??= () async {
+      try {
+        final refreshToken = await AuthStorage.getRefreshToken();
+        if (refreshToken == null || refreshToken.isEmpty) return null;
+
+        final res = await dio.post(
+          ApiConstants.authRefresh,
+          data: {'refreshToken': refreshToken},
+          options: Options(extra: {'skip_auth_refresh': true}),
+        );
+        final data = Map<String, dynamic>.from(res.data as Map);
+        final nextAccess = data['accessToken'] as String? ?? '';
+        if (nextAccess.isEmpty) return null;
+
+        final email = data['email'] as String? ?? (await AuthStorage.getEmail() ?? '');
+        final displayName =
+            data['displayName'] as String? ?? (await AuthStorage.getDisplayName() ?? '');
+        final nextRefresh = data['refreshToken'] as String? ?? refreshToken;
+
+        await AuthStorage.saveAuth(
+          token: nextAccess,
+          email: email,
+          displayName: displayName,
+          refreshToken: nextRefresh,
+        );
+        return nextAccess;
+      } catch (_) {
+        return null;
+      } finally {
+        _refreshInFlight = null;
+      }
+    }();
+    return _refreshInFlight!;
+  }
+
+  static bool _isAuthPath(String path) =>
+      path.contains(ApiConstants.authLogin) ||
+      path.contains(ApiConstants.authRegister) ||
+      path.contains(ApiConstants.authRefresh) ||
+      path.contains(ApiConstants.authLogout);
 
   static Dio _createDio() {
     final dio = Dio(
@@ -33,7 +77,7 @@ class DioClient {
       ),
     );
 
-    // 1. Interceptor gắn Token và bắt 401
+    // 1. Interceptor gắn Token và bắt 401 (xoay vòng refreshToken trước khi đăng xuất)
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -49,10 +93,38 @@ class DioClient {
           return handler.next(options);
         },
         onError: (DioException error, handler) async {
-          // Xử lý khi token hết hạn
+          final requestOptions = error.requestOptions;
+          final skipRefresh = requestOptions.extra['skip_auth_refresh'] == true;
+          final alreadyRetried = requestOptions.extra['_auth_retried'] == true;
+
           if (error.response?.statusCode == 401) {
-            await AuthStorage.clearAuth();
-            onUnauthorized?.call();
+            if (!skipRefresh && !alreadyRetried && !_isAuthPath(requestOptions.path)) {
+              final nextToken = await _refreshAccessToken(dio);
+              if (nextToken != null) {
+                final retryOptions = Options(
+                  method: requestOptions.method,
+                  headers: {
+                    ...requestOptions.headers,
+                    'Authorization': 'Bearer $nextToken',
+                  },
+                  extra: {...requestOptions.extra, '_auth_retried': true},
+                );
+                try {
+                  final response = await dio.request<dynamic>(
+                    requestOptions.path,
+                    data: requestOptions.data,
+                    queryParameters: requestOptions.queryParameters,
+                    options: retryOptions,
+                  );
+                  return handler.resolve(response);
+                } catch (_) {}
+              }
+            }
+
+            if (!requestOptions.path.contains(ApiConstants.authLogout)) {
+              await AuthStorage.clearAuth();
+              onUnauthorized?.call();
+            }
           }
 
           // Tự động retry tối đa 1 lần đối với GET request khi timeout/connection error

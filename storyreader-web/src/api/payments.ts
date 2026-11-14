@@ -29,6 +29,6 @@ export async function buySubscription(planId: string) {
 }
 
 export async function simulatePaymentCallback(providerRef: string, success = true) {
-  const res = await apiClient.post(`/payments/callback?providerRef=${encodeURIComponent(providerRef)}&success=${success}`);
+  const res = await apiClient.post(`/payments/dev-confirm?providerRef=${encodeURIComponent(providerRef)}&success=${success}`);
   return res.data;
 }

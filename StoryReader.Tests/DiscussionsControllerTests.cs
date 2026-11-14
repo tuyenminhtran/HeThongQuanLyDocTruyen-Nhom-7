@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StoryReader.Api.Controllers;
 using StoryReader.Api.Data;
 using StoryReader.Api.Models.Entities;
+using StoryReader.Api.Services.Interfaces;
 using StoryReader.Tests.Helpers;
 using Xunit;
 
@@ -17,7 +19,7 @@ public class DiscussionsControllerTests
         using var sp = TestDbFactory.BuildServiceProvider();
         using var scope = sp.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var cache = scope.ServiceProvider.GetRequiredService<IMemoryCache>();
+        var cache = scope.ServiceProvider.GetRequiredService<StoryReader.Api.Services.Interfaces.IAppCacheService>();
 
         var (author, _) = await TestDbFactory.SeedUserAsync(db, "author@test.local");
         var (reporter1, _) = await TestDbFactory.SeedUserAsync(db, "rep1@test.local");
@@ -60,5 +62,60 @@ public class DiscussionsControllerTests
         var updated = await db.Discussions.FindAsync(discussion.Id);
         Assert.Equal(2, updated!.ReportCount);
         Assert.Equal(DiscussionStatus.Reported, updated.Status);
+
+        var persistedReports = await db.DiscussionReports
+            .Where(r => r.DiscussionId == discussion.Id)
+            .ToListAsync();
+        Assert.Equal(2, persistedReports.Count);
+    }
+
+    [Fact]
+    public async Task Report_PersistsAcrossFreshCache_AndAdminApproveClearsReports()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        using var sp1 = TestDbFactory.BuildIdentityServiceProvider(dbName);
+        using var scope1 = sp1.CreateScope();
+        var db1 = scope1.ServiceProvider.GetRequiredService<AppDbContext>();
+        var cache1 = scope1.ServiceProvider.GetRequiredService<IAppCacheService>();
+
+        var (author, _) = await TestDbFactory.SeedUserAsync(db1, "author2@test.local");
+        var (reporter, _) = await TestDbFactory.SeedUserAsync(db1, "reporter@test.local");
+
+        var story = new Story { Title = "Truyện bền vững" };
+        var chapter = new Chapter { StoryId = story.Id, ChapterNumber = 1, Title = "Chương 1", Content = "Nội dung" };
+        var discussion = new Discussion { ChapterId = chapter.Id, UserId = author.Id, Content = "Bình luận bị báo cáo" };
+        db1.Stories.Add(story);
+        db1.Chapters.Add(chapter);
+        db1.Discussions.Add(discussion);
+        await db1.SaveChangesAsync();
+
+        var controller1 = new DiscussionsController(db1, cache1)
+        {
+            ControllerContext = TestDbFactory.CreateUserContext(reporter.Id)
+        };
+        Assert.IsType<OkObjectResult>(await controller1.Report(chapter.Id, discussion.Id, new ReportDiscussionDto("Spam")));
+
+        // Giả lập cache trống sau khi restart -> DB DiscussionReports vẫn chặn báo cáo trùng
+        using var sp2 = TestDbFactory.BuildIdentityServiceProvider(dbName);
+        using var scope2 = sp2.CreateScope();
+        var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
+        var cache2 = scope2.ServiceProvider.GetRequiredService<IAppCacheService>();
+        var userManager = scope2.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var auth = scope2.ServiceProvider.GetRequiredService<IAuthService>();
+
+        var controller2 = new DiscussionsController(db2, cache2)
+        {
+            ControllerContext = TestDbFactory.CreateUserContext(reporter.Id)
+        };
+        Assert.IsType<BadRequestObjectResult>(await controller2.Report(chapter.Id, discussion.Id, new ReportDiscussionDto("Spam nữa")));
+
+        // Admin duyệt lại bình luận -> xóa DiscussionReports & reset ReportCount
+        var adminCtrl = new AdminReportedCommentsController(db2, userManager, cache2, auth);
+        Assert.IsType<OkObjectResult>(await adminCtrl.Approve(discussion.Id));
+
+        var cleaned = await db2.Discussions.FindAsync(discussion.Id);
+        Assert.Equal(DiscussionStatus.Visible, cleaned!.Status);
+        Assert.Equal(0, cleaned.ReportCount);
+        Assert.Empty(await db2.DiscussionReports.Where(r => r.DiscussionId == discussion.Id).ToListAsync());
     }
 }

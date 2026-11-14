@@ -33,7 +33,12 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const result = await login(data.email, data.password);
-      setAuth(result.accessToken, result.email || data.email, result.displayName || data.email);
+      setAuth(
+        result.accessToken,
+        result.email || data.email,
+        result.displayName || data.email,
+        result.refreshToken ?? null
+      );
       navigate(from);
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };

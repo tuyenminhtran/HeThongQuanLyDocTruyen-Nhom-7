@@ -8,13 +8,13 @@ Tài liệu mô tả kiến trúc kỹ thuật thực tế, lược đồ cơ s�
 
 | Tầng (Layer) | Công nghệ thực tế trong mã nguồn | Ghi chú triển khai |
 | :--- | :--- | :--- |
-| **Backend API** | **.NET 8.0** (ASP.NET Core Web API) | Modular Controllers + Service Layer (`StoryService`, `ChapterAccessService`, `PaymentService`, `AuthService`, `TextToImageService`, `StatsService`) |
-| **ORM & Identity** | **EF Core 8.0.10** + **ASP.NET Core Identity** | `AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>` kết nối PostgreSQL qua `Npgsql.EntityFrameworkCore.PostgreSQL 8.0.10` |
-| **Xác thực & Phân quyền** | **JWT Bearer Token** (`8.0.10`) | Claim `NameIdentifier`, `Email`, `displayName`, `Role` (`Admin` / `Member`); kiểm tra khóa tài khoản `IsRestricted` |
-| **Bảo vệ & Đa phương tiện** | **SkiaSharp 2.88.8** + **TTS Proxy (`/api/tts`)** | `TextToImageService` render văn bản sang PNG watermark; `TtsController` proxy tiếng Việt kèm `IMemoryCache` |
-| **Web Frontend** | **React 19** + **TypeScript 6** + **Vite 8** + **Tailwind CSS 3.4** | Quản lý server state bằng **TanStack Query**, auth state bằng **Zustand** (`authStore`), form bằng **React Hook Form** |
-| **Mobile App** | **Flutter** (Dart `^3.12.2`) | State management **Riverpod**, điều hướng **GoRouter**, HTTP client **Dio**, lưu token bằng `flutter_secure_storage` |
-| **Database & Cache** | **PostgreSQL 16** + `IMemoryCache` (+ `redis:7` sẵn sàng trong Docker) | PostgreSQL 16 lưu 20 bảng nghiệp vụ & Identity; runtime API đang dùng `IMemoryCache`, container `redis:7` cấu hình sẵn trong `docker-compose.yml` cho bước scale |
+| **Backend API** | **.NET 8.0** (ASP.NET Core Web API) | Modular Controllers + Service Layer (`StoryService`, `ChapterAccessService`, `PaymentService`, `AuthService`, `TextToImageService`, `StatsService`, `ResilientAppCacheService`, `ChapterViewBufferService`) |
+| **ORM & Identity** | **EF Core 8.0.10** + **ASP.NET Core Identity** | `AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>` kết nối PostgreSQL qua `Npgsql.EntityFrameworkCore.PostgreSQL 8.0.10` (**22 bảng** qua Auto-Migrate) |
+| **Xác thực & Phân quyền** | **JWT Bearer Token + Refresh Token Rotation** (`8.0.10`) | Claim `NameIdentifier`, `Email`, `displayName`, `Role`, `jti`, `iat`; bảng `RefreshTokens` (băm SHA-256, phát hiện reuse); kiểm tra JWT Blacklist qua Redis & `IsRestricted` trong `OnTokenValidated` |
+| **Bảo vệ & Đa phương tiện** | **SkiaSharp 2.88.8** + **TTS Proxy (`/api/tts`)** | `TextToImageService` render văn bản sang PNG watermark; `TtsController` proxy tiếng Việt qua `IAppCacheService` kèm `[EnableRateLimiting("tts")]` |
+| **Web Frontend** | **React 19** + **TypeScript 6** + **Vite 8** + **Tailwind CSS 3.4** | Quản lý server state bằng **TanStack Query**, auth state bằng **Zustand** (`authStore`), form bằng **React Hook Form**, **Axios** (coalesced 401 refresh) |
+| **Mobile App** | **Flutter** (Dart `^3.12.2`) | State management **Riverpod**, điều hướng **GoRouter**, HTTP client **Dio** (tự làm mới token 401), lưu token bằng `flutter_secure_storage` |
+| **Database & Cache** | **PostgreSQL 16** + **Redis 7** (`StackExchangeRedis`) | PostgreSQL 16 lưu **22 bảng** (gồm `RefreshTokens`, `DiscussionReports`); **Redis 7** đang hoạt động qua `IAppCacheService` (`ResilientAppCacheService` tự fallback `IMemoryCache` khi mất Redis) |
 
 ---
 
@@ -33,40 +33,46 @@ flowchart TB
         Billing["Payments & Subscriptions\n(/api/payments, /api/subscriptions)"]
         Tts["Audio TTS Proxy\n(/api/tts)"]
         Admin["Admin Portal API\n(/api/admin/*)"]
-        MemCache[("In-Memory Cache\n(IMemoryCache)\nAudio TTS & Report Dedupe")]
+        AppCache["IAppCacheService\n(Redis 7 + IMemoryCache fallback)\nJWT Blacklist, TTS, View Buffer, Report"]
+        Workers["Background Workers\nScheduledPublisher (60s)\nChapterViewFlushWorker (5s)"]
         ImgGen["SkiaSharp Renderer\n(wwwroot/uploads/chapters)"]
     end
 
     subgraph Data["Hạ tầng Dữ liệu (Docker Compose)"]
-        DB[("PostgreSQL 16\n20 bảng Domain + Identity\n(Cổng 5432)")]
-        Redis[("Redis 7 Container\n(Cổng 6379 — Sẵn sàng scale)")]
+        DB[("PostgreSQL 16\n22 bảng Domain + Identity\n(Cổng 5432)")]
+        Redis[("Redis 7 Active\n(Cổng 6379 — Distributed Cache)")]
     end
 
-    External["Dịch vụ bên ngoài\n- Google Translate TTS (Audio)\n- MangaDex API v5 (Tools Crawler)\n- Cổng thanh toán VNPay / Momo"]
+    External["Dịch vụ bên ngoài\n- Google Translate TTS (Audio)\n- MangaDex API v5 (Tools Crawler)\n- Cổng thanh toán VNPay HMAC-SHA512"]
 
     Web -->|HTTPS / REST + JWT| Api
     Mobile -->|HTTPS / REST + JWT| Api
     Api --> DB
-    Tts <--> MemCache
+    Workers --> DB
+    Tts <--> AppCache
+    Auth <--> AppCache
+    AppCache <--> Redis
     Story --> ImgGen
     Tts -.-> External
     Billing -.-> External
-    Api -.-> Redis
 ```
 
 ---
 
-## 3. LƯỢC ĐỒ CƠ SỞ DỮ LIỆU THỰC TẾ (POSTGRESQL — 20 BẢNG)
+## 3. LƯỢC ĐỒ CƠ SỞ DỮ LIỆU THỰC TẾ (POSTGRESQL — 22 BẢNG)
 
 Database `storyreader` sử dụng mô hình **Identity kết hợp Domain Entities** (xác nhận trực tiếp từ `AppDbContext.cs` và PostgreSQL `\dt`):
 - **7 bảng Identity chuẩn:** `AspNetUsers` (mở rộng `DisplayName`, `IsRestricted`, `CreatedAt`), `AspNetRoles`, `AspNetUserRoles`, `AspNetUserClaims`, `AspNetRoleClaims`, `AspNetUserLogins`, `AspNetUserTokens`.
-- **12 bảng Nghiệp vụ + `__EFMigrationsHistory`:**
+- **14 bảng Nghiệp vụ & Bảo mật + `__EFMigrationsHistory`:**
+  (`Stories`, `Chapters`, `Genres`, `StoryGenres`, `StoryFollows`, `ReadingProgresses`, `Discussions`, `DiscussionReports`, `Notifications`, `SubscriptionPlans`, `UserSubscriptions`, `Purchases`, `Transactions`, `RefreshTokens`).
 
 ```mermaid
 erDiagram
     AspNetUsers ||--o{ StoryFollows : follows
     AspNetUsers ||--o{ ReadingProgresses : tracks
     AspNetUsers ||--o{ Discussions : posts
+    AspNetUsers ||--o{ DiscussionReports : files
+    AspNetUsers ||--o{ RefreshTokens : holds_sessions
     AspNetUsers ||--o{ Notifications : receives
     AspNetUsers ||--o{ Transactions : initiates
     AspNetUsers ||--o{ Purchases : owns
@@ -80,6 +86,7 @@ erDiagram
     Stories ||--o{ Purchases : purchased_in
 
     Chapters ||--o{ Discussions : discussed_on
+    Discussions ||--o{ DiscussionReports : reported_by
     SubscriptionPlans ||--o{ UserSubscriptions : plan_for
     Transactions ||--o| Purchases : grants
     Transactions ||--o| UserSubscriptions : activates
@@ -136,10 +143,13 @@ flowchart TD
     CheckAuth -- Có --> Validate{Hợp lệ chính sách?\n- Story Paid/Mixed & Price > 0\n- Chưa sở hữu / Chưa có VIP}
     Validate -- Sai --> BadReq[Trả HTTP 400 kèm lý do chi tiết]
     Validate -- Đúng --> CreateTx[Tạo Transaction Status = Pending\nvà ProviderTransactionRef]
-    CreateTx --> Redirect[Trả về transactionId & paymentUrl]
-    Redirect --> Gateway[Người dùng thanh toán tại Cổng VNPay / Momo\nhoặc Mô phỏng Dev]
-    Gateway --> Callback[POST /api/payments/callback\nXác thực X-Payment-Callback-Secret ngoài Dev]
+    CreateTx --> Redirect[Trả về transactionId & paymentUrl\nkèm chữ ký VNPay HMAC-SHA512]
+    Redirect --> Gateway[Người dùng thanh toán tại Cổng VNPay\nhoặc Mô phỏng trên Dev]
+    Gateway --> VerifyPath{Đường xác nhận?}
+    VerifyPath -- Webhook / IPN --> Callback[POST /api/payments/callback\nhoặc GET/POST vnpay-ipn\nBắt buộc X-Payment-Callback-Secret\nhoặc HMAC-SHA512 + khớp Amount]
+    VerifyPath -- Mô phỏng Dev --> DevConfirm[POST /api/payments/dev-confirm\nChỉ chạy ở Development + JWT\nKiểm tra tx.UserId == CurrentUserId]
     Callback -- Thành công --> Grant[Cập nhật Transaction = Success\nTạo Purchase hoặc UserSubscription]
+    DevConfirm -- Thành công --> Grant
     Callback -- Thất bại / Treo --> PendingFail{Cập nhật Failed\nhoặc Pending kéo dài?}
     PendingFail -- Treo Pending --> AdminPB28[Admin vào /admin/transactions\nBấm Kích hoạt bù PB28]
     AdminPB28 --> Grant
@@ -156,7 +166,7 @@ sequenceDiagram
     actor User as Độc giả (Truyện chữ thuần)
     participant Reader as ChapterReadPage & AudioReaderPlayer
     participant TTS as TtsController (/api/tts)
-    participant Cache as IMemoryCache
+    participant Cache as IAppCacheService (Redis + Memory)
     participant Google as Google Translate TTS
 
     User->>Reader: Bấm "Nghe Audio" hoặc phím A
@@ -267,14 +277,16 @@ sequenceDiagram
 
 ## 7. ĐIỂM NỔI BẬT VỀ BẢO MẬT & TỐI ƯU HÓA
 
-1. **Bảo mật truy cập & Thanh toán:**
+1. **Bảo mật truy cập, Phiên đăng nhập & Thanh toán:**
+   - `SecurityConfigValidator` kiểm tra khóa JWT (`>= 32` ký tự, chặn khóa `DevOnly`/`CHANGE_ME`) và bí mật thanh toán (`>= 16` ký tự) ngay khi khởi động ngoài Development; CORS giới hạn loopback ở Dev và `Cors:AllowedOrigins` ở Production.
+   - `AuthService` hỗ trợ **Refresh Token Rotation** (bảng `RefreshTokens` băm SHA-256 + phát hiện reuse) và thu hồi JWT tức thì qua `jti` Redis Blacklist (`POST /api/auth/logout`, đổi mật khẩu, hoặc Admin khóa tài khoản).
    - Kiểm tra `ChapterAccessService` ở tầng server cho cả nội dung chương văn bản lẫn danh sách ảnh; khóa bình luận (`IsRestricted`) chặn đồng thời đăng bình luận và đọc truyện trả phí.
-   - Endpoint `POST /api/payments/callback` yêu cầu chữ ký `X-Payment-Callback-Secret` so sánh theo thời gian hằng (`CryptographicOperations.FixedTimeEquals`) ngoài môi trường Development.
-   - Chống spam báo cáo bình luận: lưu cache `IMemoryCache` theo cặp `(DiscussionId, UserId)` để mỗi người chỉ báo cáo 1 lần trên cùng bình luận; Admin duyệt hợp lệ sẽ reset `ReportCount = 0`.
+   - Endpoint `POST /api/payments/callback` luôn bắt buộc `X-Payment-Callback-Secret` (so sánh hằng thời gian `CryptographicOperations.FixedTimeEquals`) hoặc chữ ký VNPay HMAC-SHA512; tách riêng `/api/payments/vnpay-ipn` (đối chiếu HMAC + số tiền) và `/api/payments/dev-confirm` (BOLA-checked ở Dev).
+   - Chống spam & DDoS: bảng `DiscussionReports` (`(DiscussionId, UserId)`) + Rate Limiting 4 policy (`auth`, `discussion`, `payment`, `tts`) + `ChapterViewBufferService` (dedupe 2 phút, `ChapterViewFlushWorker` flush 5 giây).
 2. **Bảo vệ bản quyền nội dung (Tùy chọn theo chương):**
    - Chế độ render chữ thành ảnh PNG watermark (`TextToImageService` với `SkiaSharp`) gắn token ngẫu nhiên trên tên file (`/uploads/chapters/{chapterId}/page_001_{token}.png`) chống đoán URL tĩnh.
    - Chế độ đọc web vô hiệu hóa bôi đen/chuột phải ở vùng ảnh truyện tranh & vùng ảnh chống copy.
 3. **Tối ưu hiệu năng & Trải nghiệm đọc:**
    - `AdminUsersController` sử dụng join SQL đơn (`UserRoles` join `Roles`) thay vòng lặp `GetRolesAsync` tránh truy vấn N+1.
-   - Ảnh truyện tranh tải dần (`loading="lazy"`), Audio TTS được cache byte stream trên server bằng `IMemoryCache`.
+   - Ảnh truyện tranh tải dần (`loading="lazy"`), Audio TTS được cache byte stream trên **Redis 7** (fallback `IMemoryCache`) qua `IAppCacheService`.
    - Giao diện Admin sử dụng Light Theme nhất quán (`#F4F6F9` / `#FFFFFF` / `slate-700..900`) kết hợp điều hướng nhanh giữa Quản lý truyện, Lịch đăng, Báo cáo vi phạm và Giao dịch.

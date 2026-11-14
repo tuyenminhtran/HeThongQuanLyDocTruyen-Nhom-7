@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using StoryReader.Api.Data;
 using StoryReader.Api.Models.Dtos;
 using StoryReader.Api.Models.Entities;
+using StoryReader.Api.Services.Interfaces;
 
 namespace StoryReader.Api.Controllers;
 
@@ -16,11 +17,13 @@ public class ProfileController : ControllerBase
 {
     private readonly UserManager<AppUser> _userManager;
     private readonly AppDbContext _db;
+    private readonly IAuthService _auth;
 
-    public ProfileController(UserManager<AppUser> userManager, AppDbContext db)
+    public ProfileController(UserManager<AppUser> userManager, AppDbContext db, IAuthService auth)
     {
         _userManager = userManager;
         _db = db;
+        _auth = auth;
     }
 
     private Guid CurrentUserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -128,7 +131,8 @@ public class ProfileController : ControllerBase
             return BadRequest(new { message = string.Join("; ", errors) });
         }
 
-        return Ok(new { message = "Đổi mật khẩu thành công." });
+        await _auth.RevokeAllUserSessionsAsync(user.Id);
+        return Ok(new { message = "Đổi mật khẩu thành công. Các phiên đăng nhập cũ đã được thu hồi." });
     }
 
     [HttpGet("history")]

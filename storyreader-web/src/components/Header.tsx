@@ -7,7 +7,7 @@ import { getUserProfile } from "../api/users";
 import NotificationBell from "./NotificationBell";
 
 export default function Header() {
-  const { accessToken, displayName, logout } = useAuthStore();
+  const { accessToken, displayName, logoutAndRevoke } = useAuthStore();
   const isAdmin = useIsAdmin();
   const navigate = useNavigate();
   const location = useLocation();
@@ -168,8 +168,7 @@ export default function Header() {
                 {/* Logout Button */}
                 <button
                   onClick={() => {
-                    logout();
-                    navigate("/login");
+                    void logoutAndRevoke().finally(() => navigate("/login"));
                   }}
                   className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                   title="Đăng xuất"
@@ -436,9 +435,10 @@ export default function Header() {
                   </Link>
                   <button
                     onClick={() => {
-                      logout();
-                      navigate("/login");
-                      setMobileOpen(false);
+                      void logoutAndRevoke().finally(() => {
+                        navigate("/login");
+                        setMobileOpen(false);
+                      });
                     }}
                     className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50"
                   >

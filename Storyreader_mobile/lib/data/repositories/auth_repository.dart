@@ -34,6 +34,7 @@ class AuthRepository implements IAuthRepository {
         token: result.accessToken,
         email: result.email ?? email.trim(),
         displayName: result.displayName ?? email.trim(),
+        refreshToken: result.refreshToken,
       );
 
       return result;
@@ -59,6 +60,7 @@ class AuthRepository implements IAuthRepository {
         token: result.accessToken,
         email: result.email ?? email.trim(),
         displayName: result.displayName ?? displayName.trim(),
+        refreshToken: result.refreshToken,
       );
 
       return result;
@@ -82,6 +84,17 @@ class AuthRepository implements IAuthRepository {
 
   @override
   Future<void> logout() async {
+    final token = await AuthStorage.getToken();
+    final refreshToken = await AuthStorage.getRefreshToken();
+    if (token != null && token.isNotEmpty) {
+      try {
+        await _dio.post(
+          ApiConstants.authLogout,
+          data: {'refreshToken': refreshToken},
+          options: Options(extra: {'skip_auth_refresh': true}),
+        );
+      } catch (_) {}
+    }
     await AuthStorage.clearAuth();
   }
 }

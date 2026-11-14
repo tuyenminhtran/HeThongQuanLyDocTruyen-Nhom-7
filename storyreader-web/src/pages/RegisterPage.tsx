@@ -70,7 +70,12 @@ export default function RegisterPage() {
         data.password,
         data.displayName
       );
-      setAuth(result.accessToken, result.email || data.email, result.displayName || data.displayName);
+      setAuth(
+        result.accessToken,
+        result.email || data.email,
+        result.displayName || data.displayName,
+        result.refreshToken ?? null
+      );
       navigate(from);
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };

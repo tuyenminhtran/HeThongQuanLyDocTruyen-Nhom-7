@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,11 +18,16 @@ public class ChaptersController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IChapterAccessService _access;
+    private readonly IViewCounterService _viewCounter;
 
-    public ChaptersController(AppDbContext db, IChapterAccessService access)
+    public ChaptersController(
+        AppDbContext db,
+        IChapterAccessService access,
+        IViewCounterService viewCounter)
     {
         _db = db;
         _access = access;
+        _viewCounter = viewCounter;
     }
 
     private Guid? CurrentUserId =>
@@ -39,12 +46,8 @@ public class ChaptersController : ControllerBase
         if (!ChapterAccessService.CanReadStoryChapter(chapter.Story, chapter.ChapterNumber, accessState))
             return Forbid();
 
-        chapter.ViewCount++;
-        if (chapter.Story is not null)
-        {
-            chapter.Story.ViewCount++;
-        }
-        await _db.SaveChangesAsync();
+        var viewerKey = BuildViewerKey();
+        await _viewCounter.RecordChapterViewAsync(chapter.Id, chapter.StoryId, viewerKey, HttpContext.RequestAborted);
 
         if (CurrentUserId is Guid userId && await _db.Users.AnyAsync(u => u.Id == userId))
         {
@@ -52,18 +55,21 @@ public class ChaptersController : ControllerBase
                 .FirstOrDefaultAsync(p => p.UserId == userId && p.StoryId == chapter.StoryId);
 
             if (progress is null)
+            {
                 _db.ReadingProgresses.Add(new ReadingProgress
                 {
                     UserId = userId,
                     StoryId = chapter.StoryId,
                     LastChapterId = chapter.Id
                 });
-            else
+                await _db.SaveChangesAsync();
+            }
+            else if (progress.LastChapterId != chapter.Id)
             {
                 progress.LastChapterId = chapter.Id;
                 progress.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
             }
-            await _db.SaveChangesAsync();
         }
 
         var baseUrl = $"{Request.Scheme}://{Request.Host}";
@@ -90,5 +96,15 @@ public class ChaptersController : ControllerBase
             : new List<string>();
 
         return Ok(new ChapterContentDto(chapter.Id, chapter.ChapterNumber, chapter.Title, chapter.Content, chapter.Story?.Type ?? StoryType.Novel, imageUrls, chapter.PartName));
+    }
+
+    private string BuildViewerKey()
+    {
+        if (CurrentUserId is Guid userId)
+            return $"user:{userId}";
+
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(ip));
+        return $"ip:{Convert.ToHexString(hash)[..16].ToLowerInvariant()}";
     }
 }

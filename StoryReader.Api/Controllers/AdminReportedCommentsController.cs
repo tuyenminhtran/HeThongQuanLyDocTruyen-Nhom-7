@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StoryReader.Api.Data;
 using StoryReader.Api.Models.Entities;
+using StoryReader.Api.Services.Interfaces;
 
 namespace StoryReader.Api.Controllers;
 
@@ -14,11 +15,19 @@ public class AdminReportedCommentsController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
+    private readonly IAppCacheService _cache;
+    private readonly IAuthService _auth;
 
-    public AdminReportedCommentsController(AppDbContext db, UserManager<AppUser> userManager)
+    public AdminReportedCommentsController(
+        AppDbContext db,
+        UserManager<AppUser> userManager,
+        IAppCacheService cache,
+        IAuthService auth)
     {
         _db = db;
         _userManager = userManager;
+        _cache = cache;
+        _auth = auth;
     }
 
     [HttpGet]
@@ -122,6 +131,20 @@ public class AdminReportedCommentsController : ControllerBase
         var d = await _db.Discussions.FindAsync(id);
         if (d is null) return NotFound(new { message = "Không tìm thấy bình luận" });
 
+        var oldReports = await _db.DiscussionReports
+            .Where(r => r.DiscussionId == id)
+            .ToListAsync();
+
+        foreach (var report in oldReports)
+        {
+            await _cache.RemoveAsync($"discussion-report:{id}:{report.UserId}");
+        }
+
+        if (oldReports.Count > 0)
+        {
+            _db.DiscussionReports.RemoveRange(oldReports);
+        }
+
         d.Status = DiscussionStatus.Visible;
         d.ReportCount = 0;
         d.ReportReason = null;
@@ -169,6 +192,7 @@ public class AdminReportedCommentsController : ControllerBase
         d.User.IsRestricted = true;
         d.Status = DiscussionStatus.Hidden; // Ẩn luôn bình luận vi phạm
         await _db.SaveChangesAsync();
+        await _auth.RevokeAllUserSessionsAsync(d.User.Id);
 
         return Ok(new { message = $"Đã khóa quyền của người dùng '{d.User.DisplayName}'!", userId = d.User.Id });
     }

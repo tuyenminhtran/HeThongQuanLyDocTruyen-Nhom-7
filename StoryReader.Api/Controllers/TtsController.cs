@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.RateLimiting;
+using StoryReader.Api.Services.Interfaces;
 
 namespace StoryReader.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [AllowAnonymous]
+[EnableRateLimiting("tts")]
 public class TtsController : ControllerBase
 {
     private static readonly HttpClient _httpClient = new(new HttpClientHandler
@@ -17,16 +19,17 @@ public class TtsController : ControllerBase
         Timeout = TimeSpan.FromSeconds(15)
     };
 
-    // Cache âm thanh TTS trong RAM (tối đa 500 câu) để tránh gọi trùng lên Google và hỗ trợ tua/Range mượt mà
-    private static readonly MemoryCache _audioCache = new(new MemoryCacheOptions
-    {
-        SizeLimit = 500
-    });
+    private readonly IAppCacheService _cache;
 
     static TtsController()
     {
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+    }
+
+    public TtsController(IAppCacheService cache)
+    {
+        _cache = cache;
     }
 
     [HttpGet]
@@ -41,15 +44,16 @@ public class TtsController : ControllerBase
         text = text.Trim();
         if (text.Length > 250)
         {
-            text = text.Substring(0, 250);
+            text = text[..250];
         }
 
         var safeLang = string.IsNullOrWhiteSpace(lang) ? "vi" : lang.Trim();
-        var cacheKey = $"{safeLang}:{text}";
+        var cacheKey = $"tts:{safeLang}:{text}";
 
         Response.Headers.CacheControl = "public, max-age=86400";
 
-        if (_audioCache.TryGetValue(cacheKey, out byte[]? cachedBytes) && cachedBytes is { Length: > 0 })
+        var cachedBytes = await _cache.GetBytesAsync(cacheKey, HttpContext.RequestAborted);
+        if (cachedBytes is { Length: > 0 })
         {
             return File(cachedBytes, "audio/mpeg", enableRangeProcessing: true);
         }
@@ -65,18 +69,14 @@ public class TtsController : ControllerBase
             foreach (var client in clients)
             {
                 var url = $"https://translate.google.com/translate_tts?ie=UTF-8&tl={encodedLang}&client={client}&q={encodedText}";
-                using var response = await _httpClient.GetAsync(url);
+                using var response = await _httpClient.GetAsync(url, HttpContext.RequestAborted);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var bytes = await response.Content.ReadAsByteArrayAsync();
+                    var bytes = await response.Content.ReadAsByteArrayAsync(HttpContext.RequestAborted);
                     if (bytes.Length > 0)
                     {
-                        _audioCache.Set(cacheKey, bytes, new MemoryCacheEntryOptions
-                        {
-                            Size = 1,
-                            SlidingExpiration = TimeSpan.FromHours(6)
-                        });
+                        await _cache.SetBytesAsync(cacheKey, bytes, TimeSpan.FromHours(6), HttpContext.RequestAborted);
                         return File(bytes, "audio/mpeg", enableRangeProcessing: true);
                     }
                 }

@@ -103,6 +103,7 @@ public record CreateChapterDto(
     string Title,
 
     [Required(ErrorMessage = "Nội dung chương không được để trống")]
+    [MaxLength(500000, ErrorMessage = "Nội dung chương tối đa 500.000 ký tự")]
     string Content,
 
     DateTime? PublishAt,
@@ -120,6 +121,7 @@ public record UpdateChapterDto(
     string Title,
 
     [Required(ErrorMessage = "Nội dung chương không được để trống")]
+    [MaxLength(500000, ErrorMessage = "Nội dung chương tối đa 500.000 ký tự")]
     string Content,
 
     DateTime? PublishAt,

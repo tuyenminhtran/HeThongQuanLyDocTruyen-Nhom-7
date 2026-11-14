@@ -1,21 +1,24 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using StoryReader.Api.Data;
 using StoryReader.Api.Models.Entities;
+using StoryReader.Api.Security;
 using StoryReader.Api.Services.Interfaces;
 
 namespace StoryReader.Api.Services;
 
 /// <summary>
-/// Khung xử lý thanh toán. Việc build URL redirect và verify chữ ký thực tế phụ thuộc
-/// vào SDK của VNPay/Momo — thay phần TODO bằng lời gọi SDK tương ứng khi tích hợp thật.
+/// Quản lý khởi tạo giao dịch, tạo URL VNPay Sandbox có chữ ký HMAC-SHA512 (khi cấu hình) và cấp quyền lợi idempotent.
 /// </summary>
 public class PaymentService : IPaymentService
 {
     private readonly AppDbContext _db;
+    private readonly IConfiguration? _config;
 
-    public PaymentService(AppDbContext db)
+    public PaymentService(AppDbContext db, IConfiguration? config = null)
     {
         _db = db;
+        _config = config;
     }
 
     public async Task<(Guid transactionId, string paymentUrl)> InitiateStoryPurchaseAsync(Guid userId, Guid storyId)
@@ -61,8 +64,7 @@ public class PaymentService : IPaymentService
         _db.Transactions.Add(tx);
         await _db.SaveChangesAsync();
 
-        var paymentUrl = $"https://sandbox.vnpayment.vn/pay?ref={tx.ProviderTransactionRef}&amount={tx.Amount}";
-        return (tx.Id, paymentUrl);
+        return (tx.Id, BuildPaymentUrl(tx, $"Mua truyen {story.Title}"));
     }
 
     public async Task<(Guid transactionId, string paymentUrl)> InitiateSubscriptionAsync(Guid userId, Guid planId)
@@ -89,8 +91,63 @@ public class PaymentService : IPaymentService
         _db.Transactions.Add(tx);
         await _db.SaveChangesAsync();
 
-        var paymentUrl = $"https://sandbox.vnpayment.vn/pay?ref={tx.ProviderTransactionRef}&amount={tx.Amount}";
-        return (tx.Id, paymentUrl);
+        return (tx.Id, BuildPaymentUrl(tx, $"Dang ky goi VIP {plan.Name}"));
+    }
+
+    public async Task ConfirmDevSimulationAsync(Guid userId, string providerTransactionRef, bool success)
+    {
+        var tx = await _db.Transactions
+            .FirstOrDefaultAsync(t => t.ProviderTransactionRef == providerTransactionRef)
+            ?? throw new InvalidOperationException("Không tìm thấy giao dịch.");
+
+        if (tx.UserId != userId)
+            throw new UnauthorizedAccessException("Bạn không có quyền xác nhận giao dịch của người dùng khác.");
+
+        await HandleGatewayCallbackAsync(providerTransactionRef, success);
+    }
+
+    public async Task<(bool matchedAmount, bool processed)> HandleVnPayCallbackAsync(
+        string providerTransactionRef,
+        decimal amountVndFromGateway,
+        bool success)
+    {
+        var tx = await _db.Transactions
+            .FirstOrDefaultAsync(t => t.ProviderTransactionRef == providerTransactionRef);
+
+        if (tx is null)
+            return (false, false);
+
+        if (tx.Amount != amountVndFromGateway)
+            return (false, false);
+
+        if (tx.Status == TransactionStatus.Pending)
+        {
+            await HandleGatewayCallbackAsync(providerTransactionRef, success);
+        }
+
+        return (true, true);
+    }
+
+    private string BuildPaymentUrl(Transaction tx, string orderInfo)
+    {
+        var tmnCode = _config?["Payments:VnPay:TmnCode"]?.Trim();
+        var hashSecret = _config?["Payments:VnPay:HashSecret"]?.Trim();
+        var baseUrl = _config?["Payments:VnPay:BaseUrl"]?.Trim();
+        var returnUrl = _config?["Payments:VnPay:ReturnUrl"]?.Trim() ?? "http://localhost:5173/pricing";
+
+        if (!string.IsNullOrWhiteSpace(tmnCode) && !string.IsNullOrWhiteSpace(hashSecret))
+        {
+            return VnPayGatewayHelper.BuildSignedPaymentUrl(
+                string.IsNullOrWhiteSpace(baseUrl) ? VnPayGatewayHelper.DefaultSandboxBaseUrl : baseUrl,
+                tmnCode,
+                hashSecret,
+                tx.ProviderTransactionRef,
+                tx.Amount,
+                orderInfo,
+                returnUrl);
+        }
+
+        return $"https://sandbox.vnpayment.vn/pay?ref={tx.ProviderTransactionRef}&amount={tx.Amount}";
     }
 
     public async Task HandleGatewayCallbackAsync(string providerTransactionRef, bool success)

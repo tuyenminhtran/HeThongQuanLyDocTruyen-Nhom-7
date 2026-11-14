@@ -25,4 +25,17 @@ public class Discussion
     public string? ReportReason { get; set; }
     public int ReportCount { get; set; } = 0;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public ICollection<DiscussionReport> Reports { get; set; } = new List<DiscussionReport>();
+}
+
+/// <summary>Lưu vết từng lượt báo cáo vi phạm theo (DiscussionId, UserId) chống spam Report.</summary>
+public class DiscussionReport
+{
+    public Guid DiscussionId { get; set; }
+    public Discussion Discussion { get; set; } = null!;
+    public Guid UserId { get; set; }
+    public AppUser User { get; set; } = null!;
+    public string? Reason { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

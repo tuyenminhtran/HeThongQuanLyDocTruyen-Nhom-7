@@ -22,6 +22,8 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
 
     public DbSet<ReadingProgress> ReadingProgresses => Set<ReadingProgress>();
     public DbSet<Discussion> Discussions => Set<Discussion>();
+    public DbSet<DiscussionReport> DiscussionReports => Set<DiscussionReport>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -37,6 +39,17 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
         builder.Entity<StoryFollow>().HasKey(f => new { f.UserId, f.StoryId });
 
         builder.Entity<ReadingProgress>().HasKey(r => new { r.UserId, r.StoryId });
+
+        builder.Entity<DiscussionReport>().HasKey(dr => new { dr.DiscussionId, dr.UserId });
+        builder.Entity<DiscussionReport>()
+            .HasOne(dr => dr.Discussion).WithMany(d => d.Reports).HasForeignKey(dr => dr.DiscussionId);
+        builder.Entity<DiscussionReport>()
+            .HasOne(dr => dr.User).WithMany().HasForeignKey(dr => dr.UserId);
+
+        builder.Entity<RefreshToken>()
+            .HasIndex(rt => rt.TokenHash).IsUnique();
+        builder.Entity<RefreshToken>()
+            .HasOne(rt => rt.User).WithMany().HasForeignKey(rt => rt.UserId);
 
         builder.Entity<Chapter>()
             .HasIndex(c => new { c.StoryId, c.ChapterNumber }).IsUnique();

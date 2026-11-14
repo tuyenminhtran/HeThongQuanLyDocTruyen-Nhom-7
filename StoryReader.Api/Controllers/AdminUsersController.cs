@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using StoryReader.Api.Data;
 using StoryReader.Api.Models.Dtos;
 using StoryReader.Api.Models.Entities;
+using StoryReader.Api.Services.Interfaces;
 
 namespace StoryReader.Api.Controllers;
 
@@ -16,11 +17,13 @@ public class AdminUsersController : ControllerBase
 {
     private readonly UserManager<AppUser> _userManager;
     private readonly AppDbContext _db;
+    private readonly IAuthService _auth;
 
-    public AdminUsersController(UserManager<AppUser> userManager, AppDbContext db)
+    public AdminUsersController(UserManager<AppUser> userManager, AppDbContext db, IAuthService auth)
     {
         _userManager = userManager;
         _db = db;
+        _auth = auth;
     }
 
     private Guid? CurrentUserId =>
@@ -111,6 +114,11 @@ public class AdminUsersController : ControllerBase
 
         if (!result.Succeeded)
             return BadRequest(new { message = string.Join("; ", result.Errors.Select(e => e.Description)) });
+
+        if (user.IsRestricted)
+        {
+            await _auth.RevokeAllUserSessionsAsync(user.Id);
+        }
 
         return Ok(new
         {

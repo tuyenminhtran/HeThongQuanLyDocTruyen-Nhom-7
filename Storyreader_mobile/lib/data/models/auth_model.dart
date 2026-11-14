@@ -4,6 +4,7 @@ class AuthResult {
   final String? email;
   final String? displayName;
   final String? role;
+  final String? refreshToken;
 
   AuthResult({
     required this.accessToken,
@@ -11,6 +12,7 @@ class AuthResult {
     this.email,
     this.displayName,
     this.role,
+    this.refreshToken,
   });
 
   factory AuthResult.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class AuthResult {
       email: json['email'] as String?,
       displayName: json['displayName'] as String?,
       role: json['role'] as String?,
+      refreshToken: json['refreshToken'] as String?,
     );
   }
 
@@ -29,6 +32,7 @@ class AuthResult {
     'email': email,
     'displayName': displayName,
     'role': role,
+    'refreshToken': refreshToken,
   };
 }
 

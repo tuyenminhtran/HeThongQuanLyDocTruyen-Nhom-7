@@ -66,6 +66,7 @@ class AuthNotifier extends StateNotifier<UserModel> {
       token: result.accessToken,
       email: userEmail,
       displayName: dispName,
+      refreshToken: result.refreshToken,
     );
     state = UserModel(
       accessToken: result.accessToken,
@@ -86,6 +87,7 @@ class AuthNotifier extends StateNotifier<UserModel> {
       token: result.accessToken,
       email: email,
       displayName: displayName,
+      refreshToken: result.refreshToken,
     );
     state = UserModel(
       accessToken: result.accessToken,
@@ -96,6 +98,13 @@ class AuthNotifier extends StateNotifier<UserModel> {
   }
 
   Future<void> logout() async {
+    final token = state.accessToken;
+    if (token != null && token.isNotEmpty) {
+      try {
+        final refreshToken = await AuthStorage.getRefreshToken();
+        await AuthApi.logout(refreshToken: refreshToken);
+      } catch (_) {}
+    }
     await AuthStorage.clearAuth();
     state = UserModel();
   }

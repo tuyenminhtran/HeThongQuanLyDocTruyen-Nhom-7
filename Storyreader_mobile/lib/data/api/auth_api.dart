@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/dio_client.dart';
 import '../models/auth_model.dart';
@@ -25,5 +26,22 @@ class AuthApi {
       },
     );
     return AuthResult.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  static Future<AuthResult> refresh(String refreshToken) async {
+    final res = await DioClient.instance.post(
+      ApiConstants.authRefresh,
+      data: {'refreshToken': refreshToken},
+      options: Options(extra: {'skip_auth_refresh': true}),
+    );
+    return AuthResult.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  static Future<void> logout({String? refreshToken}) async {
+    await DioClient.instance.post(
+      ApiConstants.authLogout,
+      data: {'refreshToken': refreshToken},
+      options: Options(extra: {'skip_auth_refresh': true}),
+    );
   }
 }

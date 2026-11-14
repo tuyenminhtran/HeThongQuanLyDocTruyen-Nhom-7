@@ -87,7 +87,7 @@ class SubscriptionRepository implements ISubscriptionRepository {
   Future<void> simulatePaymentCallback(String providerRef, {bool success = true}) async {
     return DioClient.safeRequest(() async {
       await _dio.post(
-        ApiConstants.paymentCallback,
+        ApiConstants.paymentDevConfirm,
         queryParameters: {
           'providerRef': providerRef,
           'success': success,

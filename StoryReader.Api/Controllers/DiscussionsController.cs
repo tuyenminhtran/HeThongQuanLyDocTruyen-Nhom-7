@@ -1,10 +1,11 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using StoryReader.Api.Data;
 using StoryReader.Api.Models.Entities;
+using StoryReader.Api.Services.Interfaces;
 
 namespace StoryReader.Api.Controllers;
 
@@ -16,9 +17,9 @@ public record ReportDiscussionDto(string? Reason);
 public class DiscussionsController : ControllerBase
 {
     private readonly AppDbContext _db;
-    private readonly IMemoryCache _cache;
+    private readonly IAppCacheService _cache;
 
-    public DiscussionsController(AppDbContext db, IMemoryCache cache)
+    public DiscussionsController(AppDbContext db, IAppCacheService cache)
     {
         _db = db;
         _cache = cache;
@@ -51,6 +52,7 @@ public class DiscussionsController : ControllerBase
 
     [HttpPost]
     [Authorize]
+    [EnableRateLimiting("discussion")]
     public async Task<IActionResult> Post(Guid chapterId, CreateDiscussionDto dto)
     {
         if (CurrentUserId is null) return Unauthorized();
@@ -80,9 +82,10 @@ public class DiscussionsController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Người dùng đã đăng nhập báo cáo một bình luận vi phạm.</summary>
+    /// <summary>Người dùng đã đăng nhập báo cáo một bình luận vi phạm (chống spam theo cache Redis + bảng DiscussionReports).</summary>
     [HttpPost("{discussionId:guid}/report")]
     [Authorize]
+    [EnableRateLimiting("discussion")]
     public async Task<IActionResult> Report(Guid chapterId, Guid discussionId, [FromBody] ReportDiscussionDto? dto)
     {
         if (CurrentUserId is null) return Unauthorized();
@@ -102,13 +105,27 @@ public class DiscussionsController : ControllerBase
             reason = reason[..300];
         }
 
-        var reporterKey = CurrentUserId.Value.ToString();
-        var reportCacheKey = $"discussion-report:{d.Id}:{reporterKey}";
+        var reportCacheKey = $"discussion-report:{d.Id}:{CurrentUserId.Value}";
+        var alreadyInCache = await _cache.GetStringAsync(reportCacheKey) is not null;
+        var alreadyInDb = !alreadyInCache && await _db.DiscussionReports
+            .AsNoTracking()
+            .AnyAsync(r => r.DiscussionId == d.Id && r.UserId == CurrentUserId.Value);
 
-        if (_cache.TryGetValue(reportCacheKey, out _))
+        if (alreadyInCache || alreadyInDb)
         {
+            if (!alreadyInCache)
+            {
+                await _cache.SetStringAsync(reportCacheKey, "1", TimeSpan.FromHours(24));
+            }
             return BadRequest(new { message = "Bạn đã báo cáo bình luận này trước đó." });
         }
+
+        _db.DiscussionReports.Add(new DiscussionReport
+        {
+            DiscussionId = d.Id,
+            UserId = CurrentUserId.Value,
+            Reason = reason
+        });
 
         d.ReportCount++;
         if (d.Status == DiscussionStatus.Visible)
@@ -116,9 +133,7 @@ public class DiscussionsController : ControllerBase
             d.Status = DiscussionStatus.Reported;
         }
 
-        _cache.Set(reportCacheKey, true, TimeSpan.FromHours(24));
-
-        // Tự động tạm ẩn nếu bị báo cáo từ 5 lần trở lên trước khi Admin xử lý
+        // Tự động tạm ẩn nếu bị 5 người dùng khác nhau báo cáo trước khi Admin xử lý
         if (d.ReportCount >= 5)
         {
             d.Status = DiscussionStatus.Hidden;
@@ -138,6 +153,8 @@ public class DiscussionsController : ControllerBase
         }
 
         await _db.SaveChangesAsync();
+        await _cache.SetStringAsync(reportCacheKey, "1", TimeSpan.FromHours(24));
+
         return Ok(new { message = "Báo cáo bình luận thành công. Ban quản trị sẽ kiểm duyệt sớm nhất!" });
     }
 

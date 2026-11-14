@@ -23,6 +23,8 @@ class ApiConstants {
   // Endpoints
   static const String authRegister = '/auth/register';
   static const String authLogin = '/auth/login';
+  static const String authRefresh = '/auth/refresh';
+  static const String authLogout = '/auth/logout';
 
   // Story endpoints
   static const String stories = '/stories';
@@ -58,6 +60,7 @@ class ApiConstants {
   static const String mySubscriptions = '/subscriptions/me';
   static const String myPurchases = '/subscriptions/me/purchases';
   static const String paymentCallback = '/payments/callback';
+  static const String paymentDevConfirm = '/payments/dev-confirm';
 
   // Profile endpoints
   static const String profile = '/profile';

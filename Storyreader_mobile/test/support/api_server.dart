@@ -256,9 +256,6 @@ class ApiServer implements HttpClientAdapter {
         'paymentUrl': 'https://sandbox.vnpayment.vn/pay?ref=tx-story-1',
       });
     }
-    if (path == '/payments/callback') {
-      return _response({'message': 'Thành công'});
-    }
 
     if (path == '/admin/transactions') {
       return _response({
@@ -391,6 +388,22 @@ class ApiServer implements HttpClientAdapter {
         'message': 'Cảm ơn bạn đã báo cáo. Quản trị viên sẽ xem xét bình luận này.',
         'status': 2,
         'reportCount': 1,
+      });
+    }
+
+    if (path == '/payments/dev-confirm' && options.method == 'POST') {
+      return _response({'message': 'Đã hoàn tất xác nhận giao dịch mô phỏng.'});
+    }
+    if (path == '/auth/logout' && options.method == 'POST') {
+      return _response({'message': 'Đã đăng xuất và thu hồi phiên đăng nhập.'});
+    }
+    if (path == '/auth/refresh' && options.method == 'POST') {
+      return _response({
+        'accessToken': 'refreshed-jwt',
+        'expiresAt': '2030-01-01T00:00:00Z',
+        'email': 'reader@storyreader.vn',
+        'displayName': 'Độc Giả Mẫu',
+        'refreshToken': 'new-refresh-token',
       });
     }
 

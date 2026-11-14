@@ -8,10 +8,10 @@ Nền tảng đọc truyện chữ (Novel), truyện tranh (Manga/Comic) và ngh
 
 | Thành phần | Thư mục | Công nghệ / Thư viện chính |
 | :--- | :--- | :--- |
-| **Backend API** | [`StoryReader.Api`](./StoryReader.Api) | **.NET 8.0** (ASP.NET Core Web API), **Entity Framework Core 8.0.10**, **ASP.NET Core Identity** (`AppUser` + `IdentityRole<Guid>`), **JWT Bearer**, **SkiaSharp 2.88.8** (render chữ sang ảnh PNG watermark chống copy), **IMemoryCache** (cache Audio TTS proxy & chống spam báo cáo), **Swashbuckle / Swagger** |
-| **Web Frontend** | [`storyreader-web`](./storyreader-web) | **React 19** (`^19.2.8`), **TypeScript 6** (`~6.0.2`), **Vite 8** (`^8.3.0`), **Tailwind CSS 3.4** (`^3.4.19`), **TanStack Query**, **Zustand**, **React Router**, **React Hook Form**, **Axios** |
-| **Mobile App** | [`Storyreader_mobile`](./Storyreader_mobile) | **Flutter** (Dart SDK `^3.12.2`), `flutter_riverpod`, `go_router`, `dio`, `audioplayers` (`Audio TTS`), `flutter_secure_storage`, `cached_network_image`, `jwt_decoder`, `url_launcher`, `intl` |
-| **Cơ sở dữ liệu & Hạ tầng** | [`docker-compose.yml`](./docker-compose.yml) | **PostgreSQL 16** (cổng `5432`), **Redis 7** (cổng `6379`, khai báo sẵn trong Docker Compose để mở rộng Distributed Cache khi scale) |
+| **Backend API** | [`StoryReader.Api`](./StoryReader.Api) | **.NET 8.0** (ASP.NET Core Web API), **Entity Framework Core 8.0.10**, **ASP.NET Core Identity** (`AppUser` + `IdentityRole<Guid>`), **JWT Bearer + Refresh Token** (`jti` revocation), **SkiaSharp 2.88.8** (render chữ sang ảnh PNG watermark chống copy), **IAppCacheService** (**Redis 7** + `IMemoryCache` fallback), **Rate Limiting**, **Swashbuckle / Swagger** |
+| **Web Frontend** | [`storyreader-web`](./storyreader-web) | **React 19** (`^19.2.8`), **TypeScript 6** (`~6.0.2`), **Vite 8** (`^8.3.0`), **Tailwind CSS 3.4** (`^3.4.19`), **TanStack Query**, **Zustand**, **React Router**, **React Hook Form**, **Axios** (tự động refresh token 401) |
+| **Mobile App** | [`Storyreader_mobile`](./Storyreader_mobile) | **Flutter** (Dart SDK `^3.12.2`), `flutter_riverpod`, `go_router`, `dio` (tự động refresh token 401), `audioplayers` (`Audio TTS`), `flutter_secure_storage`, `cached_network_image`, `jwt_decoder`, `url_launcher`, `intl` |
+| **Cơ sở dữ liệu & Hạ tầng** | [`docker-compose.yml`](./docker-compose.yml) | **PostgreSQL 16** (cổng `5432`, **22 bảng**), **Redis 7** (cổng `6379`, active qua `StackExchangeRedisCache` cho TTS Audio cache, JWT blacklist, dedupe report & view buffer) |
 | **Công cụ & Dữ liệu** | [`tools`](./tools), [`scripts`](./scripts), [`db`](./db) | Crawler MangaDex API (`tools/crawl_manga.js`), script nạp truyện chữ (`tools/add_novels.js`, `scripts/import_story.ps1`), PostgreSQL dump mẫu (`db/dump.sql`) |
 
 ---
@@ -29,8 +29,9 @@ Nền tảng đọc truyện chữ (Novel), truyện tranh (Manga/Comic) và ngh
   - Hỗ trợ chọn tốc độ (`0.8x` – `2.0x`), chuyển chương tự động, lưu vị trí câu đang đọc, phím tắt (`A` mở Audio, `Esc` đóng Audio) và tự động ẩn trên chương truyện tranh / chương ảnh PNG.
 - **Mô hình Truyện Trả Phí & Hội Viên VIP (`/pricing`):**
   - Hỗ trợ 3 chính sách: **Miễn phí (`Free`)**, **Trả phí (`Paid`)**, **Hỗn hợp (`Mixed` với `FreeChapterCount` chương đầu đọc thử)**.
-  - Thanh toán mua lẻ trọn bộ (`Purchase`) hoặc đăng ký gói VIP định kỳ (`UserSubscription`) với quy trình ghi nhận giao dịch `Pending -> Success/Failed` và trang mô phỏng cổng thanh toán VNPay (Dev mode).
+  - Thanh toán mua lẻ trọn bộ (`Purchase`) hoặc đăng ký gói VIP định kỳ (`UserSubscription`) với quy trình ghi nhận giao dịch `Pending -> Success/Failed`, hỗ trợ xác thực webhook **VNPay HMAC-SHA512** (`/api/payments/vnpay-ipn`, `/api/payments/callback`) và endpoint mô phỏng Dev riêng biệt (`/api/payments/dev-confirm` kiểm tra quyền sở hữu giao dịch).
   - *Header thông minh:* Hiển thị huy hiệu **VIP** khi tài khoản đang có gói VIP còn hiệu lực, hoặc **Gói VIP** để mời nâng cấp.
+- **Bảo mật phiên & Chống lạm dụng:** Hỗ trợ **Refresh Token Rotation** (`POST /api/auth/refresh`) & thu hồi phiên ngay khi đăng xuất / đổi mật khẩu / khóa tài khoản qua **Redis JWT Blacklist** (`POST /api/auth/logout`); tích hợp **Rate Limiting** (`auth`, `discussion`, `payment`, `tts`), `DiscussionReports` bền vững, bộ đệm lượt xem `ChapterViewBufferService` (`ChapterViewFlushWorker`) và health-check `/health`.
 - **Tương tác & Cộng đồng:** Bình luận theo chương, báo cáo bình luận vi phạm (tự động ẩn khi đạt ngưỡng báo cáo và chống 1 người spam báo cáo trùng lặp), chuông thông báo thời gian thực (`NotificationBell`).
 
 ### Dành cho Quản trị viên (`/admin` — Yêu cầu quyền `Admin`)
@@ -73,13 +74,15 @@ docker compose ps
 ```
 
 ### Bước 2: Khởi chạy Backend API (.NET 8)
+- Môi trường Development sử dụng khóa phát triển trong `StoryReader.Api/appsettings.Development.json`. Khi triển khai Staging/Production, thiết lập các biến môi trường theo mẫu [`.env.example`](./.env.example) (`SecurityConfigValidator` sẽ chặn khởi chạy nếu khóa JWT hoặc bí mật thanh toán yếu/thiếu).
 ```bash
 dotnet restore StoryReader.Api
 dotnet run --project StoryReader.Api --urls http://localhost:5066
 ```
 - API chạy tại: `http://localhost:5066`
+- Health-check Database & Redis: `http://localhost:5066/health`
 - Swagger UI (Development): `http://localhost:5066/swagger`
-- EF Core tự động chạy Migration / tạo schema và seed tài khoản + truyện mẫu khi khởi động.
+- EF Core tự động chạy Migration (`MigrateAsync()`) / tạo schema **22 bảng** và seed tài khoản + truyện mẫu khi khởi động.
 
 ### Bước 3: Khởi chạy Web Frontend (Vite + React 19)
 ```bash
@@ -93,7 +96,7 @@ npm run dev
   dotnet test StoryReader.Tests
   npm run lint --prefix storyreader-web
   npm run build --prefix storyreader-web
-  Push-Location Storyreader_mobile; flutter analyze --no-pub; flutter test --no-pub; Pop-Location
+  Push-Location Storyreader_mobile; dart analyze lib test; flutter test --no-pub; Pop-Location
   ```
 
 ### Bước 4: Nạp thêm dữ liệu truyện (Tùy chọn)
@@ -109,6 +112,7 @@ npm run dev
 ---
 
 ## 5. Tài liệu dự án liên quan
-- [KIEN_TRUC_CONG_NGHE_VA_FLOW.md](./KIEN_TRUC_CONG_NGHE_VA_FLOW.md) — Kiến trúc hệ thống, lược đồ CSDL 20 bảng thực tế và các sơ đồ luồng xử lý.
+- [KIEN_TRUC_CONG_NGHE_VA_FLOW.md](./KIEN_TRUC_CONG_NGHE_VA_FLOW.md) — Kiến trúc hệ thống, lược đồ CSDL 22 bảng thực tế và các sơ đồ luồng xử lý.
+- [BAO_CAO_AN_TOAN_BAO_MAT_POSTMAN.md](./BAO_CAO_AN_TOAN_BAO_MAT_POSTMAN.md) — Báo cáo thẩm định & xác minh khắc phục 8/8 lỗ hổng bảo mật OWASP API + kịch bản Postman.
 - [BO_CAU_HOI_VAN_DAP_DO_AN.md](./BO_CAU_HOI_VAN_DAP_DO_AN.md) — Bộ câu hỏi & trả lời vấn đáp bám sát mã nguồn thực tế.
 - [TIEN_DO.md](./TIEN_DO.md) — Nhật ký tiến độ triển khai và kiểm thử toàn hệ thống.

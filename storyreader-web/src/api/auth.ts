@@ -6,6 +6,7 @@ export interface AuthResult {
   email?: string;
   displayName?: string;
   role?: string;
+  refreshToken?: string;
 }
 
 export async function login(email: string, password: string) {
@@ -20,4 +21,13 @@ export async function register(email: string, password: string, displayName: str
     displayName,
   });
   return res.data;
+}
+
+export async function refreshSession(refreshToken: string) {
+  const res = await apiClient.post<AuthResult>("/auth/refresh", { refreshToken });
+  return res.data;
+}
+
+export async function revokeServerSession(refreshToken?: string | null) {
+  await apiClient.post("/auth/logout", { refreshToken: refreshToken || null });
 }

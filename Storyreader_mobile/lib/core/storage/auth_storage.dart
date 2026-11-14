@@ -5,6 +5,7 @@ class AuthStorage {
   static const _storage = FlutterSecureStorage();
 
   static const _keyToken = 'storyreader_access_token';
+  static const _keyRefreshToken = 'storyreader_refresh_token';
   static const _keyEmail = 'storyreader_email';
   static const _keyDisplayName = 'storyreader_display_name';
 
@@ -12,18 +13,24 @@ class AuthStorage {
     required String token,
     required String email,
     required String displayName,
+    String? refreshToken,
   }) async {
     await _storage.write(key: _keyToken, value: token);
     await _storage.write(key: _keyEmail, value: email);
     await _storage.write(key: _keyDisplayName, value: displayName);
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      await _storage.write(key: _keyRefreshToken, value: refreshToken);
+    }
   }
 
   static Future<String?> getToken() async => await _storage.read(key: _keyToken);
+  static Future<String?> getRefreshToken() async => await _storage.read(key: _keyRefreshToken);
   static Future<String?> getEmail() async => await _storage.read(key: _keyEmail);
   static Future<String?> getDisplayName() async => await _storage.read(key: _keyDisplayName);
 
   static Future<void> clearAuth() async {
     await _storage.delete(key: _keyToken);
+    await _storage.delete(key: _keyRefreshToken);
     await _storage.delete(key: _keyEmail);
     await _storage.delete(key: _keyDisplayName);
   }

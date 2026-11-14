@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:storyreader_mobile/core/utils/chapter_sequence.dart';
 import 'package:storyreader_mobile/data/api/admin_api.dart';
 import 'package:storyreader_mobile/data/api/profile_api.dart';
+import 'package:storyreader_mobile/data/models/auth_model.dart';
 import 'package:storyreader_mobile/data/models/story_model.dart';
 import 'package:storyreader_mobile/data/repositories/discussion_repository.dart';
 import 'package:storyreader_mobile/data/repositories/notification_repository.dart';
@@ -154,6 +155,21 @@ void main() {
         repo.simulatePaymentCallback('tx-story-1', success: true),
         completes,
       );
+      expect(server.requests.last.uri.path, '/api/payments/dev-confirm');
+    });
+
+    test('AuthResult parses refreshToken and fallback values safely', () {
+      final res = AuthResult.fromJson({
+        'accessToken': 'jwt-access-1',
+        'refreshToken': 'opaque-refresh-1',
+        'expiresAt': '2026-11-15T00:00:00Z',
+        'email': 'reader@storyreader.vn',
+        'displayName': 'Độc Giả Mẫu',
+        'role': 'Member',
+      });
+      expect(res.accessToken, 'jwt-access-1');
+      expect(res.refreshToken, 'opaque-refresh-1');
+      expect(res.role, 'Member');
     });
   });
 

@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -8,10 +10,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StoryReader.Api.Data;
 using StoryReader.Api.Models.Entities;
+using StoryReader.Api.Security;
 using StoryReader.Api.Services;
 using StoryReader.Api.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
+
+SecurityConfigValidator.Validate(builder.Configuration, builder.Environment);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -40,6 +45,7 @@ builder.Services.AddSwaggerGen(opt =>
         }
     });
 });
+
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
@@ -89,6 +95,19 @@ builder.Services
                     return;
                 }
 
+                var jti = context.Principal?.FindFirstValue(JwtRegisteredClaimNames.Jti);
+                var iatStr = context.Principal?.FindFirstValue(JwtRegisteredClaimNames.Iat);
+                long? iatUnix = long.TryParse(iatStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedIat)
+                    ? parsedIat
+                    : null;
+
+                var authService = context.HttpContext.RequestServices.GetRequiredService<IAuthService>();
+                if (await authService.IsTokenRevokedAsync(jti, userId, iatUnix))
+                {
+                    context.Fail("Phiên đăng nhập đã đăng xuất hoặc bị thu hồi.");
+                    return;
+                }
+
                 var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
                 var userStatus = await db.Users
                     .AsNoTracking()
@@ -106,6 +125,25 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+static RateLimitPartition<string> CreateFixedPartition(string key, int permitLimit, int windowMinutes = 1) =>
+    RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: key,
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = permitLimit,
+            Window = TimeSpan.FromMinutes(windowMinutes),
+            QueueLimit = 0
+        });
+
+static string PartitionByUserOrIp(HttpContext httpContext, string prefix)
+{
+    var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var identityKey = !string.IsNullOrWhiteSpace(userId)
+        ? $"user:{userId}"
+        : $"ip:{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+    return $"{prefix}:{identityKey}";
+}
+
 builder.Services.AddRateLimiter(opt =>
 {
     opt.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -119,17 +157,38 @@ builder.Services.AddRateLimiter(opt =>
     };
 
     opt.AddPolicy("auth", httpContext =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            factory: _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 20,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0
-            }));
+        CreateFixedPartition($"auth:{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}", permitLimit: 20));
+
+    opt.AddPolicy("discussion", httpContext =>
+        CreateFixedPartition(PartitionByUserOrIp(httpContext, "discussion"), permitLimit: 6));
+
+    opt.AddPolicy("payment", httpContext =>
+        CreateFixedPartition(PartitionByUserOrIp(httpContext, "payment"), permitLimit: 10));
+
+    opt.AddPolicy("tts", httpContext =>
+        CreateFixedPartition(PartitionByUserOrIp(httpContext, "tts"), permitLimit: 60));
 });
 
 builder.Services.AddMemoryCache();
+
+var redisConnection = builder.Configuration.GetConnectionString("Redis")?.Trim();
+if (!string.IsNullOrWhiteSpace(redisConnection))
+{
+    var normalizedRedis = redisConnection.Contains("abortConnect", StringComparison.OrdinalIgnoreCase)
+        ? redisConnection
+        : $"{redisConnection},abortConnect=false,connectTimeout=1000,syncTimeout=1000,asyncTimeout=1000";
+
+    builder.Services.AddStackExchangeRedisCache(opt =>
+    {
+        opt.InstanceName = "storyreader:";
+        opt.Configuration = normalizedRedis;
+    });
+}
+
+builder.Services.AddSingleton<IAppCacheService, ResilientAppCacheService>();
+builder.Services.AddSingleton<IViewCounterService, ChapterViewBufferService>();
+builder.Services.AddHostedService<ChapterViewFlushWorker>();
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStoryService, StoryService>();
 builder.Services.AddScoped<IChapterAccessService, ChapterAccessService>();
@@ -153,7 +212,10 @@ builder.Services.AddCors(opt =>
     {
         if (builder.Environment.IsDevelopment())
         {
-            p.SetIsOriginAllowed(_ => true)
+            // VULN-07: Trong Development chỉ cho phép loopback (Vite/Flutter Web) và danh sách AllowedOrigins, không mở wildcard toàn cầu.
+            p.SetIsOriginAllowed(origin =>
+                Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
+                (uri.IsLoopback || allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase)))
              .AllowAnyHeader()
              .AllowAnyMethod()
              .AllowCredentials();
@@ -175,9 +237,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Seed các role mặc định (Admin, Member) khi ứng dụng khởi động lần đầu.
+// Tự động cập nhật Migration & Seed các role/dữ liệu mặc định khi ứng dụng khởi động.
 using (var scope = app.Services.CreateScope())
 {
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    if (db.Database.IsRelational())
+    {
+        await db.Database.MigrateAsync();
+    }
+
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
     foreach (var role in new[] { "Admin", "Member" })
         if (!await roleManager.RoleExistsAsync(role))
@@ -194,6 +262,8 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["X-Permitted-Cross-Domain-Policies"] = "none";
+    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
     await next();
 });
 
@@ -203,6 +273,22 @@ app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/health", async (AppDbContext db, IAppCacheService cache, CancellationToken ct) =>
+{
+    var dbHealthy = await db.Database.CanConnectAsync(ct);
+    var status = dbHealthy ? "healthy" : "degraded";
+    return Results.Json(new
+    {
+        status,
+        database = dbHealthy ? "up" : "down",
+        cache = cache.IsDistributedConfigured
+            ? (cache.IsDistributedHealthy ? "redis:up" : "redis:fallback-memory")
+            : "memory",
+        timestampUtc = DateTime.UtcNow
+    }, statusCode: dbHealthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
+}).AllowAnonymous();
+
 app.MapControllers();
 
 app.Run();

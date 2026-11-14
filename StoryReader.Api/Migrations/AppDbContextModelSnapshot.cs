@@ -243,6 +243,9 @@ namespace StoryReader.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("PartName")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("PublishAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -283,6 +286,12 @@ namespace StoryReader.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("ReportCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReportReason")
+                        .HasColumnType("text");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -296,6 +305,27 @@ namespace StoryReader.Api.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Discussions");
+                });
+
+            modelBuilder.Entity("StoryReader.Api.Models.Entities.DiscussionReport", b =>
+                {
+                    b.Property<Guid>("DiscussionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text");
+
+                    b.HasKey("DiscussionId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("DiscussionReports");
                 });
 
             modelBuilder.Entity("StoryReader.Api.Models.Entities.Genre", b =>
@@ -402,6 +432,41 @@ namespace StoryReader.Api.Migrations
                     b.HasIndex("StoryId");
 
                     b.ToTable("ReadingProgresses");
+                });
+
+            modelBuilder.Entity("StoryReader.Api.Models.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ReplacedByTokenHash")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("StoryReader.Api.Models.Entities.Story", b =>
@@ -674,6 +739,25 @@ namespace StoryReader.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StoryReader.Api.Models.Entities.DiscussionReport", b =>
+                {
+                    b.HasOne("StoryReader.Api.Models.Entities.Discussion", "Discussion")
+                        .WithMany("Reports")
+                        .HasForeignKey("DiscussionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StoryReader.Api.Models.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Discussion");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("StoryReader.Api.Models.Entities.Notification", b =>
                 {
                     b.HasOne("StoryReader.Api.Models.Entities.AppUser", "User")
@@ -735,6 +819,17 @@ namespace StoryReader.Api.Migrations
                     b.Navigation("LastChapter");
 
                     b.Navigation("Story");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StoryReader.Api.Models.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("StoryReader.Api.Models.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -833,6 +928,11 @@ namespace StoryReader.Api.Migrations
             modelBuilder.Entity("StoryReader.Api.Models.Entities.Chapter", b =>
                 {
                     b.Navigation("Discussions");
+                });
+
+            modelBuilder.Entity("StoryReader.Api.Models.Entities.Discussion", b =>
+                {
+                    b.Navigation("Reports");
                 });
 
             modelBuilder.Entity("StoryReader.Api.Models.Entities.Genre", b =>
